@@ -3,15 +3,12 @@
   (:require [marrano-bot.bot :refer [init]]
             [marrano-bot.handlers :refer [stack]]
             [marrano-bot.middlewares :refer [logger]]
+            [config.core :refer [env]]
             [org.httpkit.server :refer [run-server]]))
 
 (defn -main
   "Start server"
   []
-  (let [port (or (try (Long/parseLong (System/getenv "PORT"))
-                      (catch Exception _))
-                 3000)]
-    (do
-      (println "Server listening to port " port)
+  (do (println "Server listening to port " (:port env))
       (init)
-      (run-server stack {:port port}))))
+      (run-server stack {:port (:port env)})))
