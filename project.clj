@@ -5,9 +5,9 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.9.0"]
                  [org.clojure/core.async "0.4.474"]
-                 [ring/ring-devel "1.7.0-RC1"]
-                 [metosin/muuntaja "0.5.0"]
-                 [metosin/jsonista "0.2.1"]
+                 [ring/ring-json "0.4.0"]
+                 [ring-logger "1.0.1"]
+                 [cheshire "5.7.1"]
                  [codax "1.2.0"]
                  [yogthos/config "1.1.1"]
                  [http-kit "2.3.0"]

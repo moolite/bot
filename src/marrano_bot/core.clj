@@ -2,7 +2,6 @@
   (:gen-class)
   (:require [marrano-bot.bot :refer [init]]
             [marrano-bot.handlers :refer [stack]]
-            [marrano-bot.middlewares :refer [logger]]
             [config.core :refer [env]]
             [org.httpkit.server :refer [run-server]]))
 
