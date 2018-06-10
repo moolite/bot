@@ -65,14 +65,14 @@
   [data]
   (let [[cmd predicate] (parse-message data)]
     (c/assoc-at! db [:custom cmd] predicate)
-    nil))
+    (str "oggi ho imparato " cmd)))
 
 (defn- dimentica
   "Remove custom message"
   [data]
   (let [[cmd predicate] (parse-message data)]
     (c/dissoc-at! db [:custom cmd])
-    nil))
+    (str cmd "? no so cosa sia.")))
 
 (defn- answer
   [cmd user]
@@ -88,19 +88,18 @@
 (defn answer-webhook
   "create a new message from the webhook"
   [data]
-  (when (> (count data) 3)
-    (let [message-id      (get-in data [:message :message_id])
-          chat-id         (get-in data [:message :chat :id])
-          [cmd predicate] (parse-message (get-in data [:message :text]))
-          message         (answer cmd predicate)]
-      (if message
-        {:method               "sendMessage"
-         :text                 message
-         :chat_id              chat-id
-         :reply_to_message_id  message-id
-         :disable_notification true
-         :parse_mode           "Markdown"}
-        {}))))
+  (let [message-id      (get-in data [:message :message_id])
+        chat-id         (get-in data [:message :chat :id])
+        [cmd predicate] (parse-message (get-in data [:message :text]))
+        message         (answer cmd predicate)]
+    (if message
+      {:method               "sendMessage"
+       :text                 message
+       :chat_id              chat-id
+       :reply_to_message_id  message-id
+       :disable_notification true
+       :parse_mode           "Markdown"}
+      {})))
 
 (defn init
   "initialize the bot
