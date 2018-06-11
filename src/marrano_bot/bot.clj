@@ -55,12 +55,10 @@
 
 (defn- parse-message
   [data]
-  (if (count data)
-    (let [data-text (s/split data #" ")
-          cmd       (s/lower-case (first data-text))
-          predicate (s/join " " (rest data-text))]
-      [cmd predicate]))
-  ["" ""])
+  (let [data-text (s/split data #" ")
+        cmd       (s/lower-case (first data-text))
+        predicate (s/join " " (rest data-text))]
+    [cmd predicate]))
 
 (defn- ricorda
   "Add custom message"
@@ -92,7 +90,8 @@
   [data]
   (let [message-id      (get-in data [:message :message_id])
         chat-id         (get-in data [:message :chat :id])
-        [cmd predicate] (parse-message (get-in data [:message :text]))
+        [cmd predicate] (parse-message (or (get-in data [:message :text])
+                                           "none none"))
         message         (answer cmd predicate)]
     (if message
       {:method               "sendMessage"
