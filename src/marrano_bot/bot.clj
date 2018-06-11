@@ -90,17 +90,20 @@
   [data]
   (let [message-id      (get-in data [:message :message_id])
         chat-id         (get-in data [:message :chat :id])
-        [cmd predicate] (parse-message (or (get-in data [:message :text])
-                                           "none none"))
-        message         (answer cmd predicate)]
-    (if message
-      {:method               "sendMessage"
-       :text                 message
-       :chat_id              chat-id
-       :reply_to_message_id  message-id
-       :disable_notification true
-       :parse_mode           "Markdown"}
-      {})))
+        text            (get-in data [:message :text])]
+    (if (and message-id
+             chat-id
+             text)
+      (let [[cmd predicate] (parse-message text)
+            message         (answer cmd predicate)]
+        (if message
+          {:method               "sendMessage"
+           :text                 message
+           :chat_id              chat-id
+           :reply_to_message_id  message-id
+           :disable_notification true
+           :parse_mode           "Markdown"}
+          {})))))
 
 (defn init
   "initialize the bot
