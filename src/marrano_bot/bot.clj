@@ -55,10 +55,12 @@
 
 (defn- parse-message
   [data]
-  (let [data-text (s/split data #" ")
-        cmd       (s/lower-case (first data-text))
-        predicate (s/join " " (rest data-text))]
-    [cmd predicate]))
+  (if (count data)
+    (let [data-text (s/split data #" ")
+          cmd       (s/lower-case (first data-text))
+          predicate (s/join " " (rest data-text))]
+      [cmd predicate]))
+  ["" ""])
 
 (defn- ricorda
   "Add custom message"
