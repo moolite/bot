@@ -56,14 +56,12 @@
 
 (defn- parse-message
   [data]
-  (let [data-text (s/split data #" ")
-        xcmd      (first data-text)
-        cmd       (when (s/starts-with? xcmd "!")
-                    (-> xcmd
-                        (s/replace #"^!\s*" "")
-                        (s/lower-case)))
-        predicate (s/join " " (rest data-text))]
-    [cmd predicate]))
+  (let [matcher   (re-matcher #"!\s*(?<cmd>[a-zA-Z]+) (?<text>.*)" data)]
+    (if (.matches matcher)
+      (let [cmd       (.group matcher "cmd")
+            predicate (.group matcher "text")]
+        [cmd predicate])
+      [nil, nil])))
 
 (defn- ricorda
   "Add custom message"
