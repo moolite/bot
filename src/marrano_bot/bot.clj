@@ -104,8 +104,7 @@
            :text                 message
            :chat_id              chat-id
            :reply_to_message_id  message-id
-           :disable_notification true
-           :parse_mode           "Markdown"}
+           :disable_notification true}
           {})))))
 
 (defn init
@@ -124,6 +123,6 @@
    :message {:message_id 2, :from {:id 318062977, :is_bot false, :first_name "lilo", :username "lilo060", :language_code "en-US"},
              :chat {:id 318062977, :first_name "lilo", :username "lilo060", :type "private"},
              :date 1528539408,
-             :text "bot", :entities [{:offset 0, :length 6, :type "bot_command"}]}})
+             :text "! strunz me", :entities [{:offset 0, :length 6, :type "bot_command"}]}})
 
 (answer-webhook asd)
