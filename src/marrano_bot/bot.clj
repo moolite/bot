@@ -56,10 +56,12 @@
 
 (defn- parse-message
   [data]
-  (let [data-text (-> data
-                      (s/replace #"^!\s*" "")
-                      (s/split #" "))
-        cmd       (s/lower-case (first data-text))
+  (let [data-text (s/split data #" ")
+        xcmd      (first data-text)
+        cmd       (when (s/starts-with? xcmd "!")
+                    (-> xcmd
+                        (s/replace #"^!\s*" "")
+                        (s/lower-case)))
         predicate (s/join " " (rest data-text))]
     [cmd predicate]))
 
