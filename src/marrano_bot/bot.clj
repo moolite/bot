@@ -55,7 +55,9 @@
 
 (defn- parse-message
   [data]
-  (let [data-text (s/split data #" ")
+  (let [data-text (-> data
+                      (s/replace #"^!\s*" "")
+                      (s/split #" "))
         cmd       (s/lower-case (first data-text))
         predicate (s/join " " (rest data-text))]
     [cmd predicate]))
