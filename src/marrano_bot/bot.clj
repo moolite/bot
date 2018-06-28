@@ -66,9 +66,11 @@
 (defn- ricorda
   "Add custom message"
   [data]
-  (let [[cmd predicate] (parse-message data)]
-    (c/assoc-at! db [:custom cmd] predicate)
-    (str "oggi ho imparato " cmd)))
+  (let [[cmd predicate] (parse-message (str "!" data))]
+    (if (and cmd predicate)
+      (c/assoc-at! db [:custom cmd] predicate)
+      (str "oggi ho imparato " cmd)
+      (str "mi dispiace, non ho capito"))))
 
 (defn- dimentica
   "Remove custom message"
@@ -123,6 +125,6 @@
    :message {:message_id 2, :from {:id 318062977, :is_bot false, :first_name "lilo", :username "lilo060", :language_code "en-US"},
              :chat {:id 318062977, :first_name "lilo", :username "lilo060", :type "private"},
              :date 1528539408,
-             :text "! strunz me", :entities [{:offset 0, :length 6, :type "bot_command"}]}})
+             :text "! ricorda fooffa % fifa", :entities [{:offset 0, :length 6, :type "bot_command"}]}})
 
 (answer-webhook asd)
