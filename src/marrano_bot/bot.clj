@@ -23,6 +23,7 @@
     (c/assoc-at! db [:slaps]
                  {"marrano" "%, sei un marrano!"
                   "schif"   "%, io ti schifo!"
+                  "betaschif"   "%, io ti betaschifo!"
                   "strunz"  "%, sei strunz!"
                   "paris"   "%, sei più helpy di paris hilton!"
                   "bot"     "mannò, massù, sù!"})))
