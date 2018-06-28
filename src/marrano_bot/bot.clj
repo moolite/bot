@@ -68,8 +68,8 @@
   [data]
   (let [[cmd predicate] (parse-message (str "!" data))]
     (if (and cmd predicate)
-      (c/assoc-at! db [:custom cmd] predicate)
-      (str "oggi ho imparato " cmd)
+      (do (c/assoc-at! db [:custom cmd] predicate)
+          (str "oggi ho imparato " cmd))
       (str "mi dispiace, non ho capito"))))
 
 (defn- dimentica
