@@ -14,7 +14,7 @@
                     {body :body}
                     (bot-api body))
               (route/not-found
-               (str "<!doctype html><title>404 - page not found!</title><h3>Bot not found!</h3><p>" token "</p>"))
+               "404")
               (route/files "public"))
 
       (logger/wrap-with-logger)
