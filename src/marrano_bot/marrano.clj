@@ -11,9 +11,6 @@
 (def webhook-url
   (:webhook env))
 
-(t/set-webhook token webhook-url)
-
-
 ;; Database
 (def db
   (c/open-database! (or (:db env
