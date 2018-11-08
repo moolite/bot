@@ -11,7 +11,7 @@
 (def webhook-url
   (:webhook env))
 
-(api/set-webhook token webhook-url)
+(t/set-webhook token webhook-url)
 
 
 ;; Database
