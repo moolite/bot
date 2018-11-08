@@ -9,7 +9,9 @@
 (def token
   (:token env))
 (def webhook-url
-  (:webhook env))
+  (str (:webhook env)
+       "/t/"
+       (:secret env)))
 
 ;; Database
 (def db

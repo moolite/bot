@@ -6,11 +6,11 @@
             [ring.logger :as logger]
             [marrano-bot.marrano :refer [bot-api]]))
 
-(def token
-  (:token env))
+(def secret
+  (:secret env))
 
 (def stack
-  (-> (routes (POST (str "/" token)
+  (-> (routes (POST (str "/t/" secret)
                     {body :body}
                     (bot-api body))
               (route/not-found
