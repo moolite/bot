@@ -72,8 +72,8 @@
 (h/defhandler bot-api
   (h/command "paris"
              {{id :id} :chat}
-             (let [command-list (map #(str "- !" (first %) "\n")
-                                  (c/seek-at! db [:commands]))]
+             (let [command-list (apply str (map #(str "- !" (first %) "\n")
+                                                (c/seek-at! db [:commands])))]
                (t/send-text token
                             id
                             {:parse_mode "Markdown"}
