@@ -4,17 +4,15 @@
             [ring.middleware.json :refer [wrap-json-response wrap-json-body]]
             [config.core :refer [env]]
             [ring.logger :as logger]
-            [marrano-bot.bot :refer [answer-webhook send-message]]))
+            [marrano-bot.marrano :refer [bot-api]]))
 
-(def webhook-token
-  (get-in env [:hook :token]))
+(def token
+  (get-in [:hook :token] env))
 
 (def stack
-  (-> (routes (POST "/t/:token" [token :as req]
-                (if (= token webhook-token)
-                  {:body (answer-webhook (:body req))}
-                  {:status 403}))
-
+  (-> (routes (POST (str "/" token)
+                    {{updates :result} :body}
+                    (map bot-api updates))
               (route/not-found
                "<!doctype html><title>404 - page not found!</title><h3>Page not found!</h3>")
               (route/files "public"))

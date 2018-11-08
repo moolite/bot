@@ -11,9 +11,10 @@
                  [codax "1.2.0"]
                  [yogthos/config "1.1.1"]
                  [http-kit "2.3.0"]
-                 [compojure "1.6.1"]]
+                 [compojure "1.6.1"]
+                 [morse "0.4.0"]]
 
-  :plugins [[lein-ring "0.12.1"]]
+  :plugins [[lein-ring "0.12.1"][lein-zprint "0.3.12"]]
   :ring {:handler marrano-bot.handlers/stack}
 
   :main ^:skip-aot marrano-bot.core
