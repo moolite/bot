@@ -5,6 +5,9 @@
             [config.core :refer [env]]
             [org.httpkit.server :refer [run-server]]))
 
+(def token
+  (:token env))
+
 ;; main entrypoint
 (defn -main
   "Start server"
