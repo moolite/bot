@@ -6,19 +6,22 @@
             [clojure.string :as s]))
 
 ;; Configuration
-(def api-url (:api env))
+(def token
+  (:token env))
+(def webhook-url
+  (:webhook env))
 
-(def hook-url (str (get-in env [:hook :url]) (get-in env [:hook :token])))
-(def token (get-in env [:hook :token]))
+(api/set-webhook token webhook-url)
+
 
 ;; Database
-(def db (c/open-database! (or (:db env) "./db")))
+(def db
+  (c/open-database! (or (:db env
+                             "./db"))))
 
 
 ;; seed database
-(c/assoc-at!
-  db
-  [:commands]
+(c/assoc-at! db [:commands]
   {"marrano" "%, sei un marrano!",
    "schif" "%, io ti schifo!",
    "betaschif" "%, io ti betaschifo!",
@@ -67,21 +70,26 @@
     (c/dissoc-at! db [:custom cmd])))
 
 ;; Request Handler
-(h/defhandler
-  bot-api
+(h/defhandler bot-api
   (h/command "paris"
              {{id :id} :chat}
-             (let [command-list (map #(str "- !" (key %) "\n")
+             (let [command-list (map #(str "- !" (first %) "\n")
                                   (c/seek-at! db [:commands]))]
                (t/send-text token
                             id
                             {:parse_mode "Markdown"}
                             (str "Helpy paris:\n\n" command-list))))
   (h/command "ricorda"
-             {{id :id} :chat, text :text}
-             (do (ricorda text) (t/send-text token id "umme... ok")))
+             {{id :id} :chat text :text}
+             (do (ricorda text)
+                 (t/send-text token id "umme... ok")))
   (h/command "dimentica"
-             {{id :id} :chat, text :text}
-             (do (dimentica text) (t/send-text token id "dimenticai...")))
-  (h/message {{id :id} :chat, text :text}
-             (if (command? text) (t/send-text token id (rispondi text)))))
+             {{id :id} :chat text :text}
+             (do (dimentica text)
+                 (t/send-text token id "dimenticai...")))
+  (h/message {{id :id} :chat text :text}
+             (if (and text
+                      (command? text))
+               (t/send-text token id (rispondi text)))))
+
+;; (bot-api {:message {:text "!paris hilton" :chat {:id 1234567}}})

@@ -9,14 +9,12 @@ A marrano bot
 ## Options
 
 ``` edn
-{:api "https://api.telegram.org/bot123456:12345678/"
- :hook {:url "https://bot.example.net/"
-        :token "123456789"}}
+{:webhook "https://bot.example.net"
+ :token "botABC:123467"}
 ```
 
-- `:api`: telegram api URI, must be composed of *default api url* and *telegram token*
-- `:hook :url`: base URI assigned to the bot
-- `:hook :token`: token to concatenate to the bot's URI
+- `:webhook` Bot's webhook URL
+- `:token` telegram's bot secret token
 
 ## License
 

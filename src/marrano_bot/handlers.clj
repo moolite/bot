@@ -7,14 +7,14 @@
             [marrano-bot.marrano :refer [bot-api]]))
 
 (def token
-  (get-in [:hook :token] env))
+  (:token env))
 
 (def stack
   (-> (routes (POST (str "/" token)
-                    {{updates :result} :body}
-                    (map bot-api updates))
+                    {body :body}
+                    (bot-api body))
               (route/not-found
-               "<!doctype html><title>404 - page not found!</title><h3>Page not found!</h3>")
+               (str "<!doctype html><title>404 - page not found!</title><h3>Bot not found!</h3><p>" token "</p>"))
               (route/files "public"))
 
       (logger/wrap-with-logger)
