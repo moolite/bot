@@ -1,12 +1,10 @@
 (ns marrano-bot.core
   (:gen-class)
   (:require [marrano-bot.handlers :refer [stack]]
+            [marrano-bot.marrano :refer [token webhook-url]]
             [morse.api :as t]
             [config.core :refer [env]]
             [org.httpkit.server :refer [run-server]]))
-
-(def token
-  (:token env))
 
 ;; main entrypoint
 (defn -main
