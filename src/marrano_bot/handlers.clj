@@ -12,10 +12,13 @@
 (def stack
   (-> (routes (POST (str "/t/" secret)
                     {body :body}
-                    (bot-api body))
+                    (or (bot-api body)
+                        ""))
+
+              (GET (str "/t/" secret) [] "AAAAA")
+
               (route/not-found
-               "404")
-              (route/files "public"))
+               "404"))
 
       (logger/wrap-with-logger)
 

@@ -1,8 +1,7 @@
 (ns marrano-bot.core
   (:gen-class)
   (:require [marrano-bot.handlers :refer [stack]]
-            [marrano-bot.marrano :refer [token webhook-url]]
-            [morse.api :as t]
+            [marrano-bot.marrano :refer [init! token webhook-url]]
             [config.core :refer [env]]
             [org.httpkit.server :refer [run-server]]))
 
@@ -10,7 +9,6 @@
 (defn -main
   "Start server"
   []
-  (do
-   (t/set-webhook token webhook-url)
-   (println "Server listening to port " (:port env))
-   (run-server stack {:port (:port env)})))
+  (do (init!)
+      (println "Server listening to port " (:port env))
+      (run-server stack {:port (:port env)})))
