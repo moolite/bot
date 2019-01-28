@@ -48,7 +48,7 @@
 
 (defn- parse-text
   [data]
-  (let [matcher (re-matcher #"!\s*(?<cmd>[a-zA-Z]+)\s*(?<text>.*)?" data)]
+  (let [matcher (re-matcher #"!\s*(?<cmd>[a-zA-Z0-9]+)\s*(?<text>.*)?" data)]
     (when (.matches matcher)
       (let [cmd       (s/lower-case (.group matcher "cmd"))
             predicate (.group matcher "text")]
