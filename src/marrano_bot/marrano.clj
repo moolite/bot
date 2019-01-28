@@ -90,10 +90,11 @@
   []
   (let [commands (c/seek-at! db [:commands])
         custom   (c/seek-at! db [:custom])
-        list     (map #(str "- !" (first %) "\n")
-                      (concat commands custom))]
-    (str "Helpy *paris*:\n\n"
-         (apply str list))))
+        list     (->> (concat commands custom)
+                      (map #(str "- !" (first %) "\n"))
+                      sort
+                      (apply str))]
+    (str "Helpy *paris*:\n\n" list)))
 
 ;; Request Handler
 (h/defhandler bot-api
