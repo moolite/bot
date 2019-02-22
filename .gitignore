@@ -12,3 +12,5 @@ pom.xml.asc
 /data
 /config
 /db
+/.idea/*
+marrano-bot.iml

@@ -1,5 +1,6 @@
 (ns marrano-bot.marrano
-  (:require [morse.handlers :as h]
+  (:require [marrano-bot.parse :as p]
+            [morse.handlers :as h]
             [morse.api :as t]
             [config.core :refer [env]]
             [codax.core :as c]
@@ -19,7 +20,6 @@
   (c/open-database! (or (:db env)
                         "./db")))
 
-
 (defn init!
   []
   (do (println ">> registered webhook URL: " webhook-url)
@@ -38,54 +38,54 @@
                     "spec"      "%, ti fo crashare pur di non cambiare la mia spec.",
                     "bot"       "mannò, massù, sù!"})))
 
+(defn- template
+  [tpl text]
+  (s/replace tpl "%" text))
+
 ;; answer functions
-(defn- command?
-  [text]
-  (-> text
-      (s/split #" ")
-      first
-      (s/starts-with? "!")))
-
-(defn- parse-text
-  [data]
-  (let [matcher (re-matcher #"!\s*(?<cmd>[a-zA-Z0-9]+)\s*(?<text>.*)?" data)]
-    (when (.matches matcher)
-      (let [cmd       (s/lower-case (.group matcher "cmd"))
-            predicate (.group matcher "text")]
-        [(s/lower-case cmd) predicate]))))
-
 (defn- rispondi
   [text]
-  (let [[cmd pred] (parse-text text)
+  (let [[cmd pred] (p/parse text)
         tpl        (or (c/get-at! db [:custom cmd])
                        (c/get-at! db [:commands cmd]))]
-    (if tpl (s/replace tpl "%" pred))))
-(rispondi "!marrano suppah")
+    (if tpl
+      (template tpl pred))))
 
+;; Slap answers
 (defn- slap
   [text]
   (let [slap   (rand-nth (c/seek-at! db [:slap]))
         target (apply str (rest (s/split text #" ")))]
-    (str "@me slappa " target " con " (second slap))))
+    (if (s/includes? slap " % ")
+      (str "@me " (template slap target))
+      (str "@me slappa " target " con " (second slap)))))
 
+;; Slap save
 (defn- slap-ricorda
   [text]
   (c/assoc-at! db [:slap] text))
 
+;; Remember a new quote
 (defn- ricorda
   [text]
-  (let [textlist (rest (s/split text #" "))
-        cmd      (first textlist)
-        pred     (s/join " " (rest textlist))]
+  (let [[cmd predicate] (p/parse text)]
     (if (= cmd "slap")
       (slap-ricorda pred)
       (c/assoc-at! db [:custom cmd] pred))))
 
+;; Remember one or more PhotoSize
+(defn- ricorda-photo
+  [id photos]
+  (let [photo-ids (:file_id photos)]
+    (c/update-at! db [:photos])))
+
+;; Forget a quote
 (defn- dimentica
   [text]
-  (let [cmd (first (rest (s/split text #" ")))]
+  (let [[cmd] (p/parse text)]
     (c/dissoc-at! db [:custom cmd])))
 
+;; Help message
 (defn- paris-help
   []
   (let [commands (c/seek-at! db [:commands])
@@ -101,7 +101,7 @@
   (h/command "paris"
              {{id :id} :chat}
              (t/send-text token id {:parse_mode "Markdown"}
-                            (paris-help)))
+                          (paris-help)))
 
   (h/command "slap"
              {{id :id} :chat text :text}
@@ -120,10 +120,26 @@
                  (t/send-text token id
                               "non ricordo più")))
 
-  (h/message {{id :id} :chat text :text}
-             (when (and text (command? text))
+  (h/command "russacchiotta"
+             {{id :id} :chat}
+             (let [photo (rand-nth (c/seek-at! db [:photos]))]
+               (t/send-photo token id photo)))
+
+  ;; Commands message handler
+  (h/message {{id :id chat-type :type} :chat text :text photo :photo}
+             (cond
+               (and text (p/command? text))
                (let [response (rispondi text)]
                  (when response
-                   (t/send-text token id response))))))
+                   (t/send-text token id response)))
+
+               (and photo (= chat-type "private"))
+               (let [photo-id (save-photo photo)]
+                 (t/send-text token id (str "id: " photo-id)))))
+
+  ;; Private photo messages
+  (h/message {{id :id chat-type :type} :chat photo :photo}
+             (when
+                 (save-photo id photo))))
 
 ;; (bot-api {:message{:chat{:id 123} :text "/paris"}})
