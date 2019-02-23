@@ -36,7 +36,9 @@
                     "soviet"    "%, ti mando a Stalingrado!",
                     "russa"     "%, deh or dico a Putin di tolgliert le russacchiotte di man!",
                     "spec"      "%, ti fo crashare pur di non cambiare la mia spec.",
-                    "bot"       "mannò, massù, sù!"})))
+                    "bot"       "mannò, massù, sù!"})
+      (c/assoc-at! db [:slap] ["una grande trota!"
+                               "le diciotto bobine edizione limitata de La Corazzata Potemkin durante Italia Inghilterra"])))
 
 (defn- template
   [tpl text]
@@ -63,12 +65,12 @@
 ;; Slap save
 (defn- slap-ricorda
   [text]
-  (c/assoc-at! db [:slap] text))
+  (c/update-at! db [:slap] #(concat % text)))
 
 ;; Remember a new quote
 (defn- ricorda
   [text]
-  (let [[cmd predicate] (p/parse text)]
+  (let [[cmd pred] (p/parse text)]
     (if (= cmd "slap")
       (slap-ricorda pred)
       (c/assoc-at! db [:custom cmd] pred))))
@@ -77,7 +79,7 @@
 (defn- ricorda-photo
   [id photos]
   (let [photo-ids (:file_id photos)]
-    (c/update-at! db [:photos])))
+    (c/update-at! db [:photos] #(concat % photo-ids))))
 
 ;; Forget a quote
 (defn- dimentica
@@ -128,18 +130,18 @@
   ;; Commands message handler
   (h/message {{id :id chat-type :type} :chat text :text photo :photo}
              (cond
-               (and text (p/command? text))
+               (p/command? text)
                (let [response (rispondi text)]
                  (when response
                    (t/send-text token id response)))
 
                (and photo (= chat-type "private"))
-               (let [photo-id (save-photo photo)]
+               (let [photo-id (ricorda-photo photo)]
                  (t/send-text token id (str "id: " photo-id)))))
 
   ;; Private photo messages
   (h/message {{id :id chat-type :type} :chat photo :photo}
              (when
-                 (save-photo id photo))))
+                 (ricorda-photo id photo))))
 
 ;; (bot-api {:message{:chat{:id 123} :text "/paris"}})
