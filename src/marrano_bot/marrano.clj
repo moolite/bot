@@ -39,9 +39,10 @@
                          "russa"     "%, deh or dico a Putin di tolgliert le russacchiotte di man!" ,
                          "spec"      "%, ti fo crashare pur di non cambiare la mia spec." ,
                          "bot"       "mannò, massù, sù!"})
-            (c/update-at [:slap] 0 "una grande trota!")
-            (c/update-at [:slap] 1 "le diciotto bobine edizione limitata de La Corazzata Potemkin durante Italia Inghilterra" )
-            (c/update-at [:slap] 2 "con una BlockChain AI WebScale BigData!!!111")))))
+            (c/update-at [:slap]
+                         ["una grande trota!"
+                          "le diciotto bobine edizione limitata de La Corazzata Potemkin durante Italia Inghilterra"
+                          "con una BlockChain AI WebScale BigData!!!111"])))))
 
 (defn- template
   [tpl text]
