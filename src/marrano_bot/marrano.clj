@@ -130,7 +130,7 @@
   ;; Commands message handler
   (h/message {{id :id chat-type :type} :chat text :text photo :photo}
              (cond
-               (p/command? text)
+               (and text (p/command? text))
                (let [response (rispondi text)]
                  (when response
                    (t/send-text token id response)))
@@ -144,4 +144,4 @@
              (when
                  (ricorda-photo id photo))))
 
-;; (bot-api {:message{:chat{:id 123} :text "/paris"}})
+;; (bot-api {:message{:chat{:id 123 :type "private"} :text "!paris"}})
