@@ -77,7 +77,7 @@
   (let [[cmd pred] (p/parse text)]
     (if (and (not (nil? cmd))
              (not (empty? cmd)))
-      (when (= cmd "slap")
+      (if (= cmd "slap")
         (slap-ricorda pred)
         (c/assoc-at! db [:custom cmd] pred)))))
 
