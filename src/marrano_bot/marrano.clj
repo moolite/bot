@@ -38,7 +38,11 @@
                     "spec"      "%, ti fo crashare pur di non cambiare la mia spec.",
                     "bot"       "mannò, massù, sù!"})
       (c/assoc-at! db [:slap] ["una grande trota!"
-                               "le diciotto bobine edizione limitata de La Corazzata Potemkin durante Italia Inghilterra"])))
+                               "le diciotto bobine edizione limitata de La Corazzata Potemkin durante Italia Inghilterra"])
+      ;; clean nil keys
+      (c/dissoc-at! db [:custom nil])
+      ;; clean empty keys
+      (c/dissoc-at! db [:custom ""])))
 
 (defn- template
   [tpl text]
@@ -71,9 +75,11 @@
 (defn- ricorda
   [text]
   (let [[cmd pred] (p/parse text)]
-    (if (= cmd "slap")
-      (slap-ricorda pred)
-      (c/assoc-at! db [:custom cmd] pred))))
+    (if (and (not (nil? cmd))
+             (not (empty? cmd)))
+      (when (= cmd "slap")
+        (slap-ricorda pred)
+        (c/assoc-at! db [:custom cmd] pred)))))
 
 ;; Remember one or more PhotoSize
 (defn- ricorda-photo
