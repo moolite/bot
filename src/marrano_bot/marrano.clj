@@ -60,11 +60,12 @@
 ;; Slap answers
 (defn- slap
   [text]
-  (let [slap   (rand-nth (c/seek-at! db [:slap]))
-        target (apply str (rest (s/split text #" ")))]
+  (let [target (apply str (first (s/split text #" ")))
+        slap   (or (second (s/split text #" "))
+                   (rand-nth (c/get-at! db [:slap]))) ]
     (if (s/includes? slap " % ")
       (str "@me " (template slap target))
-      (str "@me slappa " target " con " (second slap)))))
+      (str "@me slappa " target " con " slap))))
 
 ;; Slap save
 (defn- slap-ricorda
