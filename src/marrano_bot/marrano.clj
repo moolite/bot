@@ -68,8 +68,6 @@
       (str "@me " (template slap target))
       (str "@me slappa " target " con " slap))))
 
-(slap "/slap suppah un cane pelosone")
-
 ;; Slap save
 (defn- slap-ricorda
   [text]

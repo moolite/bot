@@ -2,7 +2,7 @@
   (:require [clojure.string :as s]))
 
 (def parse-regex
-  #"!?\s*(?<cmd>[a-zA-Z0-9]+)\s+(?<text>.+)?")
+  #"[/a-z]*!?\s*(?<cmd>[a-zA-Z0-9]+)\s+(?<text>.+)?")
 
 (defn parse
   [data]
