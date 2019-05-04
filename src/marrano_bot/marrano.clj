@@ -35,11 +35,13 @@
 ;; Slap answers
 (defn- slap
   [text]
-  (let [text (s/split text #" ")
-        target (get text 1)
-        slap   (or (s/join " " (drop 2 text))
-                   (rand-nth (db/get-in [:slap]))) ]
-    (if (s/includes? slap " % ")
+  (let [text      (s/split text #" ")
+        target    (get text 1)
+        user-slap (s/join " " (drop 2 text))
+        slap      (or (when (> 0 (.length user-slap))
+                        user-slap)
+                      (rand-nth (c/get-at! db [:slap]))) ]
+    (if (s/includes? slap "%")
       (str "@me " (template slap target))
       (str "@me slappa " target " con " slap))))
 
