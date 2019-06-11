@@ -1,9 +1,9 @@
 (ns marrano-bot.marrano
   (:require [marrano-bot.parse :as p]
+            [marrano-bot.db :as db]
             [morse.handlers :as h]
             [morse.api :as t]
             [config.core :refer [env]]
-            [codax.core :as c]
             [clojure.string :as s]))
 
 ;; Configuration
@@ -15,34 +15,11 @@
        "/t/"
        (:secret env)))
 
-;; Database
-(def db
-  (c/open-database! (or (:db env)
-                        "./db")))
-
 (defn init!
   []
   (do (println ">> registered webhook URL: " webhook-url)
       (t/set-webhook token webhook-url)
-      ;; seed database
-      (c/assoc-at! db [:commands]
-                   {"marrano"   "%, sei un marrano!",
-                    "schif"     "%, io ti schifo!",
-                    "betaschif" "%, io ti betaschifo!",
-                    "strunz"    "%, sei strunz!",
-                    "paris"     "%, sei più helpy di paris hilton!",
-                    "chain"     "%, sei più lento di una blockchain!",
-                    "cripto"    "%, ti criptobottokremlino!",
-                    "soviet"    "%, ti mando a Stalingrado!",
-                    "russa"     "%, deh or dico a Putin di tolgliert le russacchiotte di man!",
-                    "spec"      "%, ti fo crashare pur di non cambiare la mia spec.",
-                    "bot"       "mannò, massù, sù!"})
-      (c/assoc-at! db [:slap] ["una grande trota!"
-                               "le diciotto bobine edizione limitata de La Corazzata Potemkin durante Italia Inghilterra"])
-      ;; clean nil keys
-      (c/dissoc-at! db [:custom nil])
-      ;; clean empty keys
-      (c/dissoc-at! db [:custom ""])))
+      (db/init!)))
 
 (defn- template
   [tpl text]
@@ -52,10 +29,8 @@
 (defn- rispondi
   [text]
   (let [[cmd pred] (p/parse text)
-        tpl        (or (c/get-at! db [:custom cmd])
-                       (c/get-at! db [:commands cmd]))]
-    (if tpl
-      (template tpl pred))))
+        tpl        (db/get [:custom cmd])]
+    (if tpl (template tpl pred)))))
 
 ;; Slap answers
 (defn- slap
@@ -63,7 +38,7 @@
   (let [text (s/split text #" ")
         target (get text 1)
         slap   (or (s/join " " (drop 2 text))
-                   (rand-nth (c/get-at! db [:slap]))) ]
+                   (rand-nth (db/get-in [:slap]))) ]
     (if (s/includes? slap " % ")
       (str "@me " (template slap target))
       (str "@me slappa " target " con " slap))))
@@ -71,7 +46,7 @@
 ;; Slap save
 (defn- slap-ricorda
   [text]
-  (c/update-at! db [:slap] #(concat % text)))
+  (db/update-in [:slap] conj text))
 
 ;; Remember a new quote
 (defn- ricorda

@@ -8,7 +8,6 @@
                  [ring/ring-json "0.4.0"]
                  [ring-logger "1.0.1"]
                  [cheshire "5.7.1"]
-                 [codax "1.3.0"]
                  [yogthos/config "1.1.1"]
                  [http-kit "2.3.0"]
                  [compojure "1.6.1"]
