@@ -1,5 +1,6 @@
 (ns marrano-bot.db
-  (:require [clojure.edn :as edn]
+  (:require [clojure.core :as c]
+            [clojure.edn :as edn]
             [clojure.java.io :as io]))
 
 (def db-filename "./db.edn")
@@ -54,8 +55,11 @@
          :slap ["una grande trota!"
                 "le diciotto bobine edizione limitata de La Corazzata Potemkin durante Italia Inghilterra"]}))
 
-(defn save! []
-  (spit db-filename (prn-str @db)))
+(defn save!
+  ([_ _ _ _]
+   (save!))
+  ([]
+   (spit db-filename (prn-str @db))))
 
 (defn load! []
   (reset! @db (edn/read-string (slurp db-filename))))
@@ -73,8 +77,8 @@
 
 (defn get-in
   [path]
-  (get-in @db path))
+  (c/get-in @db path))
 
-(defn update-in
+(defn update-in!
   [k f]
-  (swap! db update-in k f))
+  (swap! db (update-in @db k f)))
