@@ -4,16 +4,17 @@
 
 (def db-filename "./db.edn")
 (def db
-  (atom {:commands {"marrano"   "%, sei un marrano!",
-                    "schif"     "%, io ti schifo!",
-                    "betaschif" "%, io ti betaschifo!",
-                    "strunz"    "%, sei strunz!",
-                    "paris"     "%, sei più helpy di paris hilton!",
-                    "chain"     "%, sei più lento di una blockchain!",
-                    "cripto"    "%, ti criptobottokremlino!",
-                    "soviet"    "%, ti mando a Stalingrado!",
-                    "russa"     "%, deh or dico a Putin di tolgliert le russacchiotte di man!",
-                    "spec"      "%, ti fo crashare pur di non cambiare la mia spec.",
+  (atom {:commands {"marrano"   "%, sei un marrano!"
+                    "brav"      "%, sei marran, ma anche !brav"
+                    "schif"     "%, io ti schifo!"
+                    "betaschif" "%, io ti betaschifo!"
+                    "strunz"    "%, sei strunz!"
+                    "paris"     "%, sei più helpy di paris hilton!"
+                    "chain"     "%, sei più lento di una blockchain!"
+                    "cripto"    "%, ti criptobottokremlino!"
+                    "soviet"    "%, ti mando a Stalingrado!"
+                    "russa"     "%, deh or dico a Putin di tolgliert le russacchiotte di man!"
+                    "spec"      "%, ti fo crashare pur di non cambiare la mia spec."
                     "acbs"      "%, ti acbsizzo!"
                     "bot"       "mannò, massù, sù!"
                     "silenti"   "Marrani! Siete più silenziosi del silenzio degli innocenti!"
