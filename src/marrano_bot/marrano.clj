@@ -29,8 +29,8 @@
 (defn- rispondi
   [text]
   (let [[cmd pred] (p/parse text)
-        tpl        (db/get [:custom cmd])]
-    (if tpl (template tpl pred)))))
+        tpl        (db/get-command cmd)]
+    (if tpl (template tpl pred))))
 
 ;; Slap answers
 (defn- slap
@@ -40,7 +40,7 @@
         user-slap (s/join " " (drop 2 text))
         slap      (or (when (> 0 (.length user-slap))
                         user-slap)
-                      (rand-nth (c/get-at! db [:slap]))) ]
+                      (db/get-rand-slap))]
     (if (s/includes? slap "%")
       (str "@me " (template slap target))
       (str "@me slappa " target " con " slap))))
@@ -48,7 +48,7 @@
 ;; Slap save
 (defn- slap-ricorda
   [text]
-  (db/update-in [:slap] conj text))
+  (db/add-slap text))
 
 ;; Remember a new quote
 (defn- ricorda
@@ -58,24 +58,24 @@
              (not (empty? cmd)))
       (if (= cmd "slap")
         (slap-ricorda pred)
-        (c/assoc-at! db [:custom cmd] pred)))))
+        (db/add-command cmd pred)))))
 
 ;; Remember one or more PhotoSize
 (defn- ricorda-photo
   [id photos]
   (let [photo-ids (:file_id photos)]
-    (c/update-at! db [:photos] #(concat % photo-ids))))
+    (db/update-at! [:photos] #(concat % photo-ids))))
 
 ;; Forget a quote
 (defn- dimentica
   [text]
   (let [[cmd] (p/parse text)]
-    (c/dissoc-at! db [:custom cmd])))
+    (db/rem-command cmd [:custom cmd])))
 
 ;; Help message
 (defn- paris-help
   []
-  (let [list (->> (keys (db/get-in [:commands]))
+  (let [list (->> (keys (db/get-in! [:commands]))
                   sort
                   (map #(str "- !" % "\n")))]
     (str "Helpy *paris*:\n\n" list)))
@@ -106,7 +106,7 @@
 
   (h/command "russacchiotta"
              {{id :id} :chat}
-             (let [photo (rand-nth (c/seek-at! db [:photos]))]
+             (let [photo (rand-nth (db/get-in! [:photos]))]
                (t/send-photo token id photo)))
 
   ;; Commands message handler
@@ -125,5 +125,3 @@
   (h/message {{id :id chat-type :type} :chat photo :photo}
              (when
                  (ricorda-photo id photo))))
-
-;; (bot-api {:message{:chat{:id 123 :type "private"} :text "!paris"}})

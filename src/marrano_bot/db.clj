@@ -1,6 +1,5 @@
 (ns marrano-bot.db
-  (:require [clojure.core :as c]
-            [clojure.edn :as edn]
+  (:require [clojure.edn :as edn]
             [clojure.java.io :as io]))
 
 (def db-filename "./db.edn")
@@ -75,10 +74,35 @@
   (add-watch db :save save!))
 
 
-(defn get-in
+(defn get-in!
   [path]
-  (c/get-in @db path))
+  (get-in @db path))
 
-(defn update-in!
+(defn update-at!
   [k f]
-  (swap! db (update-in @db k f)))
+  (swap! db (fn [val] (update-in val k f))))
+
+(defn add-to-list
+  [k thing]
+  (swap! db (fn [val] (update-in val [k] conj thing))))
+
+;; High-level helpers
+(defn add-slap
+  [text]
+  (add-to-list :slap text))
+(defn get-slaps
+  []
+  (:slap @db))
+(defn get-rand-slap
+  []
+  (rand-nth (get-slaps)))
+
+(defn add-command
+  [name text]
+  (swap! db (fn [val] (update-in val [:commands name] (fn [_] text)))))
+(defn get-command
+  [k]
+  (get-in @db [:commands k]))
+(defn rem-command
+  [k]
+  (swap! db (fn [val] (update-in val [:commands] #(dissoc % k)))))
