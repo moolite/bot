@@ -14,9 +14,25 @@
                     "soviet"    "%, ti mando a Stalingrado!",
                     "russa"     "%, deh or dico a Putin di tolgliert le russacchiotte di man!",
                     "spec"      "%, ti fo crashare pur di non cambiare la mia spec.",
-                    "bot"       "mannò, massù, sù!"}
-         :slap ("una grande trota!"
-                "le diciotto bobine edizione limitata de La Corazzata Potemkin durante Italia Inghilterra")}))
+                    "acbs"      "%, ti acbsizzo!"
+                    "bot"       "mannò, massù, sù!"
+                    "silenti"   "Marrani! Siete più silenziosi del silenzio degli innocenti!"
+                    "vegano"    "%, sei diventato un LGBTVEGan!"
+                    "tentacolo" "%, ti lascio solo un attimo e mi fai come i tentacoli di day of tentacle!"
+                    "seghe"     "%, troppe seghe ti dimentichi anche come ti chiamiii!!!oneoneone"
+                    "rosso"     "%, sei un rossobruno!!11oneone"
+                    "sovrano"   "%, sei un sovraninsto-stalino-comunisto-criptorossobruno!"
+                    "piaga"     "%, sei peggio di uno ShInKuRo attaccato ai coglioni!!!oneone11"
+                    "mostro"    "%, sei diventato il mostro di Livorno!"
+                    "hz"        "%, ti sei incastrato in una scanline!?!?!!!oneoneoe"
+                    "kb"        "%, devi finire la tastierina slim per l’ipaddo!"
+                    "gmt"       "oh no! %, hai il fuso orario del gatto!"
+                    "ciocco"    "%, ti fo cioccar come il gatto!"
+                    "lallini"   "%, sei un massacratore di lallini!"
+                    "azimuth"   "%, registra quella maledetta testinaaaaaaaa!!!!!!!!"
+                    "filtro"    ".im_message_photo_thumb{filter:blur(15px)} .im_message_photo_thumb:hover{filter:blur(0)}"}
+         :slap ["una grande trota!"
+                "le diciotto bobine edizione limitata de La Corazzata Potemkin durante Italia Inghilterra"]}))
 
 (defn save! []
   (spit db-filename (prn-str @db)))
@@ -40,5 +56,5 @@
   (get-in @db path))
 
 (defn update-in
-  [k v]
-  (swap! db update-in k v))
+  [k f]
+  (swap! db update-in k f))

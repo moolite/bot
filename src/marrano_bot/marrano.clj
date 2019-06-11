@@ -73,12 +73,9 @@
 ;; Help message
 (defn- paris-help
   []
-  (let [commands (c/seek-at! db [:commands])
-        custom   (c/seek-at! db [:custom])
-        list     (->> (concat commands custom)
-                      (map #(str "- !" (first %) "\n"))
-                      sort
-                      (apply str))]
+  (let [list (->> (keys (db/get-in [:commands]))
+                  sort
+                  (map #(str "- !" % "\n")))]
     (str "Helpy *paris*:\n\n" list)))
 
 ;; Request Handler
