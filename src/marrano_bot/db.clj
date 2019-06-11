@@ -30,7 +30,8 @@
                     "ciocco"    "%, ti fo cioccar come il gatto!"
                     "lallini"   "%, sei un massacratore di lallini!"
                     "azimuth"   "%, registra quella maledetta testinaaaaaaaa!!!!!!!!"
-                    "filtro"    ".im_message_photo_thumb{filter:blur(15px)} .im_message_photo_thumb:hover{filter:blur(0)}"}
+                    "filtro"    ".im_message_photo_thumb{filter:blur(15px)} .im_message_photo_thumb:hover{filter:blur(0)}"
+                    "gelato"    "%, meglio un culo gelato che un gelato nel culo"}
          :slap ["una grande trota!"
                 "le diciotto bobine edizione limitata de La Corazzata Potemkin durante Italia Inghilterra"]}))
 
