@@ -61,7 +61,7 @@
    (spit db-filename (prn-str @db))))
 
 (defn load! []
-  (reset! @db (edn/read-string (slurp db-filename))))
+  (reset! db (edn/read-string (slurp db-filename))))
 
 (defn init!
   []
