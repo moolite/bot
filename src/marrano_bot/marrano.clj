@@ -77,7 +77,8 @@
   []
   (let [list (->> (keys (db/get-in! [:commands]))
                   sort
-                  (map #(str "- !" % "\n")))]
+                  (map #(str "- !" % "\n"))
+                  (apply str))]
     (str "Helpy *paris*:\n\n" list)))
 
 ;; Request Handler
