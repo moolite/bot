@@ -14,3 +14,4 @@ pom.xml.asc
 /db
 /.idea/*
 marrano-bot.imlconfig.edn
+db.edn

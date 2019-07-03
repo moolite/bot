@@ -62,9 +62,14 @@
 
 ;; Remember one or more PhotoSize
 (defn- ricorda-photo
-  [id photos]
-  (let [photo-ids (:file_id photos)]
-    (db/update-at! [:photos] #(concat % photo-ids))))
+  [id photo-sizes]
+  (let [photo-id (:file_id (last photo-sizes))]
+    (db/add-to-list [:photos] photo-id)
+    {:markdown true
+     :text (str "ricorderò l'id :`" photo-id "`")}))
+
+(defn- ricorda-video
+  [id video])
 
 ;; Forget a quote
 (defn- dimentica
@@ -111,18 +116,17 @@
                (t/send-photo token id photo)))
 
   ;; Commands message handler
-  (h/message {{id :id chat-type :type} :chat text :text photo :photo}
+  (h/message {{id :id chat-type :type} :chat text :text}
              (cond
                (and text (p/command? text))
                (let [response (rispondi text)]
                  (when response
-                   (t/send-text token id response)))
-
-               (and photo (= chat-type "private"))
-               (let [photo-id (ricorda-photo photo)]
-                 (t/send-text token id (str "id: " photo-id)))))
+                   (t/send-text token id response)))))
 
   ;; Private photo messages
   (h/message {{id :id chat-type :type} :chat photo :photo}
-             (when
-                 (ricorda-photo id photo))))
+             (when (and photo (= chat-type "private"))
+               (ricorda-photo id photo)))
+  (h/message {{id :id chat-type :type} :chat video :video}
+             (when (and video (= chat-type "private"))
+               (ricorda-video id video))))
