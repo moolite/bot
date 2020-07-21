@@ -86,6 +86,19 @@
                   (apply str))]
     (str "Helpy *paris*:\n\n" list)))
 
+;; links
+(defn links
+  [text]
+  (let [[_ cmd text] (re-matches #"/link ([^\s]+) (.+)"
+                                 text)]
+    (cond (re-find #"https?" text) (let [[_ url text] #"(https?://[^\s]+) (.+)"]
+                                     (when (and url text)
+                                       (db/add-link url text)))
+          (= cmd "rm") (db/rem-link (s/split " " text))
+          :else (or (db/search-link (s/split " " text))
+                    [{:url (str "https://lmgtfy.com/?q=" (s/replace text) "&pp=1&s=d""&s=l")
+                        :text "🖕 LMGIFY"}]))))
+
 ;; Request Handler
 (h/defhandler bot-api
   (h/command "paris"
@@ -114,6 +127,15 @@
              {{id :id} :chat}
              (let [photo (rand-nth (db/get-in! [:photos]))]
                (t/send-photo token id photo)))
+
+  (h/command "link"
+             {{id :id} :chat text :text}
+             (let [response (links text)]
+               (when response
+                 (t/send-text token id
+                              {:parse_mode "Markdown"
+                               :reply_markup response}
+                              "Ecco cosa ho trovato in A-TEMP:"))))
 
   ;; Commands message handler
   (h/message {{id :id chat-type :type} :chat text :text}

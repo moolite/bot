@@ -1,6 +1,8 @@
 (ns marrano-bot.db
   (:require [clojure.edn :as edn]
-            [clojure.java.io :as io]))
+            [clojure.java.io :as io]
+            [clojure.string :as s]))
+
 
 (def db-filename "./db.edn")
 (def db
@@ -86,7 +88,11 @@
   [k thing]
   (swap! db (fn [val] (update-in val [k] conj thing))))
 
+;;
 ;; High-level helpers
+;;
+
+;; Slaps
 (defn add-slap
   [text]
   (add-to-list :slap text))
@@ -97,6 +103,7 @@
   []
   (rand-nth (get-slaps)))
 
+;; commands
 (defn add-command
   [name text]
   (swap! db (fn [val] (update-in val [:commands name] (fn [_] text)))))
@@ -106,3 +113,21 @@
 (defn rem-command
   [k]
   (swap! db (fn [val] (update-in val [:commands] #(dissoc % k)))))
+
+;; Links
+(defn add-link
+  [url title]
+  (add-to-list :links {:url   url}
+                      :title title))
+
+(defn search-link
+  [terms]
+  (->> (get-in! [:links])
+       (filterv #(s/includes? terms (:title %)))))
+
+(defn rem-link
+  [url]
+  (swap! db (fn [val]
+              (update-in val [:links]
+                         (fn [links] (filterv #(not (= (:url %) url))
+                                              links))))))
