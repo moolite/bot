@@ -9,6 +9,15 @@
 (def secret
   (:secret env))
 
+(defn wrap-fallback-exception
+  [handler]
+  (fn [request]
+    (try
+      (handler request)
+      (catch Exception e
+        (do (print "body: " (:body request))
+            {:status 500 :body "Something isn't quite right..."})))))
+
 (def stack
   (-> (routes (POST (str "/t/" secret)
                     {body :body}
@@ -24,4 +33,5 @@
 
       ;; JSON
       (wrap-json-body {:keywords? true})
-      (wrap-json-response)))
+      (wrap-json-response)
+      (wrap-fallback-exception)))
