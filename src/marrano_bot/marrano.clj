@@ -93,7 +93,7 @@
     (cond
       (and (nil? cmd)
            (nil? tags))
-      [(vec (db/get-in! [:links]))]
+      (vec (db/get-in! [:links]))
       
       (and (some? cmd)
            (some? tags)
