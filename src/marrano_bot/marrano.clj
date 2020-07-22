@@ -89,14 +89,33 @@
 ;; links
 (defn links
   [text]
-  (let [[_ cmd text] (re-matches #"/link ([^\s]+) (.+)" text)]
-    (cond (re-find #"https?" text) (let [[_ url text] #"(https?://[^\s]+) (.+)"]
-                                     (when (and url text)
-                                       (db/add-link url text)))
-          (= cmd "rm") (db/rem-link (s/split " " text))
-          :else (or (db/search-link (s/split " " text))
-                    [{:url (str "https://lmgtfy.com/?q=" (s/replace text) "&pp=1&s=d""&s=l")
-                      :text "🖕 LMGIFY"}]))))
+  (let [[_ cmd tags] (re-find #"/[\w]+\s+([^\s]+)?\s+(.+)?" text)]
+    (cond
+      (and (nil? cmd)
+           (nil? tags))
+      (vec (db/get-in! [:links]))
+      
+      (and (some? cmd)
+           (some? tags)
+           (s/starts-with? cmd "http"))
+      (do (db/add-link cmd tags)
+          [{:url cmd
+            :text tags}])
+
+      (or (= cmd "rm")
+          (= cmd "del")
+          (= cmd "rimuovi")
+          (= cmd "schifa"))
+      (do (db/rem-link tags)
+          [{:url tags
+            :text "eliminato!"}])
+
+      :else
+      (let [results (db/search-link (rest (s/split text #"\s+")))]
+        (if (empty? results)
+          [{:url (str "https://lmgtfy.com/?q=" text "&pp=1&s=d""&s=l")
+            :text "🖕 LMGIFY"}]
+          results)))))
 
 (defn- send-message
   [parts]
@@ -140,55 +159,15 @@
               (send-message {:text response})))
         :else ""))
 
-;; Request Handler
-(h/defhandler bot-api
-  (h/command "paris"
-             {{id :id} :chat}
-             (t/send-text token id {:parse_mode "Markdown"}
-                          (paris-help)))
+(comment
+    (bot-api)
+    {:chat {:id 123 :type "channel"}}
+    :text "/link foo bar"
 
-  (h/command "slap"
-             {{id :id} :chat text :text}
-             (t/send-text token id
-                          (slap text)))
+    (links "/link https://example.com ex eg")
+    (links "/link del https://example.com")
+    (links "/link ex")
+    (links "/link")
 
-  (h/command "ricorda"
-             {{id :id} :chat text :text}
-             (do (ricorda text)
-                 (t/send-text token id
-                              "umme... ho imparato qualcosa!")))
-
-  (h/command "dimentica"
-             {{id :id} :chat text :text}
-             (do (dimentica text)
-                 (t/send-text token id
-                              "non ricordo più")))
-
-  (h/command "russacchiotta"
-             {{id :id} :chat}
-             (let [photo (rand-nth (db/get-in! [:photos]))]
-               (t/send-photo token id photo)))
-
-  (h/command "link"
-             {{id :id} :chat text :text}
-             (let [response (links text)]
-               (when response
-                 (t/send-text token id
-                              {:parse_mode "Markdown"
-                               :reply_markup response}
-                              "Ecco cosa ho trovato in A-TEMP:"))))
-
-  ;; Commands message handler
-  (h/message {{id :id chat-type :type} :chat text :text}
-             (when (and text (p/command? text))
-               (let [response (rispondi text)]
-                 (when response
-                   (send-message {:text response})))))
-
-  ;; Private photo messages
-  (h/message {{id :id chat-type :type} :chat photo :photo}
-             (when (and photo (= chat-type "private"))
-               (ricorda-photo id photo)))
-  (h/message {{id :id chat-type :type} :chat video :video}
-             (when (and video (= chat-type "private"))
-               (ricorda-video id video))))
+    (re-find #"/[\w]+ ([^\s]+) (.+)"
+            "/ass foo bar"))

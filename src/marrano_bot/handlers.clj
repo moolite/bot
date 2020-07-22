@@ -13,10 +13,8 @@
       "test"))
 
 (defn telegram-handler [r]
-  (print (:body r))
   {:status 200
-   :body {:body (:message (:body r))}})
-
+   :body (bot-api (get-in r [:body-params :message]))})
 
 (def stack
   (ring/ring-handler
