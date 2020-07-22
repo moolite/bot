@@ -25,8 +25,7 @@
       ["/t" ["/"
              ["" {:get (fn [_] {:status 200 :body ""})}]
              [secret {:post telegram-handler
-                      :get (fn [_] {:status 200 :body {:results "Ko"}})}]]]
-      ["/foo" {:get handler}]]
+                      :get (fn [_] {:status 200 :body {:results "Ko"}})}]]]]
      {:data {:muuntaja muuntaja.core/instance
              :middleware [muuntaja/format-middleware
                           exception/exception-middleware]}})
