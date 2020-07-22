@@ -3,18 +3,13 @@
   :url "https://bot.frenz.click"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.9.0"]
+  :dependencies [[org.clojure/clojure "1.10.1"]
                  [org.clojure/core.async "0.4.474"]
-                 [ring/ring-json "0.4.0"]
-                 [ring-logger "1.0.1"]
-                 [cheshire "5.7.1"]
+                 [metosin/reitit "0.5.5"]
+                 [metosin/reitit-middleware "0.5.2"]
                  [yogthos/config "1.1.1"]
                  [http-kit "2.3.0"]
-                 [compojure "1.6.1"]
                  [morse "0.4.0"]]
-
-  :plugins [[lein-ring "0.12.1"][lein-zprint "0.3.12"]]
-  :ring {:handler marrano-bot.handlers/stack}
 
   :main ^:skip-aot marrano-bot.core
   :target-path "target/%s"

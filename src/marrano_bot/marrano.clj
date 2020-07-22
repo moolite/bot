@@ -64,7 +64,7 @@
 (defn- ricorda-photo
   [id photo-sizes]
   (let [photo-id (:file_id (last photo-sizes))]
-    (db/add-to-list [:photos] photo-id)
+    (db/add-to-vec [:photos] photo-id)
     {:markdown true
      :text (str "ricorderò l'id :`" photo-id "`")}))
 
@@ -89,8 +89,7 @@
 ;; links
 (defn links
   [text]
-  (let [[_ cmd text] (re-matches #"/link ([^\s]+) (.+)"
-                                 text)]
+  (let [[_ cmd text] (re-matches #"/link ([^\s]+) (.+)" text)]
     (cond (re-find #"https?" text) (let [[_ url text] #"(https?://[^\s]+) (.+)"]
                                      (when (and url text)
                                        (db/add-link url text)))

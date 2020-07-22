@@ -10,3 +10,7 @@
     (is (= cmd "foo") "parses a simple message"))
   (let [[cmd pred] (#'m/parse-text "!FoO is not case sensitive")]
     (is (= cmd "foo") "is not case sensitive")))
+
+(deftest test-link
+  (do (#'m/links "/link http://example.com example")
+      (let [results (#'m/links "")])))
