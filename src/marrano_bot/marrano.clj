@@ -157,7 +157,8 @@
         (and text (p/command? text))
         (let [response (rispondi text)]
             (when response
-              (send-message {:text response})))
+              (send-message {:chat_id id
+                             :text response})))
         :else ""))
 
 (comment
