@@ -127,25 +127,25 @@
 
 (defn bot-api
   [{{id :id chat-type :type} :chat text :text}]
-  (cond (s/starts-with? "/paris" text)
+  (cond (s/starts-with? text "/paris")
         (send-message {:text (paris-help)})
         ;;
         ;; /slap
         ;; 
-        (s/starts-with? "/slap" text)
+        (s/starts-with? text "/slap")
         (send-message {:text (slap text)})
         ;;
         ;; /ricorda
         ;; 
-        (s/starts-with? "/ricorda" text)
+        (s/starts-with? text "/ricorda")
         (do
           (ricorda text)
           (send-message {:text "umme ... ho imparato *qualcosa*"}))
         ;;
         ;; /link | /nota
         ;;
-        (or (s/starts-with? "/link" text)
-            (s/starts-with? "/nota" text))
+        (or (s/starts-with? text "/link")
+            (s/starts-with? text "/nota"))
         (let [response (links text)]
           (when response
             (send-message {:reply_markup response
@@ -160,14 +160,13 @@
         :else ""))
 
 (comment
-    (bot-api)
-    {:chat {:id 123 :type "channel"}}
-    :text "/link foo bar"
+  (bot-api {:text "/link"})
 
-    (links "/link https://example.com ex eg")
-    (links "/link del https://example.com")
-    (links "/link ex")
-    (links "/link")
+  (links "/link https://example.com ex eg")
+  (links "/link del https://example.com")
+  (links "/link ex")
+  (links "/link")
 
-    (re-find #"/[\w]+ ([^\s]+) (.+)"
-            "/ass foo bar"))
+  (re-find #"/[\w]+ ([^\s]+) (.+)"
+          "/ass foo bar"))
+
