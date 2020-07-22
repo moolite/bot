@@ -3,6 +3,7 @@
             [marrano-bot.db :as db]
             [morse.handlers :as h]
             [morse.api :as t]
+            [muuntaja.core :as m]
             [config.core :refer [env]]
             [clojure.string :as s]))
 
@@ -87,6 +88,12 @@
     (str "Helpy *paris*:\n\n" list)))
 
 ;; links
+(defn- as-json
+  [data]
+  (->> data
+       (muuntaja.core/encode "application/json")
+       slurp))
+
 (defn links
   [text]
   (let [[_ cmd tags] (re-find #"/[\w]+\s+([^\s]+)?\s+(.+)?" text)]
@@ -152,7 +159,7 @@
         (let [response (links text)]
           (when response
             (send-message {:chat_id id
-                           :reply_markup {:inline_keyboard [response]}
+                           :reply_markup (as-json {:inline_keyboard [response]})
                            :text "ecco cosa ho trovato in *A-TEMP:*"})))
         ;;
         ;; il resto
