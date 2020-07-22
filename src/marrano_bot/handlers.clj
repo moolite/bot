@@ -12,14 +12,11 @@
   (or (:secret env)
       "test"))
 
-(defn handler [r]
+(defn telegram-handler [r]
   (print (:body r))
   {:status 200
    :body {:body (:message (:body r))}})
 
-(defn telegram-handler
-  [request]
-  {:status 200 :body (bot-api (:body request))})
 
 (def stack
   (ring/ring-handler
