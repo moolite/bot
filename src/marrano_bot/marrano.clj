@@ -98,6 +98,48 @@
                     [{:url (str "https://lmgtfy.com/?q=" (s/replace text) "&pp=1&s=d""&s=l")
                         :text "🖕 LMGIFY"}]))))
 
+(defn- send-message
+  [parts]
+  (merge {:method "sendMessage"
+          :disableNotification true
+          :parse_mode "Markdown"
+          :text "qualcosa e' andato storto... colpa dei bot russi."}
+         parts))
+
+(defn bot-api
+  [{{id :id chat-type :type} :chat text :text}]
+  (cond (s/starts-with? "/paris" text)
+        (send-message {:text (paris-help)})
+        ;;
+        ;; /slap
+        ;; 
+        (s/starts-with? "/slap" text)
+        (send-message {:text (slap text)})
+        ;;
+        ;; /ricorda
+        ;; 
+        (s/starts-with? "/ricorda" text)
+        (do
+          (ricorda text)
+          (send-message {:text "umme ... ho imparato *qualcosa*"}))
+        ;;
+        ;; /link | /nota
+        ;;
+        (or (s/starts-with? "/link" text)
+            (s/starts-with? "/nota" text))
+        (let [response (links text)]
+          (when response
+            (send-message {:reply_markup response
+                           :text "ecco cosa ho trovato in *A-TEMP:*"})))
+        ;;
+        ;; il resto
+        ;;
+        (and text (p/command? text))
+        (let [response (rispondi text)]
+            (when response
+              (send-message {:text response})))
+        :else ""))
+
 ;; Request Handler
 (h/defhandler bot-api
   (h/command "paris"
@@ -138,11 +180,10 @@
 
   ;; Commands message handler
   (h/message {{id :id chat-type :type} :chat text :text}
-             (cond
-               (and text (p/command? text))
+             (when (and text (p/command? text))
                (let [response (rispondi text)]
                  (when response
-                   (t/send-text token id response)))))
+                   (send-message {:text response})))))
 
   ;; Private photo messages
   (h/message {{id :id chat-type :type} :chat photo :photo}
