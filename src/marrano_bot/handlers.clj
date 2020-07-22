@@ -13,7 +13,9 @@
       "test"))
 
 (defn handler [r]
-  {:status 200 :body {:body (:body r)}})
+  (print (:body r))
+  {:status 200
+   :body {:body (:message (:body r))}})
 
 (defn telegram-handler
   [request]

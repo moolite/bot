@@ -96,7 +96,7 @@
           (= cmd "rm") (db/rem-link (s/split " " text))
           :else (or (db/search-link (s/split " " text))
                     [{:url (str "https://lmgtfy.com/?q=" (s/replace text) "&pp=1&s=d""&s=l")
-                        :text "🖕 LMGIFY"}]))))
+                      :text "🖕 LMGIFY"}]))))
 
 (defn- send-message
   [parts]
