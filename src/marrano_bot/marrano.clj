@@ -159,7 +159,7 @@
         (let [response (links text)]
           (when response
             (send-message {:chat_id id
-                           :reply_markup (as-json {:inline_keyboard [response]})
+                           :reply_markup (as-json {:inline_keyboard (map #(conj [] %) response)})
                            :text "ecco cosa ho trovato in *A-TEMP:*"})))
         ;;
         ;; il resto
@@ -180,4 +180,6 @@
   (links "/link")
 
   (re-find #"/[\w]+ ([^\s]+) (.+)"
-          "/ass foo bar"))
+          "/ass foo bar")
+
+ (links "/link"))
