@@ -11,6 +11,18 @@
   (let [[cmd pred] (#'m/parse-text "!FoO is not case sensitive")]
     (is (= cmd "foo") "is not case sensitive")))
 
-(deftest test-link
-  (do (#'m/links "/link http://example.com example")
-      (let [results (#'m/links "")])))
+(def sample-data
+  {:update_id 10000
+   :message {:message_id 1365
+             :date 1441645532
+             :chat {:id 1111111
+                    :last_name "Test Lastname"
+                    :first_name "Test"
+                    :username "Test"}
+             :from {:id 1111111
+                    :last_name "Test Lastname"
+                    :first_name "Test"
+                    :username "Test"}
+             :text "/start"}})
+
+(deftest test-api)

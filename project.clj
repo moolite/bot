@@ -7,6 +7,8 @@
                  [org.clojure/core.async "0.4.474"]
                  [metosin/reitit "0.5.5"]
                  [metosin/reitit-middleware "0.5.2"]
+                 [metosin/muuntaja "0.6.7"]
+                 [ring-logger "1.0.1"]
                  [yogthos/config "1.1.1"]
                  [http-kit "2.3.0"]
                  [morse "0.4.0"]]
