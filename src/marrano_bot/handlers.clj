@@ -17,7 +17,7 @@
 
 (defn telegram-handler
   [request]
-  (bot-api (:body request)))
+  {:status 200 :body (bot-api (:body request))})
 
 (def stack
   (ring/ring-handler
