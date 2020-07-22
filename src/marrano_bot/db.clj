@@ -124,14 +124,14 @@
               #(dissoc % k)))
 
 ;; Links
-(defn add-link [url title]
+(defn add-link [url text]
   (add-to-vec [:links]
               {:url   url
-               :title title}))
+               :text text}))
 
 (defn search-link [terms]
   (->> (get-in! [:links])
-       (filterv #(s/includes? terms (:title %)))))
+       (filterv #(s/includes? terms (:text %)))))
 
 (defn rem-link [url]
   (update-at! [:links]
