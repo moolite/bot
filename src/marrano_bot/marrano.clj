@@ -128,19 +128,19 @@
 (defn bot-api
   [{{id :id chat-type :type} :chat text :text}]
   (cond (s/starts-with? text "/paris")
-        (send-message {:text (paris-help)})
+        (send-message {:chat_id id :text (paris-help)})
         ;;
         ;; /slap
         ;; 
         (s/starts-with? text "/slap")
-        (send-message {:text (slap text)})
+        (send-message {:chat_id id :text (slap text)})
         ;;
         ;; /ricorda
         ;; 
         (s/starts-with? text "/ricorda")
         (do
           (ricorda text)
-          (send-message {:text "umme ... ho imparato *qualcosa*"}))
+          (send-message {:chat_id id :text "umme ... ho imparato *qualcosa*"}))
         ;;
         ;; /link | /nota
         ;;
@@ -148,7 +148,8 @@
             (s/starts-with? text "/nota"))
         (let [response (links text)]
           (when response
-            (send-message {:reply_markup response
+            (send-message {:chat_id id
+                           :reply_markup response
                            :text "ecco cosa ho trovato in *A-TEMP:*"})))
         ;;
         ;; il resto
