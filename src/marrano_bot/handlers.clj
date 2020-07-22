@@ -15,17 +15,13 @@
 (defn handler [r]
   {:status 200 :body {:body (:body r)}})
 
-(defn telegram-handler
-  [request]
-  {:status 200 :body (bot-api (:body request))})
-
 (def stack
   (ring/ring-handler
     (ring/router
      [["/" {:get (fn [_] {:status 200 :body "v0.1.0 - marrano-bot"})}]
       ["/t" ["/"
              ["" {:get (fn [_] {:status 200 :body ""})}]
-             [secret {:post telegram-handler
+             [secret {:post bot-api
                       :get (fn [_] {:status 200 :body {:results "Ko"}})}]]]
       ["/foo" {:get handler}]]
      {:data {:muuntaja muuntaja.core/instance
