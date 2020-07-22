@@ -93,22 +93,22 @@
     (cond
       (and (nil? cmd)
            (nil? tags))
-      (vec (db/get-in! [:links]))
+      [(vec (db/get-in! [:links]))]
       
       (and (some? cmd)
            (some? tags)
            (s/starts-with? cmd "http"))
       (do (db/add-link cmd tags)
-          [{:url cmd
-            :text tags}])
+          [[{:url cmd
+             :text tags}]])
 
       (or (= cmd "rm")
           (= cmd "del")
           (= cmd "rimuovi")
           (= cmd "schifa"))
       (do (db/rem-link tags)
-          [{:url tags
-            :text "eliminato!"}])
+          [[{:url tags
+             :text "eliminato!"}]])
 
       :else
       (let [results (db/search-link (rest (s/split text #"\s+")))]
