@@ -128,19 +128,22 @@
 (defn bot-api
   [{{id :id chat-type :type} :chat text :text}]
   (cond (s/starts-with? text "/paris")
-        (send-message {:chat_id id :text (paris-help)})
+        (send-message {:chat_id id
+                       :text (paris-help)})
         ;;
         ;; /slap
         ;; 
         (s/starts-with? text "/slap")
-        (send-message {:chat_id id :text (slap text)})
+        (send-message {:chat_id id
+                       :text (slap text)})
         ;;
         ;; /ricorda
         ;; 
         (s/starts-with? text "/ricorda")
         (do
           (ricorda text)
-          (send-message {:chat_id id :text "umme ... ho imparato *qualcosa*"}))
+          (send-message {:chat_id
+                         id :text "umme ... ho imparato *qualcosa*"}))
         ;;
         ;; /link | /nota
         ;;
@@ -171,4 +174,3 @@
 
   (re-find #"/[\w]+ ([^\s]+) (.+)"
           "/ass foo bar"))
-
