@@ -99,16 +99,16 @@
            (some? tags)
            (s/starts-with? cmd "http"))
       (do (db/add-link cmd tags)
-          [[{:url cmd
-             :text tags}]])
+          [{:url cmd
+             :text tags}])
 
       (or (= cmd "rm")
           (= cmd "del")
           (= cmd "rimuovi")
           (= cmd "schifa"))
       (do (db/rem-link tags)
-          [[{:url tags
-             :text "eliminato!"}]])
+          [{:url tags
+             :text "eliminato!"}])
 
       :else
       (let [results (db/search-link (rest (s/split text #"\s+")))]
@@ -152,7 +152,7 @@
         (let [response (links text)]
           (when response
             (send-message {:chat_id id
-                           :reply_markup response
+                           :reply_markup {:inline_keyboard [response]}
                            :text "ecco cosa ho trovato in *A-TEMP:*"})))
         ;;
         ;; il resto
