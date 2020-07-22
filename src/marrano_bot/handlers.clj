@@ -31,10 +31,6 @@
      {:data {:muuntaja muuntaja.core/instance
              :middleware [muuntaja/format-middleware
                           exception/exception-middleware]}})
-    (ring/create-default-handler
-        {:not-found (constantly {:status 404, :body "kosh"})
-         :method-not-allowed (constantly {:status 405, :body "kosh"})
-         :not-acceptable (constantly {:status 406, :body "kosh"})})
     (ring/redirect-trailing-slash-handler {:method :strip})))
 
 (comment
