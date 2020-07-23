@@ -4,7 +4,8 @@
             [marrano-bot.handlers :refer [stack]]
             [config.core :refer [env]]
             [ring.logger :as logger]
-            [org.httpkit.server :refer [run-server]]))
+            [org.httpkit.server :refer [run-server]]
+            [timbre.core :as timbre]))
             
 
 ;; main entrypoint
@@ -13,5 +14,7 @@
   []
   (do (init!)
       (println "Server listening to port " (:port env))
-      (run-server (logger/wrap-with-logger stack)
+      (run-server (-> stack
+                      logger/wrap-with-logger{:log-fn (fn [{:keys [level throwable message]}]
+                                                        (timbre/log level throwable message))}) 
                   {:port (:port env)})))

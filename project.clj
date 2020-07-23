@@ -9,8 +9,10 @@
                  [metosin/reitit-middleware "0.5.2"]
                  [metosin/muuntaja "0.6.7"]
                  [ring-logger "1.0.1"]
+                 [clj-fuzzy "0.4.1"]
                  [yogthos/config "1.1.1"]
                  [http-kit "2.3.0"]
+                 [com.taoensso/timbre "4.10.0"]
                  [morse "0.4.0"]]
 
   :main ^:skip-aot marrano-bot.core
