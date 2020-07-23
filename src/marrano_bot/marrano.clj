@@ -101,7 +101,7 @@
       (and (nil? cmd)
            (nil? tags))
       (vec (db/get-in! [:links]))
-      
+
       (and (some? cmd)
            (some? tags)
            (s/starts-with? cmd "http"))
@@ -139,13 +139,13 @@
                        :text (paris-help)})
         ;;
         ;; /slap
-        ;; 
+        ;;
         (s/starts-with? text "/slap")
         (send-message {:chat_id id
                        :text (slap text)})
         ;;
         ;; /ricorda
-        ;; 
+        ;;
         (s/starts-with? text "/ricorda")
         (do
           (ricorda text)
@@ -182,4 +182,12 @@
   (re-find #"/[\w]+ ([^\s]+) (.+)"
           "/ass foo bar")
 
- (links "/link"))
+ (links "/link")
+
+ {:update_id 82256110,
+  :message {:date 1595506720, :entities [{:offset 0, :type "bot_command", :length 5}],
+            :chat {:first_name "crypto", :username "liemmo", :type "private", :id 318062977, :last_name "бот"},
+            :message_id 212466,
+            :from {:first_name "crypto", :language_code "en", :is_bot false, :username "liemmo", :id 318062977, :last_name "бот"},
+            :text "/link"}})
+

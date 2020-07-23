@@ -16,7 +16,7 @@
 (defn telegram-handler [r]
   (let [body (:body-params r)
         message (merge {:text ""} ; text can be nil!!!
-                       (:messge body))]
+                       (:message body))]
     (debug "body" body)
     {:status 200
      :body (bot-api message)}))
