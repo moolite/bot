@@ -26,7 +26,8 @@
                       :get (fn [_] {:status 200 :body {:results "Ko"}})}]]]]
      {:data {:muuntaja muuntaja.core/instance
              :middleware [muuntaja/format-middleware
-                          exception/exception-middleware]}})
+                          exception/exception-middleware]}
+      :exception pretty/exception})
     (ring/redirect-trailing-slash-handler {:method :strip})))
 
 (comment
