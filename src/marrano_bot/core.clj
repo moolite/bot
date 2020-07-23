@@ -15,6 +15,8 @@
   (do (init!)
       (println "Server listening to port " (:port env))
       (run-server (-> stack
-                      logger/wrap-with-logger {:log-fn (fn [{:keys [level throwable message]}]
-                                                         (timbre/log level throwable message))}) 
+                      (logger/wrap-with-logger {:log-fn (fn [{:keys [level throwable message]}]
+                                                          (timbre/log level throwable message))})
+                      logger/wrap-log-request-params)
+
                   {:port (:port env)})))
