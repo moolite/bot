@@ -6,15 +6,19 @@
             [reitit.dev.pretty :as pretty]
             [config.core :refer [env]]
             [marrano-bot.marrano :refer [bot-api]]
-            [clojure.java.io :as io]))
+            [clojure.java.io :as io]
+            [taoensso.timbre :as timbre :refer [info debug warn error]]))
 
 (def secret
   (or (:secret env)
       "test"))
 
 (defn telegram-handler [r]
-  {:status 200
-   :body (bot-api (get-in r [:body-params :message]))})
+  (let [body (:body-params r)
+        message (:messge body)]
+    (debug "body" body)
+    {:status 200
+     :body (bot-api (get-in r [:body-params :message]))}))
 
 (def stack
   (ring/ring-handler
