@@ -5,7 +5,7 @@
             [config.core :refer [env]]
             [ring.logger :as logger]
             [org.httpkit.server :refer [run-server]]
-            [timbre.core :as timbre]))
+            [taoensso.timbre :as timbre]))
             
 
 ;; main entrypoint
@@ -15,6 +15,6 @@
   (do (init!)
       (println "Server listening to port " (:port env))
       (run-server (-> stack
-                      logger/wrap-with-logger{:log-fn (fn [{:keys [level throwable message]}]
-                                                        (timbre/log level throwable message))}) 
+                      logger/wrap-with-logger {:log-fn (fn [{:keys [level throwable message]}]
+                                                         (timbre/log level throwable message))}) 
                   {:port (:port env)})))
