@@ -132,8 +132,7 @@
   [parts]
   (merge {:method "sendMessage"
           :disableNotification true
-          :parse_mode "Markdown"
-          :text "qualcosa e' andato storto... colpa dei bot russi."}
+          :parse_mode "Markdown"}
          parts))
 
 (defn bot-api
@@ -186,7 +185,7 @@
               (s/includes? (s/lower-case text)
                            "potta"))
           (let [item (db/get-rand-in! [:photo])]
-            (send-message (merge {:chat_id id :text nil}
+            (send-message (merge {:chat_id id}
                                  item)))
 
           ;;
