@@ -16,10 +16,12 @@
 (defn telegram-handler [r]
   (let [body (:body-params r)
         message (merge {:text ""} ; text can be nil!!!
-                       (:message body))]
+                       (:message body))
+        answer (bot-api message)]
     (debug "body" body)
+    (debug "answer" answer)
     {:status 200
-     :body (bot-api message)}))
+     :body answer}))
 
 (def stack
   (ring/ring-handler
