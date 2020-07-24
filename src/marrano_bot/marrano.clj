@@ -167,8 +167,8 @@
           ;;
           ;; /link | /nota
           ;;
-          (or (s/starts-with? text "/link")
-              (s/starts-with? text "/nota"))
+          (some #(s/starts-with? text %)
+                ["/link" "/nota"])
           (let [response (links text)]
             (when response
               (send-message {:chat_id id
@@ -186,10 +186,8 @@
             (send-message {:chat_id id
                            :text (str "umme... " caption)}))
 
-          (or (s/includes? (s/lower-case text)
-                           "russa")
-              (s/includes? (s/lower-case text)
-                           "potta"))
+          (some #(s/includes? (s/lower-case text) %)
+                ["russa" "potta" "signorina"])
           (let [item (db/get-rand-in! [:photo])]
             (send-photo (merge {:chat_id id}
                                item)))
