@@ -138,65 +138,68 @@
 
 (defn bot-api
   [{{id :id chat-type :type} :chat caption :caption photo :photo text :text}]
-  (cond (s/starts-with? text "/paris")
-        (send-message {:chat_id id
-                       :text (paris-help)})
-        ;;
-        ;; /slap
-        ;;
-        (s/starts-with? text "/slap")
-        (send-message {:chat_id id
-                       :text (slap text)})
-        ;;
-        ;; /ricorda
-        ;;
-        (s/starts-with? text "/ricorda")
-        (do
-          (ricorda text)
+  (let [caption (or caption "")
+        text (or text "")]
+    (cond (s/starts-with? text "/paris")
           (send-message {:chat_id id
-                         :text "umme ... ho imparato *qualcosa*"}))
-        ;;
-        ;; /link | /nota
-        ;;
-        (or (s/starts-with? text "/link")
-            (s/starts-with? text "/nota"))
-        (let [response (links text)]
-          (when response
+                         :text (paris-help)})
+          ;;
+          ;; /slap
+          ;;
+          (s/starts-with? text "/slap")
+          (send-message {:chat_id id
+                         :text (slap text)})
+          ;;
+          ;; /ricorda
+          ;;
+          (s/starts-with? text "/ricorda")
+          (do
+            (ricorda text)
             (send-message {:chat_id id
-                           :reply_markup (as-json {:inline_keyboard (map #(conj [] %) response)})
-                           :text "ecco cosa ho trovato in *A-TEMP:*"})))
+                           :text "umme ... ho imparato *qualcosa*"}))
+          ;;
+          ;; /link | /nota
+          ;;
+          (or (s/starts-with? text "/link")
+              (s/starts-with? text "/nota"))
+          (let [response (links text)]
+            (when response
+              (send-message {:chat_id id
+                             :reply_markup (as-json {:inline_keyboard (map #(conj [] %) response)})
+                             :text "ecco cosa ho trovato in *A-TEMP:*"})))
 
-        ;;
-        ;; Photos
-        ;;
-        (and photo
-             (s/starts-with? caption "/ricorda"))
-        (let [caption (rest (s/split caption #" "))
-              photo (:file_id (first))
-              response (ricorda-photo photo caption)]
-          (when response
-            (send-message {:chat_id id
-                           :text response})))
-
-        (or (s/includes? (s/lower-case text)
-                         "russa")
-            (s/includes? (s/lower-case text)
-                         "potta"))
-        (let [item (db/get-rand-in! [:photo])]
-          (send-message (merge {:chat_id id :text nil}
-                               item)))
-
-        ;;
-        ;; il resto
-        ;;
-        (and text (p/command? text))
-        (let [response (rispondi text)]
+          ;;
+          ;; Photos
+          ;;
+          (and photo caption
+               (s/starts-with? (or caption "")
+                               "/ricorda"))
+          (let [caption (rest (s/split caption #" "))
+                photo (:file_id (first photo))
+                response (ricorda-photo photo caption)]
             (when response
               (send-message {:chat_id id
                              :text response})))
 
-        ;; do nothing
-        :else ""))
+          (or (s/includes? (s/lower-case text)
+                           "russa")
+              (s/includes? (s/lower-case text)
+                           "potta"))
+          (let [item (db/get-rand-in! [:photo])]
+            (send-message (merge {:chat_id id :text nil}
+                                 item)))
+
+          ;;
+          ;; il resto
+          ;;
+          (and text (p/command? text))
+          (let [response (rispondi text)]
+            (when response
+              (send-message {:chat_id id
+                             :text response})))
+
+          ;; do nothing
+          :else "")))
 
 (comment
   (bot-api {:text "/link"})
@@ -207,36 +210,39 @@
   (links "/link")
 
   (re-find #"/[\w]+ ([^\s]+) (.+)"
-          "/ass foo bar")
+           "/ass foo bar")
 
- (links "/link")
+  (links "/link")
 
- {:update_id 82256110,
-  :message {:date 1595506720, :entities [{:offset 0, :type "bot_command", :length 5}],
-            :chat {:first_name "crypto", :username "liemmo", :type "private", :id 318062977, :last_name "бот"},
-            :message_id 212466,
-            :from {:first_name "crypto", :language_code "en", :is_bot false, :username "liemmo", :id 318062977, :last_name "бот"},
-            :text "/link"}}
+  {:update_id 82256110,
+   :message {:date 1595506720, :entities [{:offset 0, :type "bot_command", :length 5}],
+             :chat {:first_name "crypto", :username "liemmo", :type "private", :id 318062977, :last_name "бот"},
+             :message_id 212466,
+             :from {:first_name "crypto", :language_code "en", :is_bot false, :username "liemmo", :id 318062977, :last_name "бот"},
+             :text "/link"}}
 
- {:update_id 82256244,
-  :message {:date 1595577868,
-            :chat {:first_name "crypto", :username "liemmo", :type "private", :id 318062977, :last_name "бот"},
-            :message_id 212599,
-            :caption "some text"
-            :photo [{:width 320,
-                     :file_size 11445,
-                     :file_unique_id "AQADujN8I10AA1bWAwAB",
-                     :file_id "AgACAgQAAxkBAAEDPndfGpYMBC8ihT3wfJEgmIyZmbMMEAACJbYxG6pt2FBM06JSv_4HbrozfCNdAAMBAAMCAANtAANW1gMAARoE", :height 180}
-                    {:width 800, :file_size 44920, :file_unique_id "AQADujN8I10AA1fWAwAB",
-                     :file_id "AgACAgQAAxkBAAEDPndfGpYMBC8ihT3wfJEgmIyZmbMMEAACJbYxG6pt2FBM06JSv_4HbrozfCNdAAMBAAMCAAN4AANX1gMAARoE", :height 450}
-                    {:width 960, :file_size 59505, :file_unique_id "AQADujN8I10AA1TWAwAB",
-                     :file_id "AgACAgQAAxkBAAEDPndfGpYMBC8ihT3wfJEgmIyZmbMMEAACJbYxG6pt2FBM06JSv_4HbrozfCNdAAMBAAMCAAN5AANU1gMAARoE", :height 540}],
-            :from {:first_name "crypto", :language_code "en", :is_bot false, :username "liemmo", :id 318062977, :last_name "бот"}}})
+  {:update_id 82256244,
+   :message {:date 1595577868,
+             :chat {:first_name "crypto", :username "liemmo", :type "private", :id 318062977, :last_name "бот"},
+             :message_id 212599,
+             :caption "some text"
+             :photo [{:width 320,
+                      :file_size 11445,
+                      :file_unique_id "AQADujN8I10AA1bWAwAB",
+                      :file_id "AgACAgQAAxkBAAEDPndfGpYMBC8ihT3wfJEgmIyZmbMMEAACJbYxG6pt2FBM06JSv_4HbrozfCNdAAMBAAMCAANtAANW1gMAARoE", :height 180}
+                     {:width 800, :file_size 44920, :file_unique_id "AQADujN8I10AA1fWAwAB",
+                      :file_id "AgACAgQAAxkBAAEDPndfGpYMBC8ihT3wfJEgmIyZmbMMEAACJbYxG6pt2FBM06JSv_4HbrozfCNdAAMBAAMCAAN4AANX1gMAARoE", :height 450}
+                     {:width 960, :file_size 59505, :file_unique_id "AQADujN8I10AA1TWAwAB",
+                      :file_id "AgACAgQAAxkBAAEDPndfGpYMBC8ihT3wfJEgmIyZmbMMEAACJbYxG6pt2FBM06JSv_4HbrozfCNdAAMBAAMCAAN5AANU1gMAARoE", :height 540}],
+             :from {:first_name "crypto", :language_code "en", :is_bot false, :username "liemmo", :id 318062977, :last_name "бот"}}
 
-(ricorda-photo
- "asdfgbfafs" ["uno", "due", "tre"])
+    (ricorda-photo)
+    "asdfgbfafs" ["uno", "due", "tre"]
 
-(bot-api
- {:chat {:id 123} :text "potta"})
+    (bot-api)
+    {:chat {:id 123} :text "potta"}
 
-(db/get-rand-in! [:photo])
+    (db/get-rand-in! [:photo])
+
+    (bot-api)
+    {:caption "/ricorda", :date 1595597871, :caption_entities [{:offset 0, :type "bot_command", :length 8}], :chat {:first_name "crypto", :username "liemmo", :type "private", :id 318062977, :last_name "бот"}, :message_id 212655, :photo [{:width 320, :file_size 33404, :file_unique_id "AQADZelhIl0AA1rWBAAB", :file_id "AgACAgQAAxkBAAEDPq9fGuQvgprZMcEWYKb9uvzrmj2xWwACebYxG6pt2FAf9xU9uFGl4WXpYSJdAAMBAAMCAANtAANa1gQAARoE", :height 320} {:width 800, :file_size 251875, :file_unique_id "AQADZelhIl0AA1vWBAAB", :file_id "AgACAgQAAxkBAAEDPq9fGuQvgprZMcEWYKb9uvzrmj2xWwACebYxG6pt2FAf9xU9uFGl4WXpYSJdAAMBAAMCAAN4AANb1gQAARoE", :height 800} {:width 1024, :file_size 335951, :file_unique_id "AQADZelhIl0AA1jWBAAB", :file_id "AgACAgQAAxkBAAEDPq9fGuQvgprZMcEWYKb9uvzrmj2xWwACebYxG6pt2FAf9xU9uFGl4WXpYSJdAAMBAAMCAAN5AANY1gQAARoE", :height 1024}], :from {:first_name "crypto", :language_code "en", :is_bot false, :username "liemmo", :id 318062977, :last_name "бот"}}})
