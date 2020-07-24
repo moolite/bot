@@ -61,22 +61,26 @@
         (slap-ricorda pred)
         (db/add-command cmd pred)))))
 
-;; Remember one or more PhotoSize
-(defn- ricorda-photo
-  [id photo-sizes]
-  (let [photo-id (:file_id (last photo-sizes))]
-    (db/add-to-vec [:photos] photo-id)
-    {:markdown true
-     :text (str "ricorderò l'id :`" photo-id "`")}))
-
-(defn- ricorda-video
-  [id video])
-
 ;; Forget a quote
 (defn- dimentica
   [text]
   (let [[cmd] (p/parse text)]
     (db/rem-command cmd [:custom cmd])))
+
+
+;; Photo
+(defn ricorda-photo
+  [photo caption]
+  (db/add-to-vec!
+   [:photo]
+   {:photo photo
+    :caption caption}))
+
+(defn- dimentica-photo
+  [photo]
+  (db/del-from-vec!
+   [:photo]
+   #(= (:photo_id %) photo)))
 
 ;; Help message
 (defn- paris-help
@@ -133,7 +137,7 @@
          parts))
 
 (defn bot-api
-  [{{id :id chat-type :type} :chat text :text}]
+  [{{id :id chat-type :type} :chat caption :caption photo :photo text :text}]
   (cond (s/starts-with? text "/paris")
         (send-message {:chat_id id
                        :text (paris-help)})
@@ -149,8 +153,8 @@
         (s/starts-with? text "/ricorda")
         (do
           (ricorda text)
-          (send-message {:chat_id
-                         id :text "umme ... ho imparato *qualcosa*"}))
+          (send-message {:chat_id id
+                         :text "umme ... ho imparato *qualcosa*"}))
         ;;
         ;; /link | /nota
         ;;
@@ -161,6 +165,27 @@
             (send-message {:chat_id id
                            :reply_markup (as-json {:inline_keyboard (map #(conj [] %) response)})
                            :text "ecco cosa ho trovato in *A-TEMP:*"})))
+
+        ;;
+        ;; Photos
+        ;;
+        (and photo
+             (s/starts-with? caption "/ricorda"))
+        (let [caption (rest (s/split caption #" "))
+              photo (:file_id (first))
+              response (ricorda-photo photo caption)]
+          (when response
+            (send-message {:chat_id id
+                           :text response})))
+
+        (or (s/includes? (s/lower-case text)
+                         "russa")
+            (s/includes? (s/lower-case text)
+                         "potta"))
+        (let [item (db/get-rand-in! [:photo])]
+          (send-message (merge {:chat_id id :text nil}
+                               item)))
+
         ;;
         ;; il resto
         ;;
@@ -169,6 +194,8 @@
             (when response
               (send-message {:chat_id id
                              :text response})))
+
+        ;; do nothing
         :else ""))
 
 (comment
@@ -189,5 +216,27 @@
             :chat {:first_name "crypto", :username "liemmo", :type "private", :id 318062977, :last_name "бот"},
             :message_id 212466,
             :from {:first_name "crypto", :language_code "en", :is_bot false, :username "liemmo", :id 318062977, :last_name "бот"},
-            :text "/link"}})
+            :text "/link"}}
 
+ {:update_id 82256244,
+  :message {:date 1595577868,
+            :chat {:first_name "crypto", :username "liemmo", :type "private", :id 318062977, :last_name "бот"},
+            :message_id 212599,
+            :caption "some text"
+            :photo [{:width 320,
+                     :file_size 11445,
+                     :file_unique_id "AQADujN8I10AA1bWAwAB",
+                     :file_id "AgACAgQAAxkBAAEDPndfGpYMBC8ihT3wfJEgmIyZmbMMEAACJbYxG6pt2FBM06JSv_4HbrozfCNdAAMBAAMCAANtAANW1gMAARoE", :height 180}
+                    {:width 800, :file_size 44920, :file_unique_id "AQADujN8I10AA1fWAwAB",
+                     :file_id "AgACAgQAAxkBAAEDPndfGpYMBC8ihT3wfJEgmIyZmbMMEAACJbYxG6pt2FBM06JSv_4HbrozfCNdAAMBAAMCAAN4AANX1gMAARoE", :height 450}
+                    {:width 960, :file_size 59505, :file_unique_id "AQADujN8I10AA1TWAwAB",
+                     :file_id "AgACAgQAAxkBAAEDPndfGpYMBC8ihT3wfJEgmIyZmbMMEAACJbYxG6pt2FBM06JSv_4HbrozfCNdAAMBAAMCAAN5AANU1gMAARoE", :height 540}],
+            :from {:first_name "crypto", :language_code "en", :is_bot false, :username "liemmo", :id 318062977, :last_name "бот"}}})
+
+(ricorda-photo
+ "asdfgbfafs" ["uno", "due", "tre"])
+
+(bot-api
+ {:chat {:id 123} :text "potta"})
+
+(db/get-rand-in! [:photo])

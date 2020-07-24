@@ -54,7 +54,9 @@
                     "vegano"    "%, sei diventato un LGBTVEGan!"
                     "vw"        "%, mi vuoi gasare con la vw???? Spegnilaaaa"}
          :slap ["una grande trota!"
-                "le diciotto bobine edizione limitata de La Corazzata Potemkin durante Italia Inghilterra"]}))
+                "le diciotto bobine edizione limitata de La Corazzata Potemkin durante Italia Inghilterra"]
+         :photos []
+         :links []}))
 
 (defn save!
   ([_ _ _ _]
@@ -79,6 +81,9 @@
 (defn get-in!
   [path]
   (get-in @db path))
+(defn get-rand-in!
+  [path]
+  (rand-nth (get-in! path)))
 
 (defn update-at!
   [k f]
@@ -87,7 +92,7 @@
    f update function"
   (swap! db (fn [val] (update-in val k f))))
 
-(defn add-to-vec
+(defn add-to-vec!
   [k thing]
   "append a value to a db vector k
    k     key
@@ -97,7 +102,7 @@
                       vec
                       distinct)))
 
-(defn del-from-vec
+(defn del-from-vec!
   [k fun]
   "remove a thing from a vector using a filter function"
   (update-at! k (fn [val] (filterv #(not (fun %)) val))))
@@ -108,11 +113,11 @@
 
 ;; Slaps
 (defn add-slap [text]
-  (add-to-vec :slap text))
+  (add-to-vec! [:slap] text))
 (defn get-slaps []
   (:slap @db))
 (defn get-rand-slap []
-  (rand-nth (get-slaps)))
+  (get-rand-in! [:slap]))
 
 ;; commands
 (defn add-command [name text]
@@ -125,7 +130,7 @@
 
 ;; Links
 (defn add-link [url text]
-  (add-to-vec [:links]
+  (add-to-vec! [:links]
               {:url   url
                :text text}))
 
