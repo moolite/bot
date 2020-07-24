@@ -73,8 +73,9 @@
   [photo caption]
   (db/add-to-vec!
    [:photo]
-   {:photo photo
-    :caption caption}))
+   {:photo   photo
+    :caption caption})
+  "umme.")
 
 (defn- dimentica-photo
   [photo]
@@ -132,7 +133,14 @@
   [parts]
   (merge {:method "sendMessage"
           :disableNotification true
-          :parse_mode "Markdown"}
+          :parse_mode "Markdown"
+          :text "qualcosa e' andato storto... colpa dei bot russi."}
+         parts))
+
+(defn- send-photo
+  [parts]
+  (merge {:method "sendPhoto"
+          :disableNotification true}
          parts))
 
 (defn bot-api
@@ -171,22 +179,20 @@
           ;; Photos
           ;;
           (and photo caption
-               (s/starts-with? (or caption "")
-                               "/ricorda"))
-          (let [caption (s/join " " (rest (s/split caption #" ")))
+               (s/starts-with? caption "/ricorda"))
+          (let [caption (or (last (re-find #"/ricorda (.*)"caption)))
                 photo (:file_id (first photo))
                 response (ricorda-photo photo caption)]
-            (when response
-              (send-message {:chat_id id
-                             :text response})))
+            (send-message {:chat_id id
+                           :text (str "umme... " caption)}))
 
           (or (s/includes? (s/lower-case text)
                            "russa")
               (s/includes? (s/lower-case text)
                            "potta"))
           (let [item (db/get-rand-in! [:photo])]
-            (send-message (merge {:chat_id id}
-                                 item)))
+            (send-photo (merge {:chat_id id}
+                               item)))
 
           ;;
           ;; il resto
@@ -201,60 +207,13 @@
           :else "")))
 
 (comment
-  (bot-api {:text "/link"})
-
-  (links "/link https://example.com ex eg")
-  (links "/link del https://example.com")
-  (links "/link ex")
-  (links "/link")
-
-  (re-find #"/[\w]+ ([^\s]+) (.+)"
-           "/ass foo bar")
-
-  (links "/link")
-
-  {:update_id 82256110,
-   :message {:date 1595506720, :entities [{:offset 0, :type "bot_command", :length 5}],
-             :chat {:first_name "crypto", :username "liemmo", :type "private", :id 318062977, :last_name "бот"},
-             :message_id 212466,
-             :from {:first_name "crypto", :language_code "en", :is_bot false, :username "liemmo", :id 318062977, :last_name "бот"},
-             :text "/link"}}
-
-  {:update_id 82256244,
-   :message {:date 1595577868,
-             :chat {:first_name "crypto", :username "liemmo", :type "private", :id 318062977, :last_name "бот"},
-             :message_id 212599,
-             :caption "some text"
-             :photo [{:width 320,
-                      :file_size 11445,
-                      :file_unique_id "AQADujN8I10AA1bWAwAB",
-                      :file_id "AgACAgQAAxkBAAEDPndfGpYMBC8ihT3wfJEgmIyZmbMMEAACJbYxG6pt2FBM06JSv_4HbrozfCNdAAMBAAMCAANtAANW1gMAARoE", :height 180}
-                     {:width 800, :file_size 44920, :file_unique_id "AQADujN8I10AA1fWAwAB",
-                      :file_id "AgACAgQAAxkBAAEDPndfGpYMBC8ihT3wfJEgmIyZmbMMEAACJbYxG6pt2FBM06JSv_4HbrozfCNdAAMBAAMCAAN4AANX1gMAARoE", :height 450}
-                     {:width 960, :file_size 59505, :file_unique_id "AQADujN8I10AA1TWAwAB",
-                      :file_id "AgACAgQAAxkBAAEDPndfGpYMBC8ihT3wfJEgmIyZmbMMEAACJbYxG6pt2FBM06JSv_4HbrozfCNdAAMBAAMCAAN5AANU1gMAARoE", :height 540}],
-             :from {:first_name "crypto", :language_code "en", :is_bot false, :username "liemmo", :id 318062977, :last_name "бот"}}
-
-    (ricorda-photo)
-    "asdfgbfafs" ["uno", "due", "tre"]
-
-    (bot-api)
-    {:chat {:id 123} :text "potta"}
-
-    (db/get-rand-in! [:photo])}
-
-
  (bot-api
   {:caption "/ricorda fia", :date 1595597871,
    :caption_entities [{:offset 0, :type "bot_command", :length 8}],
    :chat {:first_name "crypto", :username "liemmo", :type "private", :id 318062977, :last_name "бот"},
    :message_id 212655,
-   :photo [{:width 320, :file_size 33404, :file_unique_id "AQADZelhIl0AA1rWBAAB",
-            :file_id "AgACAgQAAxkBAAEDPq9fGuQvgprZMcEWYKb9uvzrmj2xWwACebYxG6pt2FAf9xU9uFGl4WXpYSJdAAMBAAMCAANtAANa1gQAARoE", :height 320 {:width 800, :file_size 251875, :file_unique_id "AQADZelhIl0AA1vWBAAB", :file_id "AgACAgQAAxkBAAEDPq9fGuQvgprZMcEWYKb9uvzrmj2xWwACebYxG6pt2FAf9xU9uFGl4WXpYSJdAAMBAAMCAAN4AANb1gQAARoE", :height 800} {:width 1024, :file_size 335951, :file_unique_id "AQADZelhIl0AA1jWBAAB", :file_id "AgACAgQAAxkBAAEDPq9fGuQvgprZMcEWYKb9uvzrmj2xWwACebYxG6pt2FAf9xU9uFGl4WXpYSJdAAMBAAMCAAN5AANY1gQAARoE", :height 1024},}]
+   :photo [{:width 1024, :file_size 335951, :file_unique_id "AQADZelhIl0AA1jWBAAB", :file_id "AgACAgQAAxkBAAEDPq9fGuQvgprZMcEWYKb9uvzrmj2xWwACebYxG6pt2FAf9xU9uFGl4WXpYSJdAAMBAAMCAAN5AANY1gQAARoE", :height 1024}]
    :from {:first_name "crypto", :language_code "en", :is_bot false, :username "liemmo", :id 318062977, :last_name "бот"}})
- 
- (bot-api
-  {:update_id 82256304, :message {:caption "/ricorda", :date 1595598249, :caption_entities [{:offset 0, :type "bot_command", :length 8}], :chat {:first_name "crypto", :username "liemmo", :type "private", :id 318062977, :last_name "бот"}, :message_id 212660, :photo [{:width 320, :file_size 33404, :file_unique_id "AQADXCqhJF0AA42rAAI", :file_id "AgACAgQAAxkBAAEDPrRfGuWpUZREVMYVaBDYR1eQvfVz8QACerYxG6pt2FCLMYnKfu0oDlwqoSRdAAMBAAMCAANtAAONqwACGgQ", :height 320} {:width 800, :file_size 251837, :file_unique_id "AQADXCqhJF0AA46rAAI", :file_id "AgACAgQAAxkBAAEDPrRfGuWpUZREVMYVaBDYR1eQvfVz8QACerYxG6pt2FCLMYnKfu0oDlwqoSRdAAMBAAMCAAN4AAOOqwACGgQ", :height 800} {:width 1024, :file_size 335975, :file_unique_id "AQADXCqhJF0AA4yrAAI", :file_id "AgACAgQAAxkBAAEDPrRfGuWpUZREVMYVaBDYR1eQvfVz8QACerYxG6pt2FCLMYnKfu0oDlwqoSRdAAMBAAMCAAN5AAOMqwACGgQ", :height 1024}], :from {:first_name "crypto", :language_code "en", :is_bot false, :username "liemmo", :id 318062977, :last_name "бот"}}})
  
  (bot-api
      {:chat {:id 123} :text "potta"}))
