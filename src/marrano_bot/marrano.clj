@@ -174,7 +174,7 @@
           (and photo caption
                (s/starts-with? (or caption "")
                                "/ricorda"))
-          (let [caption (rest (s/split caption #" "))
+          (let [caption (s/join " " (rest (s/split caption #" ")))
                 photo (:file_id (first photo))
                 response (ricorda-photo photo caption)]
             (when response
@@ -242,7 +242,20 @@
     (bot-api)
     {:chat {:id 123} :text "potta"}
 
-    (db/get-rand-in! [:photo])
+    (db/get-rand-in! [:photo])}
 
-    (bot-api)
-    {:caption "/ricorda", :date 1595597871, :caption_entities [{:offset 0, :type "bot_command", :length 8}], :chat {:first_name "crypto", :username "liemmo", :type "private", :id 318062977, :last_name "бот"}, :message_id 212655, :photo [{:width 320, :file_size 33404, :file_unique_id "AQADZelhIl0AA1rWBAAB", :file_id "AgACAgQAAxkBAAEDPq9fGuQvgprZMcEWYKb9uvzrmj2xWwACebYxG6pt2FAf9xU9uFGl4WXpYSJdAAMBAAMCAANtAANa1gQAARoE", :height 320} {:width 800, :file_size 251875, :file_unique_id "AQADZelhIl0AA1vWBAAB", :file_id "AgACAgQAAxkBAAEDPq9fGuQvgprZMcEWYKb9uvzrmj2xWwACebYxG6pt2FAf9xU9uFGl4WXpYSJdAAMBAAMCAAN4AANb1gQAARoE", :height 800} {:width 1024, :file_size 335951, :file_unique_id "AQADZelhIl0AA1jWBAAB", :file_id "AgACAgQAAxkBAAEDPq9fGuQvgprZMcEWYKb9uvzrmj2xWwACebYxG6pt2FAf9xU9uFGl4WXpYSJdAAMBAAMCAAN5AANY1gQAARoE", :height 1024}], :from {:first_name "crypto", :language_code "en", :is_bot false, :username "liemmo", :id 318062977, :last_name "бот"}}})
+
+ (bot-api
+  {:caption "/ricorda fia", :date 1595597871,
+   :caption_entities [{:offset 0, :type "bot_command", :length 8}],
+   :chat {:first_name "crypto", :username "liemmo", :type "private", :id 318062977, :last_name "бот"},
+   :message_id 212655,
+   :photo [{:width 320, :file_size 33404, :file_unique_id "AQADZelhIl0AA1rWBAAB",
+            :file_id "AgACAgQAAxkBAAEDPq9fGuQvgprZMcEWYKb9uvzrmj2xWwACebYxG6pt2FAf9xU9uFGl4WXpYSJdAAMBAAMCAANtAANa1gQAARoE", :height 320 {:width 800, :file_size 251875, :file_unique_id "AQADZelhIl0AA1vWBAAB", :file_id "AgACAgQAAxkBAAEDPq9fGuQvgprZMcEWYKb9uvzrmj2xWwACebYxG6pt2FAf9xU9uFGl4WXpYSJdAAMBAAMCAAN4AANb1gQAARoE", :height 800} {:width 1024, :file_size 335951, :file_unique_id "AQADZelhIl0AA1jWBAAB", :file_id "AgACAgQAAxkBAAEDPq9fGuQvgprZMcEWYKb9uvzrmj2xWwACebYxG6pt2FAf9xU9uFGl4WXpYSJdAAMBAAMCAAN5AANY1gQAARoE", :height 1024},}]
+   :from {:first_name "crypto", :language_code "en", :is_bot false, :username "liemmo", :id 318062977, :last_name "бот"}})
+ 
+ (bot-api
+  {:update_id 82256304, :message {:caption "/ricorda", :date 1595598249, :caption_entities [{:offset 0, :type "bot_command", :length 8}], :chat {:first_name "crypto", :username "liemmo", :type "private", :id 318062977, :last_name "бот"}, :message_id 212660, :photo [{:width 320, :file_size 33404, :file_unique_id "AQADXCqhJF0AA42rAAI", :file_id "AgACAgQAAxkBAAEDPrRfGuWpUZREVMYVaBDYR1eQvfVz8QACerYxG6pt2FCLMYnKfu0oDlwqoSRdAAMBAAMCAANtAAONqwACGgQ", :height 320} {:width 800, :file_size 251837, :file_unique_id "AQADXCqhJF0AA46rAAI", :file_id "AgACAgQAAxkBAAEDPrRfGuWpUZREVMYVaBDYR1eQvfVz8QACerYxG6pt2FCLMYnKfu0oDlwqoSRdAAMBAAMCAAN4AAOOqwACGgQ", :height 800} {:width 1024, :file_size 335975, :file_unique_id "AQADXCqhJF0AA4yrAAI", :file_id "AgACAgQAAxkBAAEDPrRfGuWpUZREVMYVaBDYR1eQvfVz8QACerYxG6pt2FCLMYnKfu0oDlwqoSRdAAMBAAMCAAN5AAOMqwACGgQ", :height 1024}], :from {:first_name "crypto", :language_code "en", :is_bot false, :username "liemmo", :id 318062977, :last_name "бот"}}})
+ 
+ (bot-api
+     {:chat {:id 123} :text "potta"}))
