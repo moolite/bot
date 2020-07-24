@@ -180,7 +180,7 @@
           ;;
           (and photo caption
                (s/starts-with? caption "/ricorda"))
-          (let [caption (or (last (re-find #"/ricorda (.*)"caption)))
+          (let [caption (or (last (re-find #"/ricorda (.*)"caption)) "")
                 photo (:file_id (first photo))
                 response (ricorda-photo photo caption)]
             (send-message {:chat_id id
