@@ -92,6 +92,11 @@
    f update function"
   (swap! db (fn [val] (update-in val k f))))
 
+(defn apply-in!
+  [k fun default-value]
+  (swap! db (fn [val] (update-in val k
+                                 #(if % (fun %) default-value)))))
+
 (defn add-to-vec!
   [k thing]
   "append a value to a db vector k
@@ -142,3 +147,8 @@
   (update-at! [:links]
               (fn [links] (filterv #(not (= (:url %) url))
                                   links))))
+
+
+(defn inc!
+  [& k]
+  (apply-in! k inc 1))

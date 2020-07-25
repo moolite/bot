@@ -129,6 +129,62 @@
             :text "🖕 LMGIFY"}]
           results)))))
 
+;; Stats
+;;
+(defn includes-some
+  [lst thing]
+  "returns true if the `thing` contains one of the search terms of `lst`"
+  (some #(s/includes? thing %)
+        lst))
+
+(defn update-stats
+  [text]
+  "increments stats based on spoken words"
+  (let [normalized (-> text
+                       s/lower-case
+                       s/trim)]
+    (condp includes-some normalized
+      ["umme" "umm3"]
+      (db/inc! :stats :umme)
+      ["russa"]
+      (db/inc! :stats :russacchiotta)
+      ["polska" "polacchina"]
+      (db/inc! :stats :polacchina)
+      ["potta" "figa" "fia"]
+      (db/inc! :stats :fia)
+      ["linux" "gnu"]
+      (db/inc! :stats :linux)
+      ["elastic" "elasticsearch" "bigdata"]
+      (db/inc! :stats :bigdata)
+      ["amiga" "vampire" "a1200" "a600"]
+      (db/inc! :stats :amiga)
+      ["c64" "unboxerki" "sid"]
+      (db/inc! :stats :commodore)
+      ["cd32" "c%3"]
+      (db/inc! :stats :grumpycat)
+      ["deh" "boia"]
+      (db/inc! :stats :deh)
+      ["retro" "marran"]
+      (db/inc! :stats :marrani)
+      ["suppah" "munne"]
+      (db/inc! :stats :munne)
+      ["gatto" "cat" "grumpy"]
+      (db/inc! :stats :gatto)
+      ["lukke" "luke"]
+      (db/inc! :stats :lukke)
+      ["liemmo" "aliemmo" "aliem"]
+      (db/inc! :stats :aliemmo)
+      false)))
+
+(defn get-stats
+  []
+  (->> (db/get-in! [:stats])
+       (map #(str "- `" (first %) "` :: *" (second %) "*"))
+       (s/join "\n")))
+
+;;
+;; Responses
+;;
 (defn- send-message
   [parts]
   (merge {:method "sendMessage"
@@ -145,6 +201,8 @@
 
 (defn bot-api
   [{{id :id chat-type :type} :chat caption :caption photo :photo text :text}]
+  (when text
+    (update-stats text))
   (let [caption (or caption "")
         text (or text "")]
     (cond (s/starts-with? text "/paris")
@@ -193,6 +251,13 @@
                                item)))
 
           ;;
+          ;; Stats
+          ;;
+          (and text (s/starts-with? text "/stats"))
+          (send-message {:chat_id id
+                         :text (get-stats)})
+
+          ;;
           ;; il resto
           ;;
           (and text (p/command? text))
@@ -201,17 +266,7 @@
               (send-message {:chat_id id
                              :text response})))
 
-          ;; do nothing
+          ;;
+          ;; Stats
+          ;;
           :else "")))
-
-(comment
- (bot-api
-  {:caption "/ricorda fia", :date 1595597871,
-   :caption_entities [{:offset 0, :type "bot_command", :length 8}],
-   :chat {:first_name "crypto", :username "liemmo", :type "private", :id 318062977, :last_name "бот"},
-   :message_id 212655,
-   :photo [{:width 1024, :file_size 335951, :file_unique_id "AQADZelhIl0AA1jWBAAB", :file_id "AgACAgQAAxkBAAEDPq9fGuQvgprZMcEWYKb9uvzrmj2xWwACebYxG6pt2FAf9xU9uFGl4WXpYSJdAAMBAAMCAAN5AANY1gQAARoE", :height 1024}]
-   :from {:first_name "crypto", :language_code "en", :is_bot false, :username "liemmo", :id 318062977, :last_name "бот"}})
- 
- (bot-api
-     {:chat {:id 123} :text "potta"}))
