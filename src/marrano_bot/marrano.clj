@@ -148,7 +148,7 @@
       (db/inc! :stats :umme)
       ["russa"]
       (db/inc! :stats :russacchiotta)
-      ["polska" "polacchina"]
+      ["polska" "polacchina" "pupa" "pupy"]
       (db/inc! :stats :polacchina)
       ["potta" "figa" "fia"]
       (db/inc! :stats :fia)
@@ -245,7 +245,7 @@
                            :text (str "umme... " caption)}))
 
           (some #(s/includes? (s/lower-case text) %)
-                ["russa" "potta" "signorina"])
+                ["russa" "potta" "signorina" "pupy"])
           (let [item (db/get-rand-in! [:photo])]
             (send-photo (merge {:chat_id id}
                                item)))
