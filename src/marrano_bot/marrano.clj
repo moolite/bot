@@ -6,7 +6,8 @@
             [morse.api :as t]
             [muuntaja.core :as m]
             [config.core :refer [env]]
-            [clojure.string :as s]))
+            [clojure.string :as s]
+            [taoensso.timbre :as timbre :refer [info debug warn error]]))
 
 ;; Configuration
 (def token
@@ -136,6 +137,7 @@
   [text]
   "increments stats based on spoken words"
   (let [stats (get-stats-from-phrase text)]
+    (debug "stats:" stats)
     (map #(db/inc! :stats %) stats)))
 
 (defn get-stats
