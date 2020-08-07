@@ -139,7 +139,8 @@
   (loop [stats (seq (get-stats-from-phrase text))]
     (debug "stats:" stats)
     (db/inc! :stats (first stats))
-    (recur (next stats))))
+    (when (next stats)
+      (recur (next stats)))))
 
 (defn get-stats
   []
