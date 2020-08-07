@@ -1,51 +1,42 @@
 (ns marrano-bot.search
-  (:require [clj-fuzzy.metrics :refer [dice]]))
+  (:require [clj-fuzzy.metrics :refer [dice]]
+            [clojure.string :as string]))
 
-(dice "bot" "un bot")
-(dice "bot" "un bot e un marrano")
+(def stat-words
+  [[:russacchiotta "russa" "russacchiotta"]
+   [:polacchina "pupy" "pupa" "poska" "polacchina"]
+   [:lukke "lukke" "luca" "bertolovski"]
+   [:suppah "suppah" "supphppa" "suppahsrv" "munne"]
+   [:gatto "cat" "grumpycat" "gatto" "gattino" "bibbiano"]
+   [:aliemmo "aliemmo" "aliem" "lorenzo"]
+   [:marrano "marran" "marrans" "marrani" "mrrny"]
+   [:amiga "amiga" "vampire" "cd32" "a1200" "a600" "acceleratore" "blitter" "aga" "terriblefire" "tf330" "tf530" "warp"]
+   [:commodore "commodore" "c64" "vic20"]
+   [:retro "spectrum" "speccy" "coleco" "atari" "falcon"]
+   [:umme "umme" "ummme" "ummmeee" "umm3"]
+   [:potta "figa" "potta" "signorina" "tette"]
+   [:bigdata "mongo" "elasticsearch" "elastic" "bigdata"]])
 
-(def words
-  ["russacchiotte" "libri" "marrani" "marrano" "asimov" "filosofia" "amiga" "AmigaOS"])
+(defn calculate-distance
+  [w1 w2]
+  (dice w1 w2))
 
-(def frasi
-  [{:text "russacchiotte fighe"}
-   {:text "libri"}
-   {:text "marrani"}
-   {:text "polacchine"}
-   {:text "figa"}
-   {:text "libri gratuiti"}
-   {:text "sconti amazon"}
-   {:text "acceleratori amiga"}
-   {:text "AOS 3.1.4"}
-   {:text "AmigaOS 3.9"}])
-
-(take 5 (filterv #(< 0 (dice "amiga" %))
-                 words))
- 
-(defn take-topmost
-  [term]
-  (->> words
-       (filterv #(< 0 (dice term %)))
-       (take 5)
-       (vec)))
+(defn calculate-rank-word
+  [word words]
+  (reduce
+   #(max (calculate-distance word %2) %1)
+   0 words))
 
 (defn calculate-rank
-  [word]
-  (->> (map (fn [x] {:text (:text x) :rank (dice word (:text x)) :term word})
-            frasi)
-       (filterv #(< 0.2 (:rank %)))))
-
-(calculate-rank "amiga")
-
-(dice "acceleratori amiga" "amiga")
-
-(defn search
-  []
-  (->> (map calculate-rank words)))
-
-(search)
-
-;; - (each word)
-;; - rank by word
-;; - filtra per (> 0 x)
-;; - 
+  [phrase words]
+  (->> (string/split phrase #"\s+")
+       (map #(calculate-rank-word % words))
+       (apply max)))
+    
+(defn get-stats-from-phrase
+  [phrase]
+  (->> stat-words
+       (filterv #(< 0.4 (calculate-rank phrase
+                                        (rest %))))
+       (map #(first %))
+       (reduce conj #{})))

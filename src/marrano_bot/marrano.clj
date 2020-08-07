@@ -1,6 +1,7 @@
 (ns marrano-bot.marrano
   (:require [marrano-bot.parse :as p]
             [marrano-bot.db :as db]
+            [marrano-bot.search :refer [get-stats-from-phrase]]
             [morse.handlers :as h]
             [morse.api :as t]
             [muuntaja.core :as m]
@@ -131,50 +132,11 @@
 
 ;; Stats
 ;;
-(defn includes-some
-  [lst thing]
-  "returns true if the `thing` contains one of the search terms of `lst`"
-  (some #(s/includes? thing %)
-        lst))
-
 (defn update-stats
   [text]
   "increments stats based on spoken words"
-  (let [normalized (-> text
-                       s/lower-case
-                       s/trim)]
-    (condp includes-some normalized
-      ["umme" "umm3"]
-      (db/inc! :stats :umme)
-      ["russa"]
-      (db/inc! :stats :russacchiotta)
-      ["polska" "polacchina" "pupa" "pupy"]
-      (db/inc! :stats :polacchina)
-      ["potta" "figa" "fia"]
-      (db/inc! :stats :fia)
-      ["linux" "gnu"]
-      (db/inc! :stats :linux)
-      ["elastic" "elasticsearch" "bigdata"]
-      (db/inc! :stats :bigdata)
-      ["amiga" "vampire" "a1200" "a600"]
-      (db/inc! :stats :amiga)
-      ["c64" "unboxerki" "sid"]
-      (db/inc! :stats :commodore)
-      ["cd32" "c%3"]
-      (db/inc! :stats :grumpycat)
-      ["deh" "boia"]
-      (db/inc! :stats :deh)
-      ["retro" "marran"]
-      (db/inc! :stats :marrani)
-      ["suppah" "munne"]
-      (db/inc! :stats :munne)
-      ["gatto" "cat" "grumpy"]
-      (db/inc! :stats :gatto)
-      ["lukke" "luke"]
-      (db/inc! :stats :lukke)
-      ["liemmo" "aliemmo" "aliem"]
-      (db/inc! :stats :aliemmo)
-      false)))
+  (let [stats (get-stats-from-phrase)]
+    (map #(db/inc! :stats %) stats)))
 
 (defn get-stats
   []
