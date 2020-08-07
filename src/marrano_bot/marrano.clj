@@ -135,7 +135,7 @@
 (defn update-stats
   [text]
   "increments stats based on spoken words"
-  (let [stats (get-stats-from-phrase)]
+  (let [stats (get-stats-from-phrase text)]
     (map #(db/inc! :stats %) stats)))
 
 (defn get-stats
