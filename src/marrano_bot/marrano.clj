@@ -137,8 +137,9 @@
   [text]
   "increments stats based on spoken words"
   (loop [stats (seq (get-stats-from-phrase text))]
-    (debug "stats:" stats)
-    (db/inc! :stats (first stats))
+    (when (first stats)
+      (debug "stats:" stats)
+      (db/inc! :stats (first stats)))
     (when (next stats)
       (recur (next stats)))))
 
