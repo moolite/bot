@@ -146,6 +146,7 @@
 (defn get-stats
   []
   (->> (db/get-in! [:stats])
+       (sort-by second)
        (map #(str "- `" (first %) "` :: *" (second %) "*"))
        (s/join "\n")))
 
