@@ -212,7 +212,7 @@
             (send-message {:chat_id id
                            :text (str "umme... " caption)}))
 
-          (some #(s/starts-with? text %)
+          (some #(s/starts-with? (s/lower-case text) %)
                 ["/russa" "/pup" "pupy" "pupa" "russacchiotta" "signorina" "!russa" "!pupa" "potta"])
           (let [item (db/get-rand-in! [:photo])]
             (send-photo (merge {:chat_id id}
