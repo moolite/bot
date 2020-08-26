@@ -1,0 +1,31 @@
+{:paths ["src" "resources"]
+ :deps {org.clojure/clojure {:mvn/version "1.10.1"}
+        org.clojure/core.async {:mvn/version "0.4.474"}
+        metosin/reitit {:mvn/version "0.5.5"}
+        metosin/reitit-middleware {:mvn/version "0.5.2"}
+        metosin/muuntaja {:mvn/version "0.6.7"}
+        ring-logger {:mvn/version "1.0.1"}
+        clj-fuzzy {:mvn/version "0.4.1"}
+        yogthos/config {:mvn/version "1.1.1"}
+        http-kit {:mvn/version "2.3.0"}
+        com.taoensso/timbre {:mvn/version "4.10.0"}
+        morse {:mvn/version "0.4.0"}}
+ :aliases
+ {:test {:extra-paths ["test"]
+         :extra-deps {org.clojure/test.check {:mvn/version "1.0.0"}}}
+  :runner {:extra-deps {com.cognitect/test-runner
+                        {:git/url "https://github.com/cognitect-labs/test-runner"}
+                        :sha "f7ef16dc3b8332b0d77bc0274578ad5270fbfedd"}
+           :main-opts ["-m" "cognitect.test-runner"
+                       "-d" "test"]}
+  :uberjar {:extra-deps {seancorfield/depstar {:mvn/version "1.0.94"}}
+            :main-opts ["-m" "hf.depstar.uberjar" "bot.jar"
+                        "-C" "-m" "marrano-bot.core"]}
+  :native-image {:main-opts ["-m clj.native-image marrano-bot.core"
+                             "--initialize-at-build-time"
+                             "--enable-url-protocols=https"
+                             ;; optional native image name override
+                             "H:Name=bot"]
+                 :jvm-opts ["-Dclojure.compiler.direct-linking=true"]
+                 :extra-deps {clj.native-image/clj.native-image {:git/url "https://github.com/taylorwood/clj.native-image.git"
+                                                                 :sha "7708e7fd4572459c81f6a6b8e44c96f41cdd92d4"}}}}}
