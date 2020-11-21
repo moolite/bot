@@ -7,8 +7,8 @@
    [:polacchina "pupy" "pupa" "poska" "polacchina"]
    [:lukke "lukke" "luca" "bertolovski"]
    [:suppah "suppah" "supphppa" "suppahsrv" "munne"]
-   [:gatto "cat" "grumpycat" "gatto" "gattino" "bibbiano"]
-   [:aliemmo "aliemmo" "aliem" "lorenzo"]
+   [:gatto "grumpycat" "gatto" "gattino" "bibbiano"]
+   [:aliemmo "aliemmo" "aliem" "lorenzo" "lallini"]
    [:marrano "marran" "marrans" "marrani" "mrrny"]
    [:amiga "amiga" "vampire" "cd32" "a1200" "a600" "acceleratore" "blitter" "aga" "terriblefire" "tf330" "tf530" "warp"]
    [:commodore "commodore" "c64" "vic20"]
@@ -38,5 +38,5 @@
   (->> stat-words
        (filterv #(< 0.4 (calculate-rank phrase
                                         (rest %))))
-       (map #(first %))
+       (map first)
        (reduce conj #{})))
