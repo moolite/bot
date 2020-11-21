@@ -1,7 +1,7 @@
 (ns marrano-bot.marrano
   (:require [marrano-bot.parse :as p]
             [marrano-bot.db :as db]
-            [marrano-bot.search :refer [get-stats-from-phrase]]
+            [marrano-bot.stats :refer [get-stats-from-phrase]]
             [morse.handlers :as h]
             [morse.api :as t]
             [muuntaja.core :as m]
@@ -122,7 +122,7 @@
           (= cmd "schifa"))
       (do (db/rem-link tags)
           [{:url tags
-             :text "eliminato!"}])
+            :text "eliminato!"}])
 
       :else
       (let [results (db/search-link (rest (s/split text #"\s+")))]
@@ -148,6 +148,14 @@
   (->> (db/get-in! [:stats])
        (sort-by second)
        (map #(str "- `" (first %) "` :: *" (second %) "*"))
+       (s/join "\n")))
+
+(defn prometheus-metrics
+  []
+  (->> (db/get-in! [:stats])
+       (map #(str "# HELP " (first %) " metric\n"
+                  "# TYPE marrano_" (first %) " gauge"
+                  "marrano_" (first %) " " (second %)))
        (s/join "\n")))
 
 ;;
@@ -183,14 +191,6 @@
           (send-message {:chat_id id
                          :text (slap text)})
           ;;
-          ;; /ricorda
-          ;;
-          (s/starts-with? text "/ricorda")
-          (do
-            (ricorda text)
-            (send-message {:chat_id id
-                           :text "umme ... ho imparato *qualcosa*"}))
-          ;;
           ;; /link | /nota
           ;;
           (some #(s/starts-with? text %)
@@ -200,13 +200,12 @@
               (send-message {:chat_id id
                              :reply_markup (as-json {:inline_keyboard (map #(conj [] %) response)})
                              :text "ecco cosa ho trovato in *A-TEMP:*"})))
-
           ;;
           ;; Photos
           ;;
           (and photo caption
                (s/starts-with? caption "/ricorda"))
-          (let [caption (or (last (re-find #"/ricorda (.*)"caption)) "")
+          (let [caption (or (last (re-find #"/ricorda (.*)" caption)) "")
                 photo (:file_id (first photo))
                 response (ricorda-photo photo caption)]
             (send-message {:chat_id id
@@ -224,7 +223,14 @@
           (and text (s/starts-with? text "/stats"))
           (send-message {:chat_id id
                          :text (get-stats)})
-
+          ;;
+          ;; /ricorda
+          ;;
+          (s/starts-with? text "/ricorda")
+          (do
+            (ricorda text)
+            (send-message {:chat_id id
+                           :text "umme ... ho imparato *qualcosa*"}))
           ;;
           ;; il resto
           ;;

@@ -5,7 +5,7 @@
             [reitit.ring.middleware.exception :as exception]
             [reitit.dev.pretty :as pretty]
             [config.core :refer [env]]
-            [marrano-bot.marrano :refer [bot-api]]
+            [marrano-bot.marrano :refer [bot-api prometheus-metrics]]
             [clojure.java.io :as io]
             [taoensso.timbre :as timbre :refer [info debug warn error]]))
 
@@ -27,6 +27,7 @@
   (ring/ring-handler
     (ring/router
      [["/" {:get (fn [_] {:status 200 :body "v0.1.0 - marrano-bot"})}]
+      ["/metrics" {:get (fn [_] {:status 200 :body (prometheus-metrics) :headers {:Content-Type "text/plain"}})}]
       ["/t" ["/"
              ["" {:get (fn [_] {:status 200 :body ""})}]
              [secret {:post telegram-handler

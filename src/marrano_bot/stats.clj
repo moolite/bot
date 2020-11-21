@@ -1,4 +1,4 @@
-(ns marrano-bot.search
+(ns marrano-bot.stats
   (:require [clj-fuzzy.metrics :refer [dice]]
             [clojure.string :as string]))
 

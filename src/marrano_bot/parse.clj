@@ -25,5 +25,4 @@
 (defn command?
   [data]
   (and (= \! (first data))
-       (let [matcher (re-matcher parse-regex data)]
-         (.matches matcher))))
+       (.matches (re-matcher parse-regex data))))
