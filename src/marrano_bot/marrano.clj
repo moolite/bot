@@ -153,7 +153,7 @@
 (defn prometheus-metrics
   []
   (->> (db/get-in! [:stats])
-       (map (fn [[k v]] (str "# HELP " (name k) " metric\n"
+       (map (fn [[k v]] (str "# HELP marrano_" (name k) " metric\n"
                              "# TYPE marrano_" (name k) " gauge\n"
                              "marrano_" (name k) " " v)))
        (s/join "\n")))
