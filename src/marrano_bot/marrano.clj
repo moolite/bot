@@ -154,7 +154,7 @@
   []
   (->> (db/get-in! [:stats])
        (map #(str "# HELP " (first %) " metric\n"
-                  "# TYPE marrano_" (first %) " gauge"
+                  "# TYPE marrano_" (first %) " gauge\n"
                   "marrano_" (first %) " " (second %)))
        (s/join "\n")))
 

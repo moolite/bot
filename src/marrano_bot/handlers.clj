@@ -25,15 +25,15 @@
 
 (def stack
   (ring/ring-handler
-    (ring/router
-     [["/" {:get (fn [_] {:status 200 :body "v0.1.0 - marrano-bot"})}]
-      ["/metrics" {:get (fn [_] {:status 200 :body (prometheus-metrics) :headers {"Content-Type" "text/plain"}})}]
-      ["/t" ["/"
-             ["" {:get (fn [_] {:status 200 :body ""})}]
-             [secret {:post telegram-handler
-                      :get (fn [_] {:status 200 :body {:results "Ko"}})}]]]]
-     {:data {:muuntaja muuntaja.core/instance
-             :middleware [muuntaja/format-middleware
-                          exception/exception-middleware]}
-      :exception pretty/exception})
-    (ring/redirect-trailing-slash-handler {:method :strip})))
+   (ring/router
+    [["/" {:get (fn [_] {:status 200 :body "v0.1.0 - marrano-bot"})}]
+     ["/metrics" {:get (fn [_] {:status 200 :body (prometheus-metrics)})}]
+     ["/t" ["/"
+            ["" {:get (fn [_] {:status 200 :body ""})}]
+            [secret {:post telegram-handler
+                     :get (fn [_] {:status 200 :body {:results "Ko"}})}]]]]
+    {:data {:muuntaja muuntaja.core/instance
+            :middleware [muuntaja/format-middleware
+                         exception/exception-middleware]}
+     :exception pretty/exception})
+   (ring/redirect-trailing-slash-handler {:method :strip})))
