@@ -1,13 +1,14 @@
+;; This Source Code Form is subject to the terms of the Mozilla Public
+;; License, v. 2.0. If a copy of the MPL was not distributed with this
+;; file, You can obtain one at http://mozilla.org/MPL/2.0/.
 (ns marrano-bot.db
   (:require [clojure.edn :as edn]
             [clojure.java.io :as io]
             [clojure.string :as s]))
 
-
 (def db-filename "./db.edn")
 (def db
-  (atom {:commands {
-                    "acbs"      "%, ti acbsizzo!"
+  (atom {:commands {"acbs"      "%, ti acbsizzo!"
                     "audi"      "%, ti installo i sensori posteriori, schermo, finestrini elettronici con massaggio e autoradio con bitcoin miner di una Audi nella Giulia!"
                     "azimuth"   "%, registra quella maledetta testinaaaaaaaa!!!!!!!!"
                     "betaschif" "%, io ti betaschifo!"
@@ -77,7 +78,6 @@
   ; add the atom watcher
   (add-watch db :save save!))
 
-
 (defn get-in!
   [path]
   (get-in @db path))
@@ -136,8 +136,8 @@
 ;; Links
 (defn add-link [url text]
   (add-to-vec! [:links]
-              {:url   url
-               :text text}))
+               {:url   url
+                :text text}))
 
 (defn search-link [terms]
   (->> (get-in! [:links])
@@ -146,8 +146,7 @@
 (defn rem-link [url]
   (update-at! [:links]
               (fn [links] (filterv #(not (= (:url %) url))
-                                  links))))
-
+                                   links))))
 
 (defn inc!
   [& k]

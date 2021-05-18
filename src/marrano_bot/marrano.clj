@@ -1,3 +1,6 @@
+;; This Source Code Form is subject to the terms of the Mozilla Public
+;; License, v. 2.0. If a copy of the MPL was not distributed with this
+;; file, You can obtain one at http://mozilla.org/MPL/2.0/.
 (ns marrano-bot.marrano
   (:require [marrano-bot.parse :as p]
             [marrano-bot.db :as db]
@@ -71,6 +74,8 @@
 
 
 ;; Photo
+
+
 (defn ricorda-photo
   [photo caption]
   (db/add-to-vec!
@@ -114,7 +119,7 @@
            (s/starts-with? cmd "http"))
       (do (db/add-link cmd tags)
           [{:url cmd
-             :text tags}])
+            :text tags}])
 
       (or (= cmd "rm")
           (= cmd "del")
@@ -127,7 +132,7 @@
       :else
       (let [results (db/search-link (rest (s/split text #"\s+")))]
         (if (empty? results)
-          [{:url (str "https://lmgtfy.com/?q=" text "&pp=1&s=d""&s=l")
+          [{:url (str "https://lmgtfy.com/?q=" text "&pp=1&s=d" "&s=l")
             :text "🖕 LMGIFY"}]
           results)))))
 
@@ -212,7 +217,7 @@
                            :text (str "umme... " caption)}))
 
           (some #(s/starts-with? (s/lower-case text) %)
-                ["/russa" "/pup" "pupy" "pupa" "russacchiotta" "signorina" "!russa" "!pupa" "potta"])
+                ["/russa" "/pup" "pupy" "pupa" "russa" "russia" "russacchiotta" "signorina" "!russa" "!pupa" "potta"])
           (let [item (db/get-rand-in! [:photo])]
             (send-photo (merge {:chat_id id}
                                item)))

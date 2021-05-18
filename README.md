@@ -23,5 +23,4 @@ The bot will register the webhook `<:webhook>/t/<:secret>`
 
 Copyright © 2018 Lorenzo Giuliani
 
-Distributed under the Eclipse Public License either version 1.0 or (at
-your option) any later version.
+Release under MPL-2.0, see attached [LICENSE](LICENSE) file.
