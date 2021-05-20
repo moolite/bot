@@ -10,8 +10,7 @@ java -Dconfig="<path/to/config.edn>" -jar marrano-bot-0.1.0-SNAPSHOT-standalone.
 
 ** Options
 
-``` edn
-#+BEGIN_SRC edn
+#+BEGIN_SRC clojure
 {:webhook "https://bot.example.net"
  :token "botABC:123467"}
 #+END_SRC
