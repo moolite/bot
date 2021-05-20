@@ -151,3 +151,7 @@
 (defn inc!
   [& k]
   (apply-in! k inc 1))
+
+(defn inc-by!
+  [n & k]
+  (apply-in! k inc n))

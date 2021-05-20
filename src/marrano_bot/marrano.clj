@@ -5,6 +5,7 @@
   (:require [marrano-bot.parse :as p]
             [marrano-bot.db :as db]
             [marrano-bot.stats :refer [get-stats-from-phrase]]
+            [marrano-bot.grumpyness :refer [calculate-grumpyness]]
             [morse.handlers :as h]
             [morse.api :as t]
             [muuntaja.core :as m]
@@ -74,6 +75,7 @@
 
 
 ;; Photo
+;;
 
 
 (defn ricorda-photo
@@ -91,6 +93,7 @@
    #(= (:photo_id %) photo)))
 
 ;; Help message
+;;
 (defn- paris-help
   []
   (let [list (->> (keys (db/get-in! [:commands]))
@@ -99,7 +102,8 @@
                   (apply str))]
     (str "Helpy *paris*:\n\n" list)))
 
-;; links
+;; Link
+;;
 (defn- as-json
   [data]
   (->> data
@@ -136,23 +140,34 @@
             :text "🖕 LMGIFY"}]
           results)))))
 
+;; Grumpyness
+;;
+(defn update-grumpyness
+  [username text]
+  (when (and username text)
+    (let [grumpyness (calculate-grumpyness text)]
+      (db/inc-by! grumpyness :grumpyness username))))
+
+(defn get-grumpyness
+  []
+  (->> (db/get-in! [:grumpyness])
+       (sort-by second)
+       (map #(str "- _" (first %) "_ *" (second %) "*"))
+       (s/join "\n")))
+
 ;; Stats
 ;;
 (defn update-stats
   [text]
   "increments stats based on spoken words"
-  (loop [stats (seq (get-stats-from-phrase text))]
-    (when (first stats)
-      (debug "stats:" stats)
-      (db/inc! :stats (first stats)))
-    (when (next stats)
-      (recur (next stats)))))
+  (doseq [stat (get-stats-from-phrase text)]
+    (db/inc! :stats stat)))
 
 (defn get-stats
   []
   (->> (db/get-in! [:stats])
        (sort-by second)
-       (map #(str "- `" (first %) "` :: *" (second %) "*"))
+       (map #(str "- _" (first %) "_ *" (second %) "*"))
        (s/join "\n")))
 
 (defn prometheus-metrics
@@ -181,9 +196,10 @@
          parts))
 
 (defn bot-api
-  [{{id :id chat-type :type} :chat caption :caption photo :photo text :text}]
+  [{{username :username} :from {id :id chat-type :type} :chat caption :caption photo :photo text :text}]
   (when text
-    (update-stats text))
+    (do (update-stats text)
+        (update-grumpyness username text)))
   (let [caption (or caption "")
         text (or text "")]
     (cond (s/starts-with? text "/paris")
@@ -228,6 +244,12 @@
           (and text (s/starts-with? text "/stats"))
           (send-message {:chat_id id
                          :text (get-stats)})
+          ;;
+          ;; Grumpyness
+          ;;
+          (and text (s/starts-with? text "/grumpy"))
+          (send-message {:chat_id id
+                         :text (get-grumpyness)})
           ;;
           ;; /ricorda
           ;;

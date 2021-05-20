@@ -14,3 +14,4 @@ pom.xml.asc
 /.idea/*
 marrano-bot.imlconfig.edn
 db.edn
+/.cpcache/

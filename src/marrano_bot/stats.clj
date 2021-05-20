@@ -8,17 +8,23 @@
 (def stat-words
   [[:russacchiotta "russa" "russacchiotta"]
    [:polacchina "pupy" "pupa" "poska" "polacchina"]
+   [:potta "figa" "potta" "signorina" "tette" "pheega"]
+   [:aliemmo "aliemmo" "aliem" "lorenzo" "lallini" "lallo"]
+   [:gatto "grumpycat" "gatto" "gattino" "bibbiano"]
    [:lukke "lukke" "luca" "bertolovski"]
    [:suppah "suppah" "supphppa" "suppahsrv" "munne"]
-   [:gatto "grumpycat" "gatto" "gattino" "bibbiano"]
-   [:aliemmo "aliemmo" "aliem" "lorenzo" "lallini"]
-   [:marrano "marran" "marrans" "marrani" "mrrny"]
-   [:amiga "amiga" "vampire" "cd32" "a1200" "a600" "acceleratore" "blitter" "aga" "terriblefire" "tf330" "tf530" "warp"]
+   [:amiga "amiga" "vampire" "cd32" "a1200" "a600" "acceleratore" "blitter" "terriblefire" "tf330" "tf530" "warp"]
    [:commodore "commodore" "c64" "vic20"]
    [:retro "spectrum" "speccy" "coleco" "atari" "falcon"]
+   [:warez "warez" "crack" "key" "chiave"]
+   [:bigdata "mongo" "elasticsearch" "elastic" "bigdata"]
+   [:coin "bitcoin" "litecoin" "coin" "musk" "elon" "elon musk" "speculazione"]
    [:umme "umme" "ummme" "ummmeee" "umm3"]
-   [:potta "figa" "potta" "signorina" "tette"]
-   [:bigdata "mongo" "elasticsearch" "elastic" "bigdata"]])
+   [:chiesa "dio" "papa" "chiesa" "religione" "porco"]
+   [:mj "lsd" "mj" "marjuana" "erba" "pianta" "piantina"]
+   [:marrano "marran" "marrans" "marrani" "mrrny"]
+   [:brutt "grumpy" "grumpizza" "ummatore" "cattiv" "biden" "trump" "putin" "puteen" "moo" "pastoso" "lento" "manno" "mannosu" "brutto"]
+   [:bell "brav" "bella" "ciccia" "pizza" "pasta" "vodka" "essi" "essisu" "massisu"]])
 
 (defn calculate-distance
   [w1 w2]
@@ -31,15 +37,18 @@
    0 words))
 
 (defn calculate-rank
-  [phrase words]
-  (->> (string/split phrase #"\s+")
-       (map #(calculate-rank-word % words))
-       (apply max)))
+  [word words]
+  (->> words
+       (map #(calculate-rank-word word %))))
 
 (defn get-stats-from-phrase
-  [phrase]
+  [word]
   (->> stat-words
-       (filterv #(< 0.4 (calculate-rank phrase
-                                        (rest %))))
-       (map first)
-       (reduce conj #{})))
+       (filterv #(< 0.6 (calculate-rank-word word (rest %))))
+       (map first)))
+
+(defn get-all-stats
+  [phrase]
+  (let [words (string/split phrase #"\s+")]
+    (->> words
+         (mapcat get-stats-from-phrase))))
