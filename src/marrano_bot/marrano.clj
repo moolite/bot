@@ -5,6 +5,7 @@
   (:require [marrano-bot.parse :as p]
             [marrano-bot.db :as db]
             [marrano-bot.stats :refer [get-stats-from-phrase]]
+            [marrano-bot.grumpyness :refer [calculate-grumpyness]]
             [morse.handlers :as h]
             [morse.api :as t]
             [muuntaja.core :as m]
