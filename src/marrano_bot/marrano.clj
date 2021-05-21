@@ -155,6 +155,16 @@
        (map #(str "- _" (first %) "_ *" (second %) "*"))
        (s/join "\n")))
 
+(defn get-or-set-grumpyness
+  [username text]
+  (let [[_ name pts] (re-find #"\/[^\s]+ ([^\s]+) ([\+\-]?\d+)" "/foo bar -12")
+        pts (when (some? pts) (Integer/parseInt pts))
+        name (when (and (db/get-in! [:grumpyness name])
+                        (not= username name)) name)]
+    (do (when (and name pts)
+          (db/inc-by! pts :grumpyness name))
+        (get-grumpyness))))
+
 ;; Stats
 ;;
 (defn update-stats
@@ -167,7 +177,7 @@
   []
   (->> (db/get-in! [:stats])
        (sort-by second)
-       (map #(str "- _" (first %) "_ *" (second %) "*"))
+       (map #(str "- _" (name (first %)) "_ *" (second %) "*"))
        (s/join "\n")))
 
 (defn prometheus-metrics
@@ -249,7 +259,7 @@
           ;;
           (and text (s/starts-with? text "/grumpy"))
           (send-message {:chat_id id
-                         :text (get-grumpyness)})
+                         :text (get-or-set-grumpyness username text)})
           ;;
           ;; /ricorda
           ;;
