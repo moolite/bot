@@ -157,11 +157,13 @@
 
 (defn get-or-set-grumpyness
   [username text]
-  (let [[_ name pts] (re-find #"\/[^\s]+ ([^\s]+) ([\+\-]?\d+)" "/foo bar -12")
-        pts (when (some? pts) (Integer/parseInt pts))
+  (let [[_ name pts] (re-find #"\/[^\s]+ ([^\s]+) ([\+\-]?\d+)" text)
+        pts (when (some? pts)
+              (Integer/parseInt pts))
         name (when (and (db/get-in! [:grumpyness name])
                         (not= username name)) name)]
-    (do (when (and name pts)
+    (do (when (and name
+                   pts)
           (db/inc-by! pts :grumpyness name))
         (get-grumpyness))))
 
@@ -207,7 +209,7 @@
 
 (defn bot-api
   [{{username :username} :from {id :id chat-type :type} :chat caption :caption photo :photo text :text}]
-  (when text
+  (when (and text (not (s/starts-with? text "/")))
     (do (update-stats text)
         (update-grumpyness username text)))
   (let [caption (or caption "")

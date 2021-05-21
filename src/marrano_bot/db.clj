@@ -154,4 +154,4 @@
 
 (defn inc-by!
   [n & k]
-  (apply-in! k inc n))
+  (apply-in! k #(+ % n) 1))
