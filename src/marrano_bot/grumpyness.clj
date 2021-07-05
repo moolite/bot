@@ -1,8 +1,11 @@
+;; This Source Code Form is subject to the terms of the Mozilla Public
+;; License, v. 2.0. If a copy of the MPL was not distributed with this
+;; file, You can obtain one at http://mozilla.org/MPL/2.0/.
 (ns marrano-bot.grumpyness
   (:require [marrano-bot.stats :refer [get-all-stats]]
             [clojure.string :as string]))
 
-(def score
+(def ^:private score
   [[-3 :russacchiotta :polacchina :potta]
    [-2 :bell]
    [-1 :amiga :commodore :retro :warez]
@@ -10,7 +13,7 @@
    [2 :umme :brutt]
    [3 :bigdata :coin :chiesa]])
 
-(defn calculate-thing-grumpyness
+(defn- calculate-thing-grumpyness
   [thing]
   (->>
    (map #(if (.contains % thing) (first %) 0)
@@ -18,6 +21,7 @@
    (reduce + 0)))
 
 (defn calculate-grumpyness
+  "Calculate grumpy score by stat."
   [phrase]
   (->> phrase
        (get-all-stats)

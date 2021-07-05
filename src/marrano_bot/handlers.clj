@@ -2,14 +2,12 @@
 ;; License, v. 2.0. If a copy of the MPL was not distributed with this
 ;; file, You can obtain one at http://mozilla.org/MPL/2.0/.
 (ns marrano-bot.handlers
-  (:require [reitit.core :as r]
-            [reitit.ring :as ring]
+  (:require [reitit.ring :as ring]
             [reitit.ring.middleware.muuntaja :as muuntaja]
             [reitit.ring.middleware.exception :as exception]
             [reitit.dev.pretty :as pretty]
             [config.core :refer [env]]
             [marrano-bot.marrano :refer [bot-api prometheus-metrics]]
-            [clojure.java.io :as io]
             [taoensso.timbre :as timbre :refer [info debug warn error]]))
 
 (def secret

@@ -86,10 +86,10 @@
   (rand-nth (get-in! path)))
 
 (defn update-at!
-  [k f]
   "update a path of an atom
    k key
    f update function"
+  [k f]
   (swap! db (fn [val] (update-in val k f))))
 
 (defn apply-in!
@@ -98,18 +98,18 @@
                                  #(if % (fun %) default-value)))))
 
 (defn add-to-vec!
-  [k thing]
   "append a value to a db vector k
    k     key
    thing appended value"
+  [k thing]
   (update-at! k #(->> (conj % thing)
                       (filter some?)
                       vec
                       distinct)))
 
 (defn del-from-vec!
-  [k fun]
   "remove a thing from a vector using a filter function"
+  [k fun]
   (update-at! k (fn [val] (filterv #(not (fun %)) val))))
 
 ;;

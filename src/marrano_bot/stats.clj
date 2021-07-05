@@ -5,7 +5,7 @@
   (:require [clj-fuzzy.metrics :refer [dice]]
             [clojure.string :as string]))
 
-(def stat-words
+(def ^:private stat-words
   [[:russacchiotta "russa" "russacchiotta"]
    [:polacchina "pupy" "pupa" "poska" "polacchina"]
    [:potta "figa" "potta" "signorina" "tette" "pheega"]
@@ -35,11 +35,6 @@
   (reduce
    #(max (calculate-distance word %2) %1)
    0 words))
-
-(defn calculate-rank
-  [word words]
-  (->> words
-       (map #(calculate-rank-word word %))))
 
 (defn get-stats-from-phrase
   [word]
