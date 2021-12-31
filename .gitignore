@@ -15,3 +15,5 @@ pom.xml.asc
 marrano-bot.imlconfig.edn
 db.edn
 /.cpcache/
+/.lsp/
+/.clj-kondo/
