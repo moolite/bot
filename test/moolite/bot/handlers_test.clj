@@ -1,6 +1,6 @@
-(ns marrano-bot.marrano-test
-  (:require [marrano-bot.marrano :as m]
-            [marrano-bot.parse :as p]
+(ns moolite.bot.handlers-test
+  (:require [moolite.bot.marrano :as m]
+            [moolite.bot.parse :as p]
             [clojure.test :refer :all]))
 
 (deftest test-command?

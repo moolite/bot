@@ -1,10 +1,10 @@
 ;; This Source Code Form is subject to the terms of the Mozilla Public
 ;; License, v. 2.0. If a copy of the MPL was not distributed with this
 ;; file, You can obtain one at http://mozilla.org/MPL/2.0/.
-(ns marrano-bot.core
+(ns moolite.bot.core
   (:gen-class)
-  (:require [marrano-bot.marrano :refer [init! token webhook-url]]
-            [marrano-bot.handlers :refer [stack]]
+  (:require [moolite.bot.marrano :refer [init! token webhook-url]]
+            [moolite.bot.handlers :refer [stack]]
             [config.core :refer [env]]
             [ring.logger :as logger]
             [org.httpkit.server :refer [run-server]]

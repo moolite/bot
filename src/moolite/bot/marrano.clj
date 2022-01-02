@@ -1,11 +1,11 @@
 ;; This Source Code Form is subject to the terms of the Mozilla Public
 ;; License, v. 2.0. If a copy of the MPL was not distributed with this
 ;; file, You can obtain one at http://mozilla.org/MPL/2.0/.
-(ns marrano-bot.marrano
-  (:require [marrano-bot.parse :as p]
-            [marrano-bot.db :as db]
-            [marrano-bot.stats :refer [get-stats-from-phrase]]
-            [marrano-bot.grumpyness :refer [calculate-grumpyness]]
+(ns moolite.bot.marrano
+  (:require [moolite.bot.parse :as p]
+            [moolite.bot.db :as db]
+            [moolite.bot.stats :refer [get-stats-from-phrase]]
+            [moolite.bot.grumpyness :refer [calculate-grumpyness]]
             [morse.handlers :as h]
             [morse.api :as t]
             [muuntaja.core :as m]
