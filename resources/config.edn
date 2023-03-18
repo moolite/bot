@@ -2,4 +2,5 @@
  :webhook-secret "test"
  :telegram-token "sample:token123"
  :database-file  "bot.sqlite"
- :port           10000}
+ :port           10000
+ :log-level      1}

@@ -13,50 +13,58 @@
                        [:references :groups]]]}
       sql/format))
 
-(defn insert [{gid :gid keyword :keyword}]
+(defn insert [{:keys [gid keyword]}]
   (-> {:insert-into table
        :columns [:gid :keyword :stat]
-       :values [gid keyword 0]
-       :on-conflict {:update table
-                     :set :stat}}
+       :values [[gid keyword 1]]
+       :on-conflict [:keyword :gid]
+       :do-update-set {:stat [:+ :stat :1]}
+       :returning [:stat :keyword]}
       sql/format))
 
-(defn search-by-word-like [{gid :gid keyword :keyword}]
+(defn search-by-word-like [{:keys [gid keyword]}]
   (-> {:select [:keyword :stat]
        :where [:and
                [:= :gid gid]
                [:matches :keyword keyword]]}
       sql/format))
 
-(defn get-by-word [{gid :gid keyword :keyword}]
+(defn get-by-word [{:keys [gid keyword]}]
   (-> {:select [:keyword :stat]
        :where [:and
                [:= :gid gid]
                [:= :keyword keyword]]}
       sql/format))
 
-(defn update-one [{gid :gid keyword :keyword}]
+(defn update-one [{:keys [gid keyword]}]
   (-> {:update table
        :set {:stat [:+ :stat :1]}
        :where [:and
                [:= :gid gid]
                [:= :keyword keyword]]}
-
       sql/format))
 
-(defn delete-one [{keyword :keyword gid :gid}]
+(defn update-set [{:keys [gid keyword stat]}]
+  (-> {:update table
+       :set {:stat stat}
+       :where [:and
+               [:= :gid gid]
+               [:= :keyword keyword]]}))
+
+(defn delete-one [{:keys [gid keyword]}]
   (-> {:delete-from table
        :where [:and
                [:= :gid gid]
-               [:= :keyword keyword]]
-       :limit :1}
+               [:= :keyword keyword]]}
       sql/format))
 
-(defn all [{gid :gid}]
+(defn all [{:keys [gid]}]
   (-> {:select [:keyword :stat]
+       :from table
        :where [:= :gid gid]}
       sql/format))
 
 (defn all-stats []
-  (-> {:select [:keyword :stat :gid]}
+  (-> {:select [:keyword :stat :gid]
+       :from table}
       sql/format))

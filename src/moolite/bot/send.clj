@@ -50,4 +50,5 @@
   (as-message {:method "sendMessage"
                :chat_id chat-id
                :text text
-               :reply_markup (as-json {:inline_keyboard (map #(conj [] %) links)})}))
+               :reply_markup (as-json
+                              {:inline_keyboard (map #(conj [] %) links)})}))

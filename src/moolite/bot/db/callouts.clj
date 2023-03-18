@@ -14,7 +14,7 @@
        :with-columns [[:callout [:varchar 128] [:not nil]]
                       [:text :text [:not nil]]
                       [:gid [:varchar 64] [:not nil]]
-                      [[:primary-key :callout]]
+                      [[:primary-key :callout :gid]]
                       [[:foreign-key :gid]
                        [:references :groups]]]}
       sql/format))
@@ -22,13 +22,17 @@
 (defn insert [{callout :callout text :text gid :gid}]
   (-> {:insert-into table
        :columns [:gid :callout :text]
-       :values [[gid callout text]]}
+       :values [[gid callout text]]
+       :on-conflict [:callout :gid]
+       :do-update-set :text}
       sql/format))
 
 (defn insert-many [data]
   (-> {:insert-into table
        :columns [:gid :callout :text]
-       :values (map (fn [d] [(:gid d) (:callout d) (:text d)]) data)}
+       :values (map (fn [d] [(:gid d) (:callout d) (:text d)]) data)
+       :on-conflict [:callout :gid]
+       :do-update-set :text}
       sql/format))
 
 (defn one-by-callout [{callout :callout gid :gid}]

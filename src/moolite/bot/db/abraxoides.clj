@@ -12,6 +12,7 @@
        :with-columns [[:abraxas [:varchar 128] [:not nil]]
                       [:kind [:varchar 64] [:not nil]]
                       [:gid [:varchar 64] [:not nil]]
+                      [[:primary-key :abraxas :gid]]
                       [[:foreign-key :gid]
                        [:references :groups]]]}
       sql/format))
@@ -23,12 +24,12 @@
                     :table table
                     :gid gid}))
 
-(defn insert [{abraxas :abraxas kind :kind}]
+(defn insert [{:keys [abraxas kind gid]}]
   (-> {:insert-into table
-       :values [{:abraxas abraxas :kind kind}]
-       :on-conflict {:update table
-                     :set :kind}
-       :returning [:name :kind]}
+       :columns [:gid :abraxas :kind]
+       :values [[gid abraxas kind]]
+       :on-conflict [:abraxas :gid]
+       :do-update-set :kind}
       sql/format))
 
 (defn one-by-abraxas [abraxas]
@@ -37,18 +38,18 @@
        :where [:= :abraxas abraxas]}
       sql/format))
 
-(defn all-keywords []
+(defn all-keywords [{:keys [gid]}]
   (-> {:select [:abraxas]
        :from table}
       sql/format))
 
-(defn delete-by-abraxas [abraxas]
+(defn delete-by-abraxas [{:keys [abraxas]}]
   (-> {:detele-from table
        :where [:= :abraxas abraxas]}
       sql/format))
 
-(defn search [abraxas]
+(defn search [{:keys [abraxas]}]
   (-> {:select [:abraxas :kind]
        :from table-search
-       :where [:match :abraxas abraxas]}
+       :where [:like :abraxas (str "%" abraxas "%")]}
       sql/format))

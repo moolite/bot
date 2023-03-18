@@ -7,35 +7,35 @@
 (defn create-table []
   (-> {:create-table table
        :with-columns [[:url [:varchar 512] [:not nil]]
-                      [:description :text]
+                      [:text :text]
                       [:gid [:varchar 64] [:not nil]]
                       [[:foreign-key :gid]
                        [:references :groups]]]}
       sql/format))
 
-(defn insert [{url :url description :description gid :gid}]
+(defn insert [{:keys [gid url text]}]
   (-> {:insert-into table
-       :columns [:gid :url :description]
-       :values [[gid url description]]}
+       :columns [:gid :url :text]
+       :values [[gid url text]]}
       sql/format))
 
-(defn delete-one-by-url [{url :url gid :gid}]
+(defn delete-one-by-url [{:keys [url gid]}]
   (-> {:delete-from table
        :where [:and
                [:= :gid gid]
-               [:= :keyword keyword]]
-       :limit :1
-       :returning [:url :text]}
+               [:= :url url]]}
       sql/format))
 
-(defn search [{text :text gid :gid}]
+(defn search [{:keys [text gid]}]
   (-> {:select [:text :url]
        :from table
        :where [:like :text text]}
       sql/format))
 
-(defn get-random
-  "get random command"
-  []
-  #_{:clj-kondo/ignore [:unresolved-var]}
-  (core/get-random {:table "links"}))
+(defn get-by-url [{:keys [url gid]}]
+  (-> {:select [:text :url]
+       :from table
+       :where [:and
+               [:= :url url]
+               [:= :gid gid]]}
+      sql/format))

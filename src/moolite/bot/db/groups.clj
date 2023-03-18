@@ -10,18 +10,26 @@
                       [[:primary-key :gid]]]}
       sql/format))
 
-(defn insert [{gid :gid title :title}]
+(defn insert [{:keys [gid title]}]
   (-> {:insert-into table
        :columns [:gid :title]
-       :values [[gid title]]}
+       :values [[gid title]]
+       :on-conflict :gid
+       :do-update-set :title}
       sql/format))
 
-(defn delete-one [{gid :gid}]
+(defn delete-one [{:keys [gid]}]
   (-> {:delete-from table
        :where [:= :gid gid]}
       sql/format))
 
-(defn all [{gid :gid}]
+(defn all [{:keys [gid]}]
+  (-> {:select [:title]
+       :from table
+       :where [:= :gid gid]}
+      sql/format))
+
+(defn get-one [{:keys [gid]}]
   (-> {:select [:title]
        :from table
        :where [:= :gid gid]}

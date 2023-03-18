@@ -12,6 +12,9 @@
             [moolite.bot.db :as db]
             [morse.api :as t]))
 
+(def logging (state :start
+                    (timbre/set-min-level! (or (:log-level env) :info))))
+
 (def webhook (state :start
                     (let [url (str (:webhook env)
                                    "/t/"
@@ -31,6 +34,7 @@
   "Start server"
   [& _]
   (.addShutdownHook (Runtime/getRuntime) (Thread. on-stop))
+  (deref logging)
   (deref db/db)
   (deref webhook)
   (println "Server listening to port " (:port env))

@@ -3,6 +3,8 @@
 ;; file, You can obtain one at http://mozilla.org/MPL/2.0/.
 (ns moolite.bot.actions
   (:require [clojure.string :as string]
+            [clojure.core.match :refer [match]]
+            [taoensso.timbre :as timbre :refer [info debug]]
             [moolite.bot.send :as send]
             [moolite.bot.dicer :as dicer]
             [moolite.bot.db :as db]
@@ -11,15 +13,16 @@
             [moolite.bot.db.stats :as stats]
             [moolite.bot.db.links :as links]
             [moolite.bot.db.media :as media]
-            [moolite.bot.db.abraxoides :as abraxoides]
-            [clojure.core.match :refer [match]]))
+            [moolite.bot.db.abraxoides :as abraxoides]))
 
 (defn register-channel [{{gid :id title :title} :chat}]
+  (debug {:fn "register-channel" :gid gid :title title})
   (let [chan (-> (groups/insert {:gid gid :title title})
                  (db/execute-one!))]
     (send/text gid (printf "channel registered with id %d and title '%s'" (:gid chan) (:title chan)))))
 
 (defn help [gid]
+  (debug {:fn "help" :gid gid})
   (let [callout (->> (callouts/all-keywords {:gid gid})
                      (db/execute-one!)
                      (map :name)
@@ -28,24 +31,32 @@
     (send/text gid callout)))
 
 (defn grumpyness [gid]
+  (debug {:fn "grumpyness" :gid gid})
   (let [grumpyness (-> (stats/all {:gid gid})
                        (db/execute-one!))]
     (send/text gid grumpyness)))
 
 (defn link-add [gid url & text]
+  (debug {:fn "link-add" :gid gid})
   (-> (links/insert {:url url
-                     :text (or (first text) "")
+                     :description (or (first text) "")
                      :gid gid})
-      (db/execute!)))
+      (db/execute!))
+  (send/text gid "umme ..."))
 
 (defn link-del [gid url]
-  (let [deleted (-> {:url url :gid gid}
-                    (links/delete-one-by-url)
-                    db/execute-one!)]
-    (send/text gid (str "Eliminati: \n" (string/join "\n" (map :url deleted))))))
+  (debug {:fn "link-del" :gid gid})
+  (-> {:url url :gid gid}
+      (links/delete-one-by-url)
+      (db/execute-one!))
+  (send/links gid
+              "Eliminato:"
+              [{:url url :text "~~ ## ~~"}]))
 
 (defn link-search [gid text]
-  (let [results (-> (links/search {:text text :gid gid})
+  (debug {:fn "link-search" :gid gid})
+  (let [results (-> {:text text :gid gid}
+                    (links/search)
                     db/execute!)]
     (send/links gid
                 "Link trovati:"
@@ -55,6 +66,7 @@
                   results))))
 
 (defn diceroll [gid text]
+  (debug {:fn "diceroll" :gid gid})
   (let [results (->> text
                      dicer/roll
                      dicer/as-emoji
@@ -63,6 +75,7 @@
       (send/dice gid results))))
 
 (defn ricorda [data parsed-text]
+  (debug {:fn "ricorda" :text parsed-text})
   (match [data parsed-text]
     ;; photos
     [{:photo photo-sizes :chat {:id gid}}
@@ -94,6 +107,7 @@
 
 (defn yell-callout
   ([gid co text]
+   (debug {:fn "yell-callout" :gid gid :co co})
    (when-let [c (-> (callouts/one-by-callout {:callout co :gid gid})
                     (db/execute-one!))]
      (send/text gid (string/replace (:text c) "%" text))))
@@ -102,6 +116,7 @@
 
 (defn conjure-abraxas
   [gid abx]
+  (debug {:fn "conjure-abraxas" :gid gid})
   (let [results (-> (abraxoides/search abx)
                     (db/execute-one!))
         item (-> (media/get-random-by-kind {:kind (:kind results) :gid gid})
@@ -113,33 +128,34 @@
 
 (defn act [{{gid :id} :chat :as data} parsed-text]
   (match parsed-text
-    [[[:command] [:abraxas "register"] & _]]
+    [_ [:command] [:abraxas "register"] & _]
     (register-channel data)
 
-    [[[:command] [:abraxas "ricorda"] & _]]
+    [_ [:command] [:abraxas "ricorda"] & _]
     (ricorda data parsed-text)
 
-    [[[:command] [:abraxas "paris"] & _]]
+    [_ [:command] [:abraxas "paris"] & _]
     (help gid)
 
-    [[[:command] [:abraxas "grumpy"] & _]]
+    [_ [:command] [:abraxas "grumpy"] & _]
     (grumpyness gid)
 
-    [[[:command] [:abraxas (:or "l" "link" "nota")] [:add] [:url url] & text]]
+    [_ [:command] [:abraxas (:or "l" "link" "nota")] [:add] [:url url] & text]
     (link-add gid url text)
 
-    [[[:command] [:abraxas (:or "l" "link" "nota")] [:del] [:url url] & _]]
+    [_ [:command] [:abraxas (:or "l" "link" "nota")] [:del] [:url url] & _]
     (link-del gid url)
 
-    [[[:command] [:abraxas (:or "l" "link" "nota")] [:text text]]]
+    [_ [:command] [:abraxas (:or "l" "link" "nota")] [:text text]]
     (link-search gid text)
 
-    [[[:command] [:abraxas (:or "d" "d20" "dice")] [:text text]]]
+    [_ [:command] [:abraxas (:or "d" "d20" "dice")] [:text text]]
     (diceroll gid text)
 
-    [[[:callout] [:abraxas abx] [:text text]]] (yell-callout gid abx text)
-    [[[:callout] [:abraxas abx]]]              (yell-callout gid abx)
+    [_ [:callout] [:abraxas abx] [:text text]] (yell-callout gid abx text)
+    [_ [:callout] [:abraxas abx]]              (yell-callout gid abx)
 
-    [[[:abraxas abx] & _]] (conjure-abraxas gid abx)
+    [_ [:abraxas abx] & _] (conjure-abraxas gid abx)
 
-    :else ""))
+    :else (do (debug "act -> no match")
+              nil)))

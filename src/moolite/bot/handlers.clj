@@ -5,6 +5,7 @@
   (:require [clojure.string :as string]
             [config.core :refer [env]]
             [muuntaja.core :as muuntaja-core]
+            [redelay.core :refer [state stop]]
             [reitit.ring :as ring]
             [reitit.ring.coercion :as coercion]
             [reitit.ring.middleware.muuntaja :as muuntaja]
@@ -14,9 +15,9 @@
             [moolite.bot.db.stats :as stats]
             [moolite.bot.actions :refer [act]]))
 
-(def secret
-  (or (:secret env)
-      "test"))
+(def secret (state :start
+                   (or (:webhook-secret env)
+                       "test")))
 
 (defn prometheus-handler [_]
   (let [body (->> (stats/all-stats)
@@ -26,10 +27,10 @@
     {:status 200 :body body}))
 
 (defn telegram-handler [r]
-  (debug r)
   (let [body (:body-params r)
         message (merge {:text ""} ; text can be nil!!!
                        (:message body))]
+    (debug {:body body :message message})
     (if-let [parsed-message (parse-message message)]
       {:status 200
        :body (act message parsed-message)}
@@ -42,8 +43,8 @@
      ["/metrics" {:get prometheus-handler}]
      ["/t" ["/"
             ["" {:get (fn [_] {:status 200 :body ""})}]
-            [secret {:post telegram-handler
-                     :get (fn [_] {:status 200 :body {:results "Ko"}})}]]]]
+            [@secret {:post telegram-handler
+                      :get (fn [_] {:status 200 :body {:results "Ko"}})}]]]]
     {:data {:muuntaja muuntaja-core/instance
             :middleware [muuntaja/format-middleware
                          coercion/coerce-exceptions-middleware
