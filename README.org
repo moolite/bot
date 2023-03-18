@@ -21,6 +21,20 @@ java -Dconfig="<path/to/config.edn>" -jar marrano-bot-0.1.0-SNAPSHOT-standalone.
 
 The bot will register the webhook ~<:webhook>/t/<:secret>~
 
+** Building
+
+This project is using [[https://clojure.org/reference/deps_and_cli][clj]] to manage it's dependencies and build process:
+
+#+BEGIN_SRC
+clj -X:build <command>
+#+END_SRC
+
+List of possible ~:build~ commands:
+
+- ~uber~ create a new uberjar file
+- ~run-tests~ run tests without building
+- ~ci~ run tests and build an uberjar
+
 * License
 
 Copyright © 2018 Lorenzo Giuliani

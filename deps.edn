@@ -1,28 +1,32 @@
-{:paths ["src" "resources"]
- :deps {org.clojure/clojure {:mvn/version "1.10.3"}
+{:paths ["src" "resources" "scripts"]
+ :deps {org.clojure/clojure {:mvn/version "1.11.1"}
         org.clojure/core.async {:mvn/version "0.4.474"}
-        metosin/reitit {:mvn/version "0.5.5"}
-        metosin/reitit-middleware {:mvn/version "0.5.2"}
-        metosin/muuntaja {:mvn/version "0.6.7"}
-        ring-logger/ring-logger {:mvn/version "1.0.1"}
-        clj-fuzzy/clj-fuzzy {:mvn/version "0.4.1"}
-        yogthos/config {:mvn/version "1.1.1"}
-        http-kit/http-kit {:mvn/version "2.3.0"}
-        com.taoensso/timbre {:mvn/version "4.10.0"}
-        com.rpl/specter {:mvn/version "1.1.3"}
-        morse/morse {:mvn/version "0.4.0"}
-        com.layerware/hugsql {:mvn/version "0.5.1"}
-        org.xerial/sqlite-jdbc {:mvn/version "3.36.0"}}
+        org.clojure/core.match {:mvn/version "1.0.0"}
+        com.github.seancorfield/honeysql {:mvn/version "2.4.1002"}
+        com.github.seancorfield/next.jdbc {:mvn/version "1.3.862"}
+        com.rpl/specter {:mvn/version "1.1.4"}
+        com.taoensso/timbre {:mvn/version "6.0.4"}
+        functionalbytes/redelay {:mvn/version "1.1.0"}
+        hikari-cp/hikari-cp {:mvn/version "3.0.1"}
+        http-kit/http-kit {:mvn/version "2.6.0"}
+        instaparse/instaparse {:mvn/version "1.4.12"}
+        metosin/muuntaja {:mvn/version "0.6.8"}
+        metosin/reitit {:mvn/version "0.6.0"}
+        metosin/reitit-middleware {:mvn/version "0.6.0"}
+        morse/morse {:mvn/version "0.4.3"}
+        org.xerial/sqlite-jdbc {:mvn/version "3.36.0"}
+        ring-logger/ring-logger {:mvn/version "1.1.1"}
+        uncomplicate/fluokitten {:mvn/version "0.9.1"}
+        yogthos/config {:mvn/version "1.2.0"}}
  :aliases
  ;https://github.com/seancorfield/build-clj
- {:build {:deps {io.github.seancorfield/build-clj
-                 {:git/tag "v0.6.5"
-                  :git/sha "972031a"
-                  :deps/root "slim"}}
+ {:run {:ns-default moolite.bot.server
+        :exec-fn -main}
+  :build {:deps {io.github.clojure/tools.build {:git/tag "v0.9.4" :git/sha "76b78fe"}}
           :ns-default build}
-  :test
-  {:extra-paths ["test"]
-   :extra-deps {org.clojure/test.check {:mvn/version "1.1.1"}
-                io.github.cognitect-labs/test-runner
-                {:git/tag "v0.5.0" :git/sha "48c3c67"}}
-   :exec-fn cognitect.test-runner.api/test}}}
+  :db {:ns-default db}
+  :test {:extra-paths ["test"]
+         :extra-deps {org.clojure/test.check {:mvn/version "1.1.1"}
+                      io.github.cognitect-labs/test-runner
+                      {:git/tag "v0.5.0" :git/sha "48c3c67"}}
+         :exec-fn cognitect.test-runner.api/test}}}

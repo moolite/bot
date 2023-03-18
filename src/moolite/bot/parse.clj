@@ -2,30 +2,27 @@
 ;; License, v. 2.0. If a copy of the MPL was not distributed with this
 ;; file, You can obtain one at http://mozilla.org/MPL/2.0/.
 (ns moolite.bot.parse
-  (:require [clojure.string :as s]))
+  (:require [instaparse.core :as insta]))
 
-(def parse-regex
-  #"[/a-z]*!?\s*(?<cmd>[a-zA-Z0-9]+)\s+(?<text>.+)?")
+(def text-lang
+  (insta/parser
+   "
+    <grammar> : space* (command|callout)? abraxas (space rest)?
+    <rest>    : subcmd space+ url | subcmd space+ url space+ text | url space+ text | url | text
+    <subcmd>  : del|add
+    command   : <'/'>
+    callout   : <'!'>
+    abraxas   : #'[-a-zA-Z0-9]+'
+    del       : <'rm'|'rem'|'del'|'rimuovi'|'cancella'|'dd'|'-'>
+    add       : <'add'|'aggiungi'|'nuovo'|'crea'|'new'|'+'>
+    url       : #'https?://[^ ]+'
+    text      : !<'http'> #'.+'
+    <space>   : <' '>
+    "))
 
-(defn parse
-  [data]
-  (let [matcher (re-matcher parse-regex data)]
-    (when (.matches matcher)
-      (let [cmd       (s/lower-case (.group matcher "cmd"))
-            predicate (.group matcher "text")]
-        [(s/lower-case cmd) predicate]))))
-
-(defn- get-command
-  [text]
-  (-> text
-      parse
-      first))
-
-(defn command
-  [text]
-  (s/replace (get-command text) "!" ""))
-
-(defn command?
-  [data]
-  (and (= \! (first data))
-       (.matches (re-matcher parse-regex data))))
+(defn parse-message
+  [message]
+  (let [results (insta/parses text-lang (:text message))]
+    (if (insta/failure? results)
+      []
+      results)))

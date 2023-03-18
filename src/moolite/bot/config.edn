@@ -1,0 +1,3 @@
+{:webhook "https://marranobot.frenz.click"
+ :secret  "sample"
+ :port    10001}
