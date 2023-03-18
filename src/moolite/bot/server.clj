@@ -19,8 +19,6 @@
                           token (:telegram-token env)]
                       (t/set-webhook token url))))
 
-(def server-logger (state :start))
-
 (def server (state :start
                    (-> stack
                        (logger/wrap-with-logger
@@ -36,7 +34,7 @@
   (println env)
 
   (deref db/db)
-  ; (deref webhook)
+  (deref webhook)
   (println "Server listening to port " (:port env))
   (run-server (deref server)
               {:port (:port env)}))
