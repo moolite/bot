@@ -8,7 +8,7 @@
             [redelay.core :refer [state stop]]
             [ring.logger :as logger]
             [org.httpkit.server :refer [run-server]]
-            [taoensso.timbre :as timbre]
+            [taoensso.timbre :as timbre :refer [info]]
             [moolite.bot.db :as db]
             [morse.api :as t]))
 
@@ -31,8 +31,6 @@
   "Start server"
   [& _]
   (.addShutdownHook (Runtime/getRuntime) (Thread. on-stop))
-  (println env)
-
   (deref db/db)
   (deref webhook)
   (println "Server listening to port " (:port env))

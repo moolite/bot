@@ -8,6 +8,7 @@
             [reitit.ring :as ring]
             [reitit.ring.coercion :as coercion]
             [reitit.ring.middleware.muuntaja :as muuntaja]
+            [taoensso.timbre :as timbre :refer [info debug]]
             [moolite.bot.parse :refer [parse-message]]
             [moolite.bot.db :as db]
             [moolite.bot.db.stats :as stats]
@@ -25,6 +26,7 @@
     {:status 200 :body body}))
 
 (defn telegram-handler [r]
+  (debug r)
   (let [body (:body-params r)
         message (merge {:text ""} ; text can be nil!!!
                        (:message body))]

@@ -1,3 +1,5 @@
-{:webhook "https://localhost"
- :secret  "test"
- :port    10000}
+{:webhook        "https://localhost"
+ :webhook-secret "test"
+ :telegram-token "sample:token123"
+ :database-file  "bot.sqlite"
+ :port           10000}

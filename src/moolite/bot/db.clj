@@ -6,16 +6,19 @@
             [next.jdbc.result-set :as result-set]
             [redelay.core :refer [state]]
             [config.core :refer [env]]
+            [taoensso.timbre :as timbre :refer [info]]
             [moolite.bot.db.groups :as groups]
             [moolite.bot.db.callouts :as callouts]
             [moolite.bot.db.stats :as stats]))
 
 (def db
   (state :start
-         (-> {:connection-uri (str "jdbc:sqlite:" (or (:database-file env)
-                                                      "bot.sqlite"))}
-             (jdbc/get-datasource)
-             (jdbc/with-options {:builder-fn result-set/as-unqualified-lower-maps}))
+         (let [db-file (or (:database-file env)
+                           "bot.sqlite")]
+           (info "using db file " db-file)
+           (-> {:connection-uri (str "jdbc:sqlite:" db-file)}
+               (jdbc/get-datasource)
+               (jdbc/with-options {:builder-fn result-set/as-unqualified-lower-maps})))
          :stop))
 
 (defn execute! [query]
