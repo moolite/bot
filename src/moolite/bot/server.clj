@@ -4,23 +4,16 @@
 (ns moolite.bot.server
   (:gen-class)
   (:require [moolite.bot.handlers :refer [stack]]
+            [molite.bot.send :as t]
             [config.core :refer [env]]
             [redelay.core :refer [state stop]]
             [ring.logger :as logger]
             [org.httpkit.server :refer [run-server]]
             [taoensso.timbre :as timbre :refer [info]]
-            [moolite.bot.db :as db]
-            [morse.api :as t]))
+            [moolite.bot.db :as db]))
 
 (def logging (state :start
                     (timbre/set-min-level! (or (:log-level env) :info))))
-
-(def webhook (state :start
-                    (let [url (str (:webhook env)
-                                   "/t/"
-                                   (:webhook-secret env))
-                          token (:telegram-token env)]
-                      (t/set-webhook token url))))
 
 (def server (state :start
                    (-> stack
@@ -36,7 +29,8 @@
   (.addShutdownHook (Runtime/getRuntime) (Thread. on-stop))
   (deref logging)
   (deref db/db)
-  (deref webhook)
+  (when (not (:telegram-api env))
+    (deref t/webhook))
   (println "Server listening to port " (:port env))
   (run-server (deref server)
               {:port (:port env)}))

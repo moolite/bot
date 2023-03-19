@@ -5,6 +5,7 @@
   (:require [config.core :refer [env]]
             [muuntaja.core :refer [encode]]
             [org.httpkit.client :as http]
+            [redelay.core :refer [state]]
             [taoensso.timbre :as timbre :refer [debug]]))
 
 (def token (:telegram-token env))
@@ -24,6 +25,14 @@
                {:headers {"Content-Type" "application/json"}
                 :body (as-json payload)}
                (fn [resp] (debug resp)))))
+
+(def webhook (state :start
+                    (api {:method "setWebhook"
+                          :max_connections 100
+                          :allowed_updates ["message" "callback_query"]})
+                    :stop
+                    (api {:method "deleteWebhook"
+                          :drop_pending_updates true})))
 
 (defn- as-message [data]
   (let [data (assoc data :parse_mode "MarkdownV2")]
