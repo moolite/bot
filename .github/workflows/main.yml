@@ -2,8 +2,6 @@ name: ci
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "0 10 * * *"
   push:
     branches:
       - "**"
@@ -21,36 +19,29 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Docker meta
-        id: meta
-        uses: docker/metadata-action@v4
+      - name: Log in to oci registry
+        id: login-to-registry
+        uses: redhat-actions/podman-login@v1
         with:
-          # list of Docker images to use as base name for tags
-          images: |
-            moolite/bot
-          # generate Docker tags based on the following events/attributes
-          tags: |
-            type=schedule
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=sha
+          registry: registry.frenz.click
+          username: ${{ secrets.FRENZ_USERNAME }}
+          password: ${{ secrets.FRENZ_TOKEN }}
 
-      - name: Login to Docker Hub
-        uses: docker/login-action@v2
+      - name: Buildah Image
+        id: build-image
+        uses: redhat-actions/buildah-build@v2
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          image: registry.frenz.click/moolite/bot
+          tags: latest ${{ github.sha }}
+          containerfiles: |
+            ./Containerfile
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-
-      - name: Build and push
-        uses: docker/build-push-action@v4
+      - name: Push
+        id: push-to-registry
+        uses: redhat-actions/push-to-registry@v2
         with:
-          context: .
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          image: ${{ steps.build-image.outputs.image }}
+          tags: ${{ steps.build-image.outputs.tags }}
+          registry: registry.frenz.click
+          username: ${{ secrets.FRENZ_USERNAME }}
+          password: ${{ secrets.FRENZ_TOKEN }}
