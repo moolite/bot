@@ -4,7 +4,7 @@
 (ns moolite.bot.server
   (:gen-class)
   (:require [moolite.bot.handlers :refer [stack]]
-            [molite.bot.send :as t]
+            [moolite.bot.send :as t]
             [config.core :refer [env]]
             [redelay.core :refer [state stop]]
             [ring.logger :as logger]
