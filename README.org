@@ -5,19 +5,27 @@ A marrano bot
 ** Usage
 
 #+BEGIN_SRC shell
-java -Dconfig="<path/to/config.edn>" -jar marrano-bot-0.1.0-SNAPSHOT-standalone.jar
+java -Dconfig="<path/to/config.edn>" -jar target/bot-0.2.123-standalone.jar
 #+END_SRC
 
 ** Options
 
 #+BEGIN_SRC clojure
-{:webhook "https://bot.example.net"
- :token "botABC:123467"}
+{:webhook        "https://bot.example.net"
+ :webhook-secret "some-random-string"
+ :telegram-token "botABC:123467"
+ :telegram-api   false
+ :database-file  "/tmp/bot.sqlite"
+ :port           8080
+ :log-level      :warn}
 #+END_SRC
 
 - ~:webhook~ Bot's *base* webhook URL
-- ~:secret~ bot's secret (used by the webhook)
-- ~:token~ telegram's bot secret token
+- ~:webhook-secret~ bot's secret (used by the webhook)
+- ~:telegram-token~ telegram's bot secret token
+- ~:telegram-api~ use telegram's bot api instead of a webhook response (use with caution)
+- ~:log-level~ [timbre](http://ptaoussanis.github.io/timbre/index.html) log level
+- ~:port~ webserver port
 
 The bot will register the webhook ~<:webhook>/t/<:secret>~
 
@@ -32,11 +40,10 @@ clj -X:build <command>
 List of possible ~:build~ commands:
 
 - ~uber~ create a new uberjar file
-- ~run-tests~ run tests without building
-- ~ci~ run tests and build an uberjar
+- ~jar~ create a new source jar file
 
 * License
 
-Copyright © 2018 Lorenzo Giuliani
+Copyright © 2023 Lorenzo Giuliani
 
 Release under MPL-2.0, see attached [[LICENSE]] file.
