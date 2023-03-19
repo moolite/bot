@@ -6,7 +6,7 @@
             [next.jdbc.result-set :as result-set]
             [redelay.core :refer [state]]
             [config.core :refer [env]]
-            [taoensso.timbre :as timbre :refer [info]]
+            [taoensso.timbre :as timbre :refer [info debug]]
             [moolite.bot.db.groups :as groups]
             [moolite.bot.db.callouts :as callouts]
             [moolite.bot.db.stats :as stats]))
@@ -22,7 +22,9 @@
          :stop))
 
 (defn execute! [query]
+  (debug query)
   (jdbc/execute! @db query {:return-keys true}))
 
 (defn execute-one! [query]
+  (debug query)
   (jdbc/execute-one! @db query {:return-keys true}))

@@ -5,7 +5,6 @@
 ;; (hugsql/def-db-fns "moolite/bot/db/sql/abraxoides.sql"))
 
 (def table :abraxoides)
-(def table-search :abraxoides_search)
 
 (defn create-table []
   (-> {:create-table table
@@ -20,9 +19,10 @@
 (defn get-random
   "get random command"
   [{gid :gid}]
-  (core/get-random {:columns [:abraxas :kind]
-                    :table table
-                    :gid gid}))
+  (-> {:columns [:abraxas :kind]
+       :table table
+       :where [:= :gid gid]}
+      (core/get-random)))
 
 (defn insert [{:keys [abraxas kind gid]}]
   (-> {:insert-into table
@@ -30,26 +30,34 @@
        :values [[gid abraxas kind]]
        :on-conflict [:abraxas :gid]
        :do-update-set :kind}
-      sql/format))
+      (sql/format)))
 
 (defn one-by-abraxas [abraxas]
   (-> {:select [:abraxas]
        :from table
        :where [:= :abraxas abraxas]}
-      sql/format))
+      (sql/format)))
 
 (defn all-keywords [{:keys [gid]}]
   (-> {:select [:abraxas]
        :from table}
-      sql/format))
+      (sql/format)))
 
-(defn delete-by-abraxas [{:keys [abraxas]}]
+(defn delete-by-abraxas [{:keys [gid abraxas]}]
   (-> {:detele-from table
-       :where [:= :abraxas abraxas]}
-      sql/format))
+       :where [:and
+               [:= :abraxas abraxas]
+               [:= :gid gid]]}
+      (sql/format)))
 
 (defn search [{:keys [abraxas]}]
   (-> {:select [:abraxas :kind]
-       :from table-search
+       :from table
        :where [:like :abraxas (str "%" abraxas "%")]}
-      sql/format))
+      (sql/format)))
+
+(defn search-prefix [{:keys [abraxas]}]
+  (-> {:select [:abraxas :kind]
+       :from table
+       :where [:like :abraxas (str abraxas "%")]}
+      (sql/format)))

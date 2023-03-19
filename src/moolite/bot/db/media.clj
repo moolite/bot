@@ -12,25 +12,31 @@
                       [:gid [:varchar 64] [:not nil]]
                       [[:foreign-key :gid]
                        [:references :groups]]]}
-      sql/format))
+      (sql/format)))
 
-(defn insert [{data :data kind :kind gid :gid}]
+(defn insert [{:keys [data kind gid]}]
   (-> {:insert-into table
        :columns [:gid :kind :data]
        :values [[gid kind data]]}
-      sql/format))
+      (sql/format)))
 
-(defn delete-one-by-id [{id :id gid :gid}]
+(defn delete-one-by-id [{:keys [id gid]}]
   (-> {:delete-from table
        :where [[:and [:= :gid gid] [:= :id id]]]}
-      sql/format))
+      (sql/format)))
 
-(defn get-random [{gid :gid}]
-  (-> (core/get-random {:columns [:kind :description :data]
-                        :gid gid})))
+(defn get-random [{:keys [gid]}]
+  (-> {:table table
+       :columns [:kind :description :data]
+       :where [:= :gid gid]}
+      (core/get-random)
+      (sql/format)))
 
-(defn get-random-by-kind [{kind :kind gid :gid}]
-  (-> (core/get-random-where {:columns [:kind :description :data]
-                              :where [:= :kind kind]
-                              :gid gid})
-      sql/format))
+(defn get-random-by-kind [{:keys [kind gid]}]
+  (-> {:table table
+       :columns [:kind :description :data]
+       :where [:and
+               [:= :kind kind]
+               [:= :gid gid]]}
+      (core/get-random)
+      (sql/format)))

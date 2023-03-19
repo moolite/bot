@@ -2,7 +2,7 @@
   (:require [moolite.bot.handlers :as h]
             [moolite.bot.parse :as p]
             [clojure.core.match :refer [match]]
-            [clojure.test :refer :all]))
+            [clojure.test :refer [deftest is]]))
 
 (def sample
   {:date 1595506720,
@@ -23,6 +23,14 @@
 
 (deftest test-api
   (let [res (#'h/telegram-handler {:body-params {:message (assoc sample :text "/link + https://example.com")}})]
+    (is (= (:chat_id res)
+           (get-in sample [:message :chat :id]))
+        "should answer in the same chat")
+    (is (= (get-in res [:body :method])
+           "sendMessage")
+        "should call the 'sendMessage' API"))
+
+  (let [res (#'h/telegram-handler {:body-params {:message (assoc sample :text "")}})]
     (is (= (:chat_id res)
            (get-in sample [:message :chat :id]))
         "should answer in the same chat")

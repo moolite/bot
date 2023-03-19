@@ -1,9 +1,11 @@
 (ns moolite.bot.db.core)
 
-(defn- get-random-mad [{columns :columns table :table gid :gid}]
+(defn- __get-random [{:keys [columns table gid where]}]
   {:select columns :from table
    :where [:and
-           [:= :gid gid]
+           [:and
+            [:= :gid gid]
+            where]
            [:or
             [:= :rowid [[:% [:abs [:random]]
                          {:select [[[:+ [[:max :rowid]] :1]]]
@@ -11,10 +13,10 @@
             [:= :rowid {:select [[[:max :rowid]]]
                         :from table}]]]})
 
-(defn get-random [{columns :columns table :table gid :gid}]
+(defn get-random [{:keys [columns table where]}]
   {:select columns
    :from table
-   :where [:= :gid gid]
+   :where where
    :limit :1
    :offset [:%
             [:abs [:random]]
@@ -22,9 +24,3 @@
              {:select [[:count :*]]
               :from table}
              :1]]})
-
-(defn get-random-where [{where :where columns :columns table :table gid :gid}]
-  (-> {:columns columns
-       :table table
-       :gid gid}
-      (assoc :where [:and [:= :gid gid] where])))

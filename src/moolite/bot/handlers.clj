@@ -8,8 +8,9 @@
             [redelay.core :refer [state stop]]
             [reitit.ring :as ring]
             [reitit.ring.coercion :as coercion]
-            [reitit.ring.middleware.muuntaja :as muuntaja]
-            [taoensso.timbre :as timbre :refer [info debug]]
+            [reitit.ring.middleware.muuntaja :refer [format-middleware]]
+            [reitit.ring.middleware.exception :refer [exception-middleware]]
+            [taoensso.timbre :as timbre :refer [spy info debug]]
             [moolite.bot.parse :refer [parse-message]]
             [moolite.bot.db :as db]
             [moolite.bot.db.stats :as stats]
@@ -33,7 +34,7 @@
     (debug {:body body :message message})
     (if-let [parsed-message (parse-message message)]
       {:status 200
-       :body (act message parsed-message)}
+       :body (spy :debug (act message parsed-message))}
       {:status 200})))
 
 (def stack
@@ -46,9 +47,7 @@
             [@secret {:post telegram-handler
                       :get (fn [_] {:status 200 :body {:results "Ko"}})}]]]]
     {:data {:muuntaja muuntaja-core/instance
-            :middleware [muuntaja/format-middleware
-                         coercion/coerce-exceptions-middleware
-                         coercion/coerce-request-middleware
-                         coercion/coerce-response-middleware]}})
+            :middleware [format-middleware
+                         exception-middleware]}})
 
    (ring/redirect-trailing-slash-handler {:method :strip})))

@@ -4,7 +4,7 @@
 (ns moolite.bot.actions
   (:require [clojure.string :as string]
             [clojure.core.match :refer [match]]
-            [taoensso.timbre :as timbre :refer [info debug]]
+            [taoensso.timbre :as timbre :refer [spy info debug]]
             [moolite.bot.send :as send]
             [moolite.bot.dicer :as dicer]
             [moolite.bot.db :as db]
@@ -13,7 +13,8 @@
             [moolite.bot.db.stats :as stats]
             [moolite.bot.db.links :as links]
             [moolite.bot.db.media :as media]
-            [moolite.bot.db.abraxoides :as abraxoides]))
+            [moolite.bot.db.abraxoides :as abraxoides]
+            [moolite.bot.message :as message]))
 
 (defn register-channel [{{gid :id title :title} :chat}]
   (debug {:fn "register-channel" :gid gid :title title})
@@ -24,20 +25,20 @@
 (defn help [gid]
   (debug {:fn "help" :gid gid})
   (let [callout (->> (callouts/all-keywords {:gid gid})
-                     (db/execute-one!)
-                     (map :name)
+                     (db/execute!)
+                     (map :callout)
                      (map #(str "- " %))
                      (string/join "\n"))]
     (send/text gid callout)))
 
 (defn grumpyness [gid]
-  (debug {:fn "grumpyness" :gid gid})
+  (debug ["grumpyness" gid])
   (let [grumpyness (-> (stats/all {:gid gid})
                        (db/execute-one!))]
     (send/text gid grumpyness)))
 
 (defn link-add [gid url & text]
-  (debug {:fn "link-add" :gid gid})
+  (debug ["link-add" gid])
   (-> (links/insert {:url url
                      :description (or (first text) "")
                      :gid gid})
@@ -45,7 +46,7 @@
   (send/text gid "umme ..."))
 
 (defn link-del [gid url]
-  (debug {:fn "link-del" :gid gid})
+  (debug ["link-del" gid])
   (-> {:url url :gid gid}
       (links/delete-one-by-url)
       (db/execute-one!))
@@ -54,7 +55,7 @@
               [{:url url :text "~~ ## ~~"}]))
 
 (defn link-search [gid text]
-  (debug {:fn "link-search" :gid gid})
+  (debug ["link-search" gid])
   (let [results (-> {:text text :gid gid}
                     (links/search)
                     db/execute!)]
@@ -66,13 +67,13 @@
                   results))))
 
 (defn diceroll [gid text]
-  (debug {:fn "diceroll" :gid gid})
+  (debug ["diceroll" text gid])
   (let [results (->> text
-                     dicer/roll
-                     dicer/as-emoji
+                     (dicer/roll)
+                     (dicer/as-emoji)
                      (string/join ", "))]
     (when results
-      (send/dice gid results))))
+      (send/text gid results))))
 
 (defn ricorda [data parsed-text]
   (debug {:fn "ricorda" :text parsed-text})
@@ -87,7 +88,7 @@
                            :text text
                            :gid gid})
             (db/execute-one!)))
-      (send/text gid "Uh una nuova _russacchiotta_?"))
+      (send/text gid "Uh una nuova __russacchiotta__?"))
 
     ;; videos
     [{:video video :chat {:id gid}}
@@ -98,7 +99,7 @@
                          :text text
                          :gid gid})
           db/execute-one!)
-      (send/text gid "Uh un nuovo _video_!"))
+      (send/text gid "Uh un nuovo __video__\\!"))
 
     ;; Replies using /r foo bar
     [{:reply_to_message message :chat {:id gid}}
@@ -110,23 +111,45 @@
    (debug {:fn "yell-callout" :gid gid :co co})
    (when-let [c (-> (callouts/one-by-callout {:callout co :gid gid})
                     (db/execute-one!))]
-     (send/text gid (string/replace (:text c) "%" text))))
+     (send/text gid (->> text
+                         (string/replace (:text c) "%")
+                         (message/escape)))))
   ([gid co]
    (yell-callout gid co "")))
 
+(defn create-abraxas
+  [gid abraxas kind]
+  (debug {:fn "create-abraxas" :gid gid})
+  (if (or (= kind "photo") (= kind "video"))
+    (let [results (-> (abraxoides/insert {:gid gid :abraxas abraxas :kind kind}))]
+      (-> {:gid gid :abraxas abraxas :kind kind}
+          (abraxoides/insert)
+          (db/execute-one!))
+      (send/text gid "ho imparato una nuova evocazione!"))
+    (send/text gid "non ho potuto evocare l'incantazione richiesta...")))
+
+(defn delete-abraxas
+  [gid abraxas]
+  (debug {:fn "delete-abraxas" :gid gid})
+  (-> {:gid gid :abraxas abraxas}
+      (abraxoides/delete-by-abraxas)
+      (db/execute!))
+  (send/text gid "Ho dimenticato qualcosa!"))
+
 (defn conjure-abraxas
-  [gid abx]
+  [gid abraxas]
   (debug {:fn "conjure-abraxas" :gid gid})
-  (let [results (-> (abraxoides/search abx)
-                    (db/execute-one!))
-        item (-> (media/get-random-by-kind {:kind (:kind results) :gid gid})
-                 (db/execute-one!))]
-    (when item
+  (when-let [results (-> (abraxoides/search {:abraxas abraxas})
+                         (db/execute-one!))]
+    (debug "abraxas?" results)
+    (when-let [item (-> (media/get-random-by-kind {:kind (:kind results) :gid gid})
+                        (db/execute-one!))]
       (condp (:kind item)
-             "photo" (send/photo gid (:media_id item) (:text item))
-             "video" (send/photo gid (:media_id item) (:text item))))))
+             "photo" (send/photo gid (:data item) (:text item))
+             "video" (send/video gid (:data item) (:text item))))))
 
 (defn act [{{gid :id} :chat :as data} parsed-text]
+  (debug ["act" parsed-text])
   (match parsed-text
     [_ [:command] [:abraxas "register"] & _]
     (register-channel data)
@@ -149,8 +172,15 @@
     [_ [:command] [:abraxas (:or "l" "link" "nota")] [:text text]]
     (link-search gid text)
 
-    [_ [:command] [:abraxas (:or "d" "d20" "dice")] [:text text]]
+    [_ [:command] [:abraxas (:or "d" "d20" "dice" "r" "roll")] [:text text]]
     (diceroll gid text)
+
+    [_ [:command] [:abraxas "abraxas"] [:add] [:text text]]
+    (let [[abraxas kind] (string/split text " ")]
+      (create-abraxas gid abraxas kind))
+
+    [_ [:command] [:abraxas "abraxas"] [:del] [:text abraxas]]
+    (delete-abraxas gid abraxas)
 
     [_ [:callout] [:abraxas abx] [:text text]] (yell-callout gid abx text)
     [_ [:callout] [:abraxas abx]]              (yell-callout gid abx)

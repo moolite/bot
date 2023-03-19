@@ -8,24 +8,30 @@
 
 (def die-lang
   (insta/parser
-   "die    : throws <'d'> dice (<'k'> keep)?
+   "die    : throws? <'d'> dice (<'k'> keep)?
     throws : #'[0-9]+'
     dice   : #'[0-9]+'
     keep   : #'[0-9]+'
     "))
 
 (defn parse-die [str]
-  (insta/transform
-   {:throws edn/read-string
-    :dice edn/read-string
-    :keep edn/read-string}
-   (die-lang str)))
+  (insta/transform {:throws edn/read-string
+                    :dice edn/read-string
+                    :keep edn/read-string}
+                   (die-lang str)))
 
 (defn roll
   [raw]
   (let [[_ throws dice keep] (parse-die raw)
-        results (map (fn [_] (+ (inc (rand-int  dice))))
-                     (range throws))]
+        results (cond
+                  (and (some? throws)
+                       (not dice))
+                  [(inc (rand-int throws))]
+
+                  (and (some? throws)
+                       (some? dice))
+                  (map (fn [_] (+ (inc (rand-int dice))))
+                       (range throws)))]
     (if (some? keep)
       (->> (sort > results)
            (take keep)
@@ -41,4 +47,7 @@
   (roll "2d20") ;; => 12
   (roll "4d6k2") ;; => (6 4)
   (roll "1d20") ;; => 6
-  (roll "8d10k6")) ;; => (10 9 7 4 3 2)
+  (roll "8d10k6") ;; => (10 9 7 4 3 2)
+
+  (parse-die "d20")
+  (parse-die "2d20"))
