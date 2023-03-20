@@ -179,7 +179,7 @@
     (diceroll gid text)
 
     [_ [:command] [:abraxas "abraxas"] [:add] [:text text]]
-    (let [[abraxas kind] (string/split text " ")]
+    (let [[abraxas kind] (string/split text #" ")]
       (create-abraxas gid abraxas kind))
 
     [_ [:command] [:abraxas "abraxas"] [:del] [:text abraxas]]
