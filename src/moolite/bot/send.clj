@@ -64,6 +64,13 @@
                :video video
                :caption caption}))
 
+(defn animation [chat-id animation caption]
+  (debug ["video" chat-id video])
+  (as-message {:method "sendVideo"
+               :chat_id chat-id
+               :animation animation
+               :caption caption}))
+
 (defn text [chat-id message_text]
   (debug ["text" chat-id message_text])
   (as-message {:method "sendMessage"

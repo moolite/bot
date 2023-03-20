@@ -102,13 +102,24 @@
           db/execute-one!)
       (send/text gid "Uh un nuovo __video__\\!"))
 
+    ;; animations (short videos/gifs)
+    [{:animation animation :chat {:id gid}}
+     [_ _ _ [:text text]]]
+    (do
+      (-> (media/insert {:data (:file_id animation)
+                         :kind "animation"
+                         :description text
+                         :gid gid})
+          db/execute-one!)
+      (send/text gid "Uh un nuovo __video__\\!"))
+
     ;; Replies using /r foo bar
     [{:reply_to_message message :chat {:id gid}}
      [_ _ _ [:text text]]]
     (ricorda message parsed-text)
 
     :else
-    (send/text (get-in data [:chat :id]) "non ho capito ...")))
+    (send/text (get-in data [:chat :id]) (message/escape "non ho capito ..."))))
 
 (defn yell-callout
   ([gid co text]
@@ -150,8 +161,9 @@
                         (db/execute-one!))]
       (debug "item" item)
       (condp = (:kind item)
-        "photo" (send/photo gid (:data item) (message/escape (:description item)))
-        "video" (send/video gid (:data item) (message/escape (:description item)))))))
+        "photo"     (send/photo gid (:data item) (message/escape (:description item)))
+        "video"     (send/video gid (:data item) (message/escape (:description item)))
+        "animation" (send/animation gid (:data item) (message/escape (:description item)))))))
 
 (defn list-abraxas
   [gid]
