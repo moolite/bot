@@ -16,8 +16,8 @@
 
 (defn insert [{:keys [data kind description gid]}]
   (-> {:insert-into table
-       :columns [:gid :kind :data]
-       :values [[gid kind data]]}
+       :columns [:gid :data :kind :description]
+       :values [[gid data kind description]]}
       (sql/format)))
 
 (defn delete-one-by-id [{:keys [id gid]}]
