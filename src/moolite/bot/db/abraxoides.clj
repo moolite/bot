@@ -35,7 +35,8 @@
 (defn one-by-abraxas [abraxas]
   (-> {:select [:abraxas]
        :from table
-       :where [:= :abraxas abraxas]}
+       :where [:= :abraxas abraxas]
+       :limit :1}
       (sql/format)))
 
 (defn all-keywords [{:keys [gid]}]

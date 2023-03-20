@@ -152,6 +152,17 @@
         "photo" (send/photo gid (:data item) (:text item))
         "video" (send/video gid (:data item) (:text item))))))
 
+(defn list-abraxas
+  [gid]
+  (let [list (->> {:gid gid}
+                  (abraxoides/all-keywords)
+                  (db/execute!)
+                  (map :abraxas)
+                  (map #(str "- " %))
+                  (string/join "\n"))]
+    (send/text gid (str "Lista di parole:\n"
+                        list))))
+
 (defn act [{{gid :id} :chat :as data} parsed-text]
   (debug ["act" parsed-text])
   (match parsed-text
@@ -185,6 +196,9 @@
 
     [_ [:command] [:abraxas "abraxas"] [:del] [:text abraxas]]
     (delete-abraxas gid abraxas)
+
+    [_ [:command] [:abraxas "abraxas"]]
+    (list-abraxas gid)
 
     [_ [:callout] [:abraxas abx] [:text text]] (yell-callout gid abx text)
     [_ [:callout] [:abraxas abx]]              (yell-callout gid abx)
