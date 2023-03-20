@@ -80,7 +80,7 @@
   (match [data parsed-text]
     ;; photos
     [{:photo photo-sizes :chat {:id gid}}
-     [_ [:text text]]]
+     [_ _ _ [:text text]]]
     (do
       (doseq [item photo-sizes]
         (-> (media/insert {:file-id (:file_id item)
@@ -92,7 +92,7 @@
 
     ;; videos
     [{:video video :chat {:id gid}}
-     [_ [:text text]]]
+     [_ _ _ [:text text]]]
     (do
       (-> (media/insert {:file-id (:file_id video)
                          :type "video"
@@ -103,7 +103,7 @@
 
     ;; Replies using /r foo bar
     [{:reply_to_message message :chat {:id gid}}
-     [_ [:text text]]]
+     [_ _ _ [:text text]]]
     (ricorda message parsed-text)
 
     :else
