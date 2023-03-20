@@ -54,7 +54,8 @@
   (debug ["photo" chat-id photo])
   (as-message {:method "sendPhoto"
                :chat_id chat-id
-               :text text}))
+               :photo photo
+               :caption text}))
 
 (defn video [chat-id video caption]
   (debug ["video" chat-id video])

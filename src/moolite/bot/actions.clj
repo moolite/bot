@@ -150,8 +150,8 @@
                         (db/execute-one!))]
       (debug "item" item)
       (condp = (:kind item)
-        "photo" (send/photo gid (:data item) (:text item))
-        "video" (send/video gid (:data item) (:text item))))))
+        "photo" (send/photo gid (:data item) (:description item))
+        "video" (send/video gid (:data item) (:description item))))))
 
 (defn list-abraxas
   [gid]
