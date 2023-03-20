@@ -27,8 +27,8 @@
     (http/post (str telegram-api "/"  method)
                {:headers {"Content-Type" "application/json"}
                 :body (as-json payload)}
-               (fn [{:keys [error]} :as resp]
-                 (when error (timbre/error error))
+               (fn [resp]
+                 (when-let [err (:error resp)] (timbre/error err))
                  (when fun (fun resp))))))
 
 (def webhook (state :start
