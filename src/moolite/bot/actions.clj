@@ -104,7 +104,10 @@
     ;; Replies using /r foo bar
     [{:reply_to_message message :chat {:id gid}}
      [_ [:text text]]]
-    (ricorda message parsed-text)))
+    (ricorda message parsed-text)
+
+    :else
+    (send/text (get-in data [:chat :id]) "non ho capito ...")))
 
 (defn yell-callout
   ([gid co text]
