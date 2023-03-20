@@ -9,7 +9,7 @@
   (insta/parser
    "
     message   : space* (command|callout)? abraxas (space rest)?
-    <rest>    : subcmd space+ url | subcmd space+ url space+ text | url space+ text | url | text
+    <rest>    : subcmd space+ url | subcmd space+ url space+ text | url space+ text | url | subcmd space+ text | text
     <subcmd>  : del|add
     <space>   : <' '>
     command   : <'/'>
