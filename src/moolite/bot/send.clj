@@ -11,6 +11,9 @@
 (def token (:telegram-token env))
 (def telegram-api (str "https://api.telegram.org/bot" token))
 (def force-telegram-api (:telegram-api env))
+(def webhook-url (str (:webhook env)
+                      "/t/"
+                      (:webhook-secret env)))
 
 (defn- as-json
   [data]
@@ -28,6 +31,7 @@
 
 (def webhook (state :start
                     (api {:method "setWebhook"
+                          :url webhook-url
                           :max_connections 100
                           :allowed_updates ["message" "callback_query"]})
                     :stop
