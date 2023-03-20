@@ -14,7 +14,7 @@
                        [:references :groups]]]}
       (sql/format)))
 
-(defn insert [{:keys [data kind gid]}]
+(defn insert [{:keys [data kind description gid]}]
   (-> {:insert-into table
        :columns [:gid :kind :data]
        :values [[gid kind data]]}

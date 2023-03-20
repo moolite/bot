@@ -83,9 +83,9 @@
      [_ _ _ [:text text]]]
     (do
       (doseq [item photo-sizes]
-        (-> (media/insert {:file-id (:file_id item)
-                           :type "photo"
-                           :text text
+        (-> (media/insert {:data (:file_id item)
+                           :kind "photo"
+                           :description text
                            :gid gid})
             (db/execute-one!)))
       (send/text gid "Uh una nuova __russacchiotta__?"))
@@ -94,9 +94,9 @@
     [{:video video :chat {:id gid}}
      [_ _ _ [:text text]]]
     (do
-      (-> (media/insert {:file-id (:file_id video)
-                         :type "video"
-                         :text text
+      (-> (media/insert {:data (:file_id video)
+                         :kind "video"
+                         :description text
                          :gid gid})
           db/execute-one!)
       (send/text gid "Uh un nuovo __video__\\!"))
