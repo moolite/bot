@@ -194,10 +194,12 @@
 
     [_ [:command] [:abraxas "abraxas"] [:add] [:text text]]
     (let [[abraxas kind] (string/split text #" ")]
-      (create-abraxas gid abraxas kind))
+      (create-abraxas gid
+                      (string/lower-case abraxas)
+                      (string/lower-case kind)))
 
     [_ [:command] [:abraxas "abraxas"] [:del] [:text abraxas]]
-    (delete-abraxas gid abraxas)
+    (delete-abraxas gid (string/lower-case abraxas))
 
     [_ [:command] [:abraxas "abraxas"]]
     (list-abraxas gid)
@@ -205,7 +207,10 @@
     [_ [:callout] [:abraxas abx] [:text text]] (yell-callout gid abx text)
     [_ [:callout] [:abraxas abx]]              (yell-callout gid abx)
 
-    [_ [:abraxas abx] & _] (conjure-abraxas gid abx)
+    [_ [:abraxas abraxas] & _]
+    (when-let [abraxas (and (> (.length abraxas) 3)
+                            (string/lower-case abraxas))]
+      (conjure-abraxas gid abraxas))
 
     :else (do (debug "act -> no match")
               nil)))
