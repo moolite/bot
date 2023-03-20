@@ -43,7 +43,7 @@
       (println "importing photo " p)
       (-> (media/insert {:data [(:photo p)]
                          :kind "photo"
-                         :text (:caption p)
+                         :description (:caption p)
                          :gid gid})
           (db/execute!)
           (println))))
