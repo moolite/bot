@@ -28,6 +28,7 @@
                      (db/execute!)
                      (map :callout)
                      (map #(str "- " %))
+                     (map message/escape)
                      (string/join "\n"))]
     (send/text gid callout)))
 
@@ -137,7 +138,7 @@
   (-> {:gid gid :abraxas abraxas}
       (abraxoides/delete-by-abraxas)
       (db/execute!))
-  (send/text gid "Ho dimenticato qualcosa!"))
+  (send/text gid (message/escape "Ho dimenticato qualcosa!")))
 
 (defn conjure-abraxas
   [gid abraxas]
@@ -159,6 +160,7 @@
                   (db/execute!)
                   (map :abraxas)
                   (map #(str "- " %))
+                  (map message/escape)
                   (string/join "\n"))]
     (send/text gid (str "Lista di parole:\n"
                         list))))
