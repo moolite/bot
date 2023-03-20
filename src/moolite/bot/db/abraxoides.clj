@@ -54,7 +54,7 @@
 (defn search [{:keys [abraxas]}]
   (-> {:select [:abraxas :kind]
        :from table
-       :where [:like :abraxas (str "%" abraxas "%")]}
+       :where [:= :abraxas abraxas]}
       (sql/format)))
 
 (defn search-prefix [{:keys [abraxas]}]
