@@ -76,7 +76,7 @@
       (send/text gid results))))
 
 (defn ricorda [data parsed-text]
-  (debug {:fn "ricorda" :text parsed-text})
+  (debug ["ricorda" parsed-text])
   (match [data parsed-text]
     ;; photos
     [{:photo photo-sizes :chat {:id gid}}
@@ -108,7 +108,7 @@
 
 (defn yell-callout
   ([gid co text]
-   (debug {:fn "yell-callout" :gid gid :co co})
+   (debug ["yell-callout" gid co])
    (when-let [c (-> (callouts/one-by-callout {:callout co :gid gid})
                     (db/execute-one!))]
      (send/text gid (->> text
@@ -119,7 +119,7 @@
 
 (defn create-abraxas
   [gid abraxas kind]
-  (debug {:fn "create-abraxas" :gid gid})
+  (debug ["create-abraxas" gid])
   (if (or (= kind "photo") (= kind "video"))
     (let [results (-> (abraxoides/insert {:gid gid :abraxas abraxas :kind kind}))]
       (-> {:gid gid :abraxas abraxas :kind kind}
@@ -138,7 +138,7 @@
 
 (defn conjure-abraxas
   [gid abraxas]
-  (debug {:fn "conjure-abraxas" :gid gid})
+  (debug ["conjure-abraxas" gid])
   (when-let [results (-> (abraxoides/search {:abraxas abraxas})
                          (db/execute-one!))]
     (debug "abraxas?" results)

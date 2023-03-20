@@ -21,22 +21,28 @@
        (encode "application/json")
        (slurp)))
 
-(defn api [opts]
+(defn api [opts & fun]
   (let [{:keys [method]} opts
         payload (dissoc opts :method)]
     (http/post (str telegram-api "/"  method)
                {:headers {"Content-Type" "application/json"}
                 :body (as-json payload)}
-               (fn [resp] (debug resp)))))
+               (fn [{:keys [error]} :as resp]
+                 (when error (timbre/error error))
+                 (when fun (fun resp))))))
 
 (def webhook (state :start
-                    (api {:method "setWebhook"
-                          :url webhook-url
-                          :max_connections 100
-                          :allowed_updates ["message" "callback_query"]})
+                    (when (:webhook-register env)
+                      (api {:method "setWebhook"
+                            :url webhook-url
+                            :max_connections 100
+                            :allowed_updates ["message" "callback_query"]}
+                           (fn [{:keys [error]}]
+                             (println "registered webhook" webhook-url))))
                     :stop
-                    (api {:method "deleteWebhook"
-                          :drop_pending_updates true})))
+                    (when (:webhook-register env)
+                      (api {:method "deleteWebhook"
+                            :drop_pending_updates true}))))
 
 (defn- as-message [data]
   (let [data (assoc data :parse_mode "MarkdownV2")]
