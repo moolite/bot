@@ -147,9 +147,10 @@
     (debug "abraxas?" results)
     (when-let [item (-> (media/get-random-by-kind {:kind (:kind results) :gid gid})
                         (db/execute-one!))]
-      (condp (:kind item)
-             "photo" (send/photo gid (:data item) (:text item))
-             "video" (send/video gid (:data item) (:text item))))))
+      (debug "item" item)
+      (condp = (:kind item)
+        "photo" (send/photo gid (:data item) (:text item))
+        "video" (send/video gid (:data item) (:text item))))))
 
 (defn act [{{gid :id} :chat :as data} parsed-text]
   (debug ["act" parsed-text])
