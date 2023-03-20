@@ -21,6 +21,6 @@
    :offset [:%
             [:abs [:random]]
             [:max
-             {:select [[:count :*]]
+             {:select :%count.*
               :from table}
              :1]]})
