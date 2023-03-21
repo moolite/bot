@@ -22,8 +22,9 @@
     "))
 
 (defn parse-message
-  [{:keys [text]}]
-  (let [results (insta/parse text-lang text :optimize :memory)]
+  [{:keys [text caption]}]
+  (let [results (insta/parse text-lang (or text caption)
+                             :optimize :memory)]
     (if (insta/failure? results)
       []
       results)))

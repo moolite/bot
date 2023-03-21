@@ -29,8 +29,7 @@
 
 (defn telegram-handler [r]
   (let [body (:body-params r)
-        message (merge {:text ""} ; text can be nil!!!
-                       (:message body))]
+        message (:message body)]
     (debug {:body body :message message})
     (if-let [parsed-message (parse-message message)]
       {:status 200
