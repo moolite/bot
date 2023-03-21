@@ -92,7 +92,7 @@
   (let [[callout & r] (string/split text #" ")]
     (-> {:callout callout
          :gid gid
-         :text (string/join text " ")}
+         :text (string/join " " text)}
         (callouts/insert)
         (db/execute!))
     (send/text gid "ho imparato __qualcosa__")))
