@@ -31,7 +31,9 @@
   (let [body (:body-params r)
         message (:message body)]
     (debug {:body body :message message})
-    (if-let [parsed-message (parse-message message)]
+    (if-let [parsed-message (parse-message (or (:text message)
+                                               (:caption message)
+                                               ""))]
       {:status 200
        :body (spy :debug (act message parsed-message))}
       {:status 200})))
