@@ -76,51 +76,6 @@
     (when results
       (send/text gid results))))
 
-(defn ricorda [data parsed-text]
-  (debug ["ricorda" parsed-text])
-  (match [data parsed-text]
-    ;; photos
-    [{:photo photo-sizes :chat {:id gid}}
-     [_ _ _ [:text text]]]
-    (do
-      (doseq [item photo-sizes]
-        (-> (media/insert {:data (:file_id item)
-                           :kind "photo"
-                           :description text
-                           :gid gid})
-            (db/execute-one!)))
-      (send/text gid "Uh una nuova __russacchiotta__?"))
-
-    ;; videos
-    [{:video video :chat {:id gid}}
-     [_ _ _ [:text text]]]
-    (do
-      (-> (media/insert {:data (:file_id video)
-                         :kind "video"
-                         :description text
-                         :gid gid})
-          db/execute-one!)
-      (send/text gid "Uh un nuovo __video__\\!"))
-
-    ;; animations (short videos/gifs)
-    [{:animation animation :chat {:id gid}}
-     [_ _ _ [:text text]]]
-    (do
-      (-> (media/insert {:data (:file_id animation)
-                         :kind "animation"
-                         :description text
-                         :gid gid})
-          db/execute-one!)
-      (send/text gid "Uh un nuovo __video__\\!"))
-
-    ;; Replies using /r foo bar
-    [{:reply_to_message message :chat {:id gid}}
-     [_ _ _ [:text text]]]
-    (ricorda message parsed-text)
-
-    :else
-    (send/text (get-in data [:chat :id]) (message/escape "non ho capito ..."))))
-
 (defn yell-callout
   ([gid co text]
    (debug ["yell-callout" gid co])
@@ -131,6 +86,16 @@
                          (message/escape)))))
   ([gid co]
    (yell-callout gid co "")))
+
+(defn ricorda-callout
+  [gid text]
+  (let [[callout & r] (string/split text #" ")]
+    (-> {:callout callout
+         :gid gid
+         :text (string/join text " ")}
+        (callouts/insert)
+        (db/execute!))
+    (send/text gid "ho imparato __qualcosa__")))
 
 (defn create-abraxas
   [gid abraxas kind]
@@ -176,6 +141,55 @@
                   (string/join "\n"))]
     (send/text gid (str "Lista di parole:\n"
                         list))))
+
+(defn ricorda [data parsed-text]
+  (debug ["ricorda" parsed-text])
+  (match [data parsed-text]
+    ;; photos
+    [{:photo photo-sizes :chat {:id gid}}
+     [_ _ _ [:text text]]]
+    (do
+      (doseq [item photo-sizes]
+        (-> (media/insert {:data (:file_id item)
+                           :kind "photo"
+                           :description text
+                           :gid gid})
+            (db/execute-one!)))
+      (send/text gid "Uh una nuova __russacchiotta__?"))
+
+    ;; videos
+    [{:video video :chat {:id gid}}
+     [_ _ _ [:text text]]]
+    (do
+      (-> (media/insert {:data (:file_id video)
+                         :kind "video"
+                         :description text
+                         :gid gid})
+          db/execute-one!)
+      (send/text gid "Uh un nuovo __video__\\!"))
+
+    ;; animations (short videos/gifs)
+    [{:animation animation :chat {:id gid}}
+     [_ _ _ [:text text]]]
+    (do
+      (-> (media/insert {:data (:file_id animation)
+                         :kind "animation"
+                         :description text
+                         :gid gid})
+          db/execute-one!)
+      (send/text gid "Uh un nuovo __video__\\!"))
+
+    ;; Replies using /r foo bar
+    [{:reply_to_message message :chat {:id gid}}
+     [_ _ _ [:text text]]]
+    (ricorda message parsed-text)
+
+    [{:text _ :chat {:id gid}}
+     [_ _ _ [:text text]]]
+    (ricorda-callout gid text)
+
+    :else
+    (send/text (get-in data [:chat :id]) (message/escape "non ho capito ..."))))
 
 (defn act [{{gid :id} :chat :as data} parsed-text]
   (debug ["act" parsed-text])

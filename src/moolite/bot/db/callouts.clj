@@ -14,7 +14,7 @@
                        [:references :groups]]]}
       (sql/format)))
 
-(defn insert [{callout :callout text :text gid :gid}]
+(defn insert [{:keys [callout text gid]}]
   (-> {:insert-into table
        :columns [:gid :callout :text]
        :values [[gid callout text]]
