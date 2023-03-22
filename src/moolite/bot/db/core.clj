@@ -22,5 +22,6 @@
             [:abs [:random]]
             [:max
              {:select :%count.*
-              :from table}
+              :from table
+              :where where}
              :1]]})
