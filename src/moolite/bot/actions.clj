@@ -142,6 +142,14 @@
     (send/text gid (str "Lista di parole:\n"
                         list))))
 
+(defn send-item [kind gid]
+  (when-let [item (-> (media/get-random-by-kind {:kind kind :gid gid})
+                      (db/execute-one!))]
+    (condp = kind
+      "photo"     (send/photo gid (:data item) (message/escape (:description item)))
+      "video"     (send/video gid (:data item) (message/escape (:description item)))
+      "animation" (send/animation gid (:data item) (message/escape (:description item))))))
+
 (defn ricorda [data parsed-text]
   (debug ["ricorda" parsed-text])
   (match [data parsed-text]
@@ -229,6 +237,15 @@
 
     [_ [:command] [:abraxas "abraxas"]]
     (list-abraxas gid)
+
+    [_ [:command] [:abraxas "video"] & _]
+    (send-item "video" gid)
+
+    [_ [:command] [:abraxas (:or "animation" "ani" "clip")] & _]
+    (send-item "animation" gid)
+
+    [_ [:command] [:abraxas (:or "photo" "foto")] & _]
+    (send-item "photo" gid)
 
     [_ [:callout] [:abraxas abx] [:text text]] (yell-callout gid abx text)
     [_ [:callout] [:abraxas abx]]              (yell-callout gid abx)
