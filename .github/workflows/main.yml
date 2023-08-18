@@ -16,32 +16,31 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: checkout
         uses: actions/checkout@v3
 
-      - name: Log in to oci registry
-        id: login-to-registry
-        uses: redhat-actions/podman-login@v1
+      - name: prepare java
+        uses: actions/setup-java@v3
         with:
-          registry: registry.frenz.click
-          username: ${{ secrets.FRENZ_USERNAME }}
-          password: ${{ secrets.FRENZ_TOKEN }}
+          distribution: 'temurin'
+          java-version: 17
 
-      - name: Buildah Image
-        id: build-image
-        uses: redhat-actions/buildah-build@v2
+      - name: prepare clojure
+        uses: DeLaGuardo/setup-clojure@9.5
         with:
-          image: registry.frenz.click/moolite/bot
-          tags: latest ${{ github.sha }}
-          containerfiles: |
-            ./Containerfile
+          cli: '1.11.1'
 
-      - name: Push
-        id: push-to-registry
-        uses: redhat-actions/push-to-registry@v2
+      - name: build uberjar
+        run: |
+          clj -X:build uber
+
+          mkdir -p /tmp/release
+          cp bot.jar /tmp/release/bot.jar
+
+      - name: upload artifacts
+        uses: actions/upload-artifact@v2
         with:
-          image: ${{ steps.build-image.outputs.image }}
-          tags: ${{ steps.build-image.outputs.tags }}
-          registry: registry.frenz.click
-          username: ${{ secrets.FRENZ_USERNAME }}
-          password: ${{ secrets.FRENZ_TOKEN }}
+          name: release
+          path: /tmp/release/bot.jar
+          if-no-files-found: error
+
