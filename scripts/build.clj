@@ -2,7 +2,8 @@
   (:require [clojure.tools.build.api :as b]))
 
 (def lib 'moolite/bot)
-(def version (format "0.2.%s" (b/git-count-revs nil)))
+(def version (format "0.2.%s" (or (System/getenv "GIT_REVISION_COUNT")
+                                  (b/git-count-revs nil))))
 (def class-dir "target/classes")
 (def basis (b/create-basis {:project "deps.edn"}))
 (def jar-file (format "target/%s-%s.jar" (name lib) version))
@@ -21,6 +22,12 @@
                :target-dir class-dir})
   (b/jar {:class-dir class-dir
           :jar-file jar-file}))
+
+(defn get-version [_]
+  (println (format "v%s" version)))
+
+(defn uber-target [_]
+  (println uber-file))
 
 (defn uber [_]
   (b/copy-dir {:src-dirs ["src" "resources"]
