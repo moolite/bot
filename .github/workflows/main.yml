@@ -5,8 +5,8 @@ on:
   push:
     branches:
       - "github-action"
-    tags:
-      - "v*.*.*"
+      - "master"
+      - "main"
 
 jobs:
   build:
