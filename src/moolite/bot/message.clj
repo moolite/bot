@@ -5,4 +5,6 @@
 (def reserved-rex #"([_\*\[\]\(\)\~\`\>\#\+\-\=\|\{\}\.\!])")
 
 (defn escape [s]
-  (string/replace s reserved-rex #(str "\\" (first %1))))
+  (if s
+    (string/replace s reserved-rex #(str "\\" (first %1)))
+    ""))

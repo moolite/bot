@@ -13,7 +13,7 @@
             [moolite.bot.db :as db]))
 
 (def logging (state :start
-                    (timbre/set-min-level! (or (:log-level env) :info))))
+                    (timbre/set-min-level! (or (keyword (:log-level env)) :info))))
 
 (def server (state :start
                    (-> stack

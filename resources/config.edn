@@ -3,4 +3,4 @@
  :telegram-token "sample:token123"
  :database-file  "bot.sqlite"
  :port           10000
- :log-level      1}
+ :log-level      :info}

@@ -18,3 +18,5 @@ db.edn
 /.lsp/
 /.clj-kondo/
 /*.sqlite
+/result
+/.direnv/
