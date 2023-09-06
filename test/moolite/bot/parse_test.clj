@@ -29,6 +29,11 @@
   (match (#'p/text-lang "/d20 4d6k2")
     [_ [:command] [:abraxas "d20"] [:text text]]
     (is text "4d6k2")
+    :else (is false))
+
+  (match (#'p/text-lang "/d20@marrano-bot 4d6k2")
+    [_ [:command] [:abraxas "d20"] [:text text]]
+    (is text "4d6k2")
     :else (is false)))
 
 (deftest test-parse-message

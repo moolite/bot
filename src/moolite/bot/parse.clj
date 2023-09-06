@@ -2,8 +2,7 @@
 ;; License, v. 2.0. If a copy of the MPL was not distributed with this
 ;; file, You can obtain one at http://mozilla.org/MPL/2.0/.
 (ns moolite.bot.parse
-  (:require [instaparse.core :as insta]
-            [taoensso.timbre :as timbre :refer [info debug]]))
+  (:require [instaparse.core :as insta]))
 
 (def text-lang
   (insta/parser
@@ -14,7 +13,7 @@
     <space>   : <' '>
     command   : <'/'>
     callout   : <'!'>
-    abraxas   : #'[-a-zA-Z0-9]+'
+    abraxas   : #'[-a-zA-Z0-9]+' <('@' #'[a-zA-Z0-9-]+')?>
     del       : <'rm'|'rem'|'del'|'rimuovi'|'cancella'|'dd'|'-'>
     add       : <'add'|'aggiungi'|'nuovo'|'crea'|'new'|'+'>
     url       : #'https?://[^ ]+'
@@ -28,3 +27,6 @@
     (if (insta/failure? results)
       []
       results)))
+
+(comment
+  (insta/parse text-lang "/cmd@marrano-bot fooo bar"));; => [:message [:command] [:abraxas "cmd"] [:text "fooo bar"]]
