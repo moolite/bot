@@ -6,29 +6,26 @@
             [next.jdbc.result-set :as result-set]
             [redelay.core :refer [state]]
             [config.core :refer [env]]
-            [taoensso.timbre :as log :refer [info debug]]
-            [moolite.bot.db.groups :as groups]
-            [moolite.bot.db.callouts :as callouts]
-            [moolite.bot.db.stats :as stats]))
+            [taoensso.timbre :as log]))
 
 (def db
   (state :start
          (let [db-file (or (:database-file env)
                            "bot.sqlite")]
-           (info "using db file " db-file)
+           (log/info "using db file " db-file)
            (-> {:connection-uri (str "jdbc:sqlite:" db-file)}
                (jdbc/get-datasource)
                (jdbc/with-options {:builder-fn result-set/as-unqualified-lower-maps})))
          :stop))
 
 (defn execute! [query]
-  (debug query)
+  (log/debug query)
   (try
     (jdbc/execute! @db query {:return-keys true})
-    (catch Exception e (log/error "Error performing execute!" query))))
+    (catch Exception e (log/error "Error performing execute!" query (.getMessage e)))))
 
 (defn execute-one! [query]
-  (debug query)
+  (log/debug query)
   (try
     (jdbc/execute-one! @db query {:return-keys true})
-    (catch Exception e (log/error "Error performing execute-one!" query))))
+    (catch Exception e (log/error "Error performing execute-one!" query (.getMessage e)))))

@@ -4,7 +4,7 @@
 (ns moolite.bot.actions
   (:require [clojure.string :as string]
             [clojure.core.match :refer [match]]
-            [taoensso.timbre :as timbre :refer [spy info debug]]
+            [taoensso.timbre :as log]
             [moolite.bot.send :as send]
             [moolite.bot.dicer :as dicer]
             [moolite.bot.db :as db]
@@ -17,13 +17,13 @@
             [moolite.bot.message :as message]))
 
 (defn register-channel [{{gid :id title :title} :chat}]
-  (debug {:fn "register-channel" :gid gid :title title})
+  (log/debug {:fn "register-channel" :gid gid :title title})
   (let [chan (-> (groups/insert {:gid gid :title title})
                  (db/execute-one!))]
     (send/text gid (printf "channel registered with id %d and title '%s'" (:gid chan) (:title chan)))))
 
 (defn help [gid]
-  (debug {:fn "help" :gid gid})
+  (log/debug {:fn "help" :gid gid})
   (let [callout (->> (callouts/all-keywords {:gid gid})
                      (db/execute!)
                      (map :callout)
@@ -33,13 +33,13 @@
     (send/text gid callout)))
 
 (defn grumpyness [gid]
-  (debug ["grumpyness" gid])
+  (log/debug ["grumpyness" gid])
   (let [grumpyness (-> (stats/all {:gid gid})
                        (db/execute-one!))]
     (send/text gid grumpyness)))
 
 (defn link-add [gid url & text]
-  (debug ["link-add" gid])
+  (log/debug ["link-add" gid])
   (-> (links/insert {:url url
                      :description (or (first text) "")
                      :gid gid})
@@ -47,7 +47,7 @@
   (send/text gid "umme ..."))
 
 (defn link-del [gid url]
-  (debug ["link-del" gid])
+  (log/debug ["link-del" gid])
   (-> {:url url :gid gid}
       (links/delete-one-by-url)
       (db/execute-one!))
@@ -56,7 +56,7 @@
               [{:url url :text "~~ ## ~~"}]))
 
 (defn link-search [gid text]
-  (debug ["link-search" gid])
+  (log/debug ["link-search" gid])
   (let [results (-> {:text text :gid gid}
                     (links/search)
                     db/execute!)]
@@ -68,7 +68,7 @@
                   results))))
 
 (defn diceroll [gid text]
-  (debug ["diceroll" text gid])
+  (log/debug ["diceroll" text gid])
   (let [results (->> text
                      (dicer/roll)
                      (dicer/as-emoji)
@@ -78,7 +78,7 @@
 
 (defn yell-callout
   ([gid co text]
-   (debug ["yell-callout" gid co])
+   (log/debug ["yell-callout" gid co])
    (when-let [c (-> (callouts/one-by-callout {:callout co :gid gid})
                     (db/execute-one!))]
      (send/text gid (->> text
@@ -99,7 +99,7 @@
 
 (defn create-abraxas
   [gid abraxas kind]
-  (debug ["create-abraxas" gid])
+  (log/debug ["create-abraxas" gid])
   (if (or (= kind "photo") (= kind "video"))
     (let [results (-> (abraxoides/insert {:gid gid :abraxas abraxas :kind kind}))]
       (-> {:gid gid :abraxas abraxas :kind kind}
@@ -110,7 +110,7 @@
 
 (defn delete-abraxas
   [gid abraxas]
-  (debug {:fn "delete-abraxas" :gid gid})
+  (log/debug {:fn "delete-abraxas" :gid gid})
   (-> {:gid gid :abraxas abraxas}
       (abraxoides/delete-by-abraxas)
       (db/execute!))
@@ -118,13 +118,13 @@
 
 (defn conjure-abraxas
   [gid abraxas]
-  (debug ["conjure-abraxas" gid])
+  (log/debug ["conjure-abraxas" gid])
   (when-let [results (-> (abraxoides/search {:abraxas abraxas})
                          (db/execute-one!))]
-    (debug "abraxas?" results)
+    (log/debug "abraxas?" results)
     (when-let [item (-> (media/get-random-by-kind {:kind (:kind results) :gid gid})
                         (db/execute-one!))]
-      (debug "item" item)
+      (log/debug "item" item)
       (condp = (:kind item)
         "photo"     (send/photo gid (:data item) (message/escape (:description item)))
         "video"     (send/video gid (:data item) (message/escape (:description item)))
@@ -151,7 +151,7 @@
       "animation" (send/animation gid (:data item) (message/escape (:description item))))))
 
 (defn ricorda [data parsed-text]
-  (debug ["ricorda" parsed-text])
+  (log/debug ["ricorda" parsed-text])
   (match [data parsed-text]
     ;; photos
     [{:photo photo-sizes :chat {:id gid}}
@@ -200,7 +200,7 @@
     (send/text (get-in data [:chat :id]) (message/escape "non ho capito ..."))))
 
 (defn act [{{gid :id} :chat :as data} parsed-text]
-  (debug ["act" parsed-text])
+  (log/debug ["act" parsed-text])
   (match parsed-text
     [_ [:command] [:abraxas "register"] & _]
     (register-channel data)
@@ -255,5 +255,5 @@
                             (string/lower-case abraxas))]
       (conjure-abraxas gid abraxas))
 
-    :else (do (debug "act -> no match")
+    :else (do (log/debug "act -> no match")
               nil)))
