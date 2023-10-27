@@ -3,17 +3,23 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    devshell.url = "github:numtide/devshell";
     flake-utils.url = "github:numtide/flake-utils";
+
     clj-nix = {
       url = "github:jlesquembre/clj-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
-  outputs = { self, nixpkgs, flake-utils, clj-nix }:
-    flake-utils.lib.eachDefaultSystem
-      (system:
+  outputs = { self, devshell, nixpkgs, flake-utils, clj-nix }:
+    flake-utils.lib.eachDefaultSystem (system:
         let
-          pkgs = nixpkgs.legacyPackages.${system};
+          pkgs = import nixpkgs {
+            inherit system;
+            overlays = [ devshell.overlays.default ];
+            config.allowUnfree = true;
+          };
+
           cljpkgs = clj-nix.packages."${system}";
         in
         {
@@ -187,14 +193,16 @@
             };
           nixosModules.default = self.nixosModules."${system}".marrano-bot;
 
-          devShells.default = pkgs.mkShell {
-            packages = with pkgs;[
-              sqlite
-              clojure
-              git
-              unzip
-            ];
-          };
+    devShells.default = pkgs.devshell.mkShell {
+      commands = [
+        { package = pkgs.clojure; }
+        { package = pkgs.clojure-lsp; }
+        { package = pkgs.sqlite; }
+      ];
+
+      env = [];
+      packages = [ pkgs.nixd pkgs.alejandra];
+    };
 
           packages = {
             marrano-bot = cljpkgs.mkCljBin {
@@ -212,6 +220,6 @@
 
             default = self.packages."${system}".marrano-bot;
           };
-        }
-      );
+
+        });
 }
