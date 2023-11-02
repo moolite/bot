@@ -5,7 +5,7 @@ import (
 )
 
 func TestParse(t *testing.T) {
-	dies := Parse("3d6")
+	dies := New("3d6")
 
 	if len(dies) > 1 {
 		t.Error("parsed more than one dice roll")
@@ -33,7 +33,7 @@ func TestParse(t *testing.T) {
 }
 
 func TestParseMulti(t *testing.T) {
-	dies := Parse("3d6 4d8 8d4")
+	dies := New("3d6 4d8 8d4")
 
 	if len(dies) != 3 {
 		t.Error("parser failed to parse 3 dies")
@@ -41,7 +41,7 @@ func TestParseMulti(t *testing.T) {
 }
 
 func TestParseKeep(t *testing.T) {
-	dies := Parse("4d6k3")
+	dies := New("4d6k3")
 
 	if len(dies) != 1 {
 		t.Error("parser failed to parse 1 die")
@@ -60,7 +60,7 @@ func TestParseKeep(t *testing.T) {
 }
 
 func TestParseOpMod(t *testing.T) {
-	dies := Parse("2d6+4 2d6-4")
+	dies := New("2d6+4 2d6-4")
 
 	if len(dies) != 2 {
 		t.Error("parser failed to parse 1 die")

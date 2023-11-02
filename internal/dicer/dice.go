@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"sort"
 	"strconv"
+	"strings"
 )
 
 var regex = regexp.MustCompile(
@@ -17,6 +18,7 @@ const (
 )
 
 type Emoji struct {
+	Total   string
 	Results []string
 	Removed []string
 }
@@ -33,7 +35,7 @@ type Dice struct {
 	Operator string
 }
 
-func Parse(text string) []*Dice {
+func New(text string) []*Dice {
 	var rolls []*Dice
 	for _, m := range regex.FindAllStringSubmatch(text, 8) {
 		dice := &Dice{
@@ -137,16 +139,61 @@ func (r *Dice) roll() *Dice {
 	}
 
 	for _, i := range r.Results {
-		r.Emoji.Results = append(r.Emoji.Results, fmt.Sprintf(`%d\u20E3`, i))
+		r.Emoji.Results = append(r.Emoji.Results, emoji(i))
 	}
 	for _, i := range r.Removed {
-		r.Emoji.Removed = append(r.Emoji.Removed, fmt.Sprintf(`%d\u20E3`, i))
+		r.Emoji.Removed = append(r.Emoji.Removed, emoji(i))
 	}
+
+	r.Emoji.Total = emoji(r.Total)
 
 	return r
 }
 
-func (r *Dice) AsEmoji() []string {
+func (r *Dice) String() string {
+	res := fmt.Sprintf("%dd%d", r.Number, r.Sides)
 
-	return emojis
+	if r.Keep > 0 {
+		res += fmt.Sprintf("k%d", r.Keep)
+	}
+
+	if r.Mod != 0 {
+		res += fmt.Sprintf("%s%d", r.Operator, r.Mod)
+	}
+
+	return res
+}
+
+func (r *Dice) Markdown() string {
+	return fmt.Sprintf(
+		"%s\n *total*:%s, *rolls*:%s\n",
+		r.String(),
+		r.Total,
+		joinInts(r.Results, ", "),
+	)
+}
+
+func (r *Dice) MarkdownEmoji() string {
+	return fmt.Sprintf(
+		"%s\n *total*:%s, *rolls*:%s\n",
+		r.String(),
+		r.Total,
+		strings.Join(r.Emoji.Results, ", "),
+	)
+}
+
+func joinInts(nums []int, sep string) string {
+	res := ""
+	for l, i := len(nums)-1, 0; i <= l; i++ {
+		if l == i {
+			res += fmt.Sprintf("%d", nums[i])
+		} else {
+			res += fmt.Sprintf("%d, ", nums[i])
+		}
+	}
+	return res
+}
+
+func emoji(i int) string {
+	return fmt.Sprintf(`%d\u20E3`, i)
 }

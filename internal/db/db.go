@@ -22,7 +22,7 @@ func QueryOne[T TableTypes](ctx context.Context, db *sql.DB, stmt *sqlf.Stmt, t 
 		QueryRow(ctx, db)
 }
 
-func QueryMany[T TableTypes](ctx context.Context, db *sql.DB, stmt sqlf.Stmt, res []*T) (err error) {
+func QueryMany[T TableTypes](ctx context.Context, db *sql.DB, stmt *sqlf.Stmt, res []*T) (err error) {
 	record := new(T)
 
 	err = stmt.Bind(record).QueryAndClose(ctx, db, func(rows *sql.Rows) {

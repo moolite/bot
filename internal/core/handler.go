@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/moolite/bot/internal/db"
+	"github.com/moolite/bot/internal/dicer"
 	"github.com/moolite/bot/internal/telegram"
 	"github.com/rs/zerolog/log"
 	"github.com/valyala/fastjson"
@@ -38,10 +39,10 @@ var (
 )
 
 const (
-	CmdRemember = iota + 1
+	_ = iota
+	CmdRemember
 	CmdForget
 	CmdLink
-	CmdNote
 	CmdDice
 	CmdVideo
 	CmdPhoto
@@ -122,16 +123,27 @@ func Handler(p *fastjson.Value, dbc *sql.DB) ([]byte, error) {
 
 	res := new(telegram.WebhookResponse)
 
-	if !p.Exists("message", "chat", "id") {
+	// Early exit
+	if !p.Exists("message") {
+		return res.
+			SetText(textErr).
+			SendMessage().
+			Marshal()
+	}
+
+	// move parser into the "message" part
+	p = p.Get("message")
+
+	if !p.Exists("chat", "id") {
 		return nil, ErrParseNoChatID
 	}
-	chatId := string(p.GetStringBytes("message", "chat", "id"))
+	chatId := string(p.GetStringBytes("chat", "id"))
 
 	var text string
-	if p.Exists("message", "text") {
-		text = string(p.GetStringBytes("message", "text"))
-	} else if p.Exists("message", "caption") {
-		text = string(p.GetStringBytes("message", "caption"))
+	if p.Exists("text") {
+		text = string(p.GetStringBytes("text"))
+	} else if p.Exists("caption") {
+		text = string(p.GetStringBytes("caption"))
 	}
 
 	inc := parseText(text)
@@ -161,26 +173,34 @@ func Handler(p *fastjson.Value, dbc *sql.DB) ([]byte, error) {
 			SetText(strings.Replace(callout.Text, "%", inc.Rest, -1))
 
 	case KindCommand:
+		// Use forwarded messages as base for data
+		if p.Exists("message", "reply_to_message") {
+			p = p.Get("message", "reply_to_message")
+		} else {
+			p = p.Get("message")
+		}
+
 		switch inc.Command {
 		case CmdRemember:
-			if p.Exists("message", "text") {
+			if p.Exists("text") {
 
-			} else { // Most likely a forwarded message or media
+			} else { // Most likely media
 				media := &db.Media{
 					GID: chatId,
 				}
 
-				if p.Exists("message", "photo") {
+				if p.Exists("photo") { // Photo
 					media.Kind = "photo"
-					media.Data = string(p.GetStringBytes("message", "photo", "0", "file_id"))
+					media.Data = string(p.GetStringBytes("photo", "0", "file_id"))
 
-				} else if p.Exists("message", "animation") {
+				} else if p.Exists("message", "animation") { // Animations
 					media.Kind = "animation"
-					p.GetStringBytes("message", "animation", "0", "file_id")
+					media.Data = string(p.GetStringBytes("animation", "0", "file_id"))
 
-				} else if p.Exists("message", "video") {
+				} else if p.Exists("message", "video") { // Video
 					media.Kind = "video"
-					p.GetStringBytes("message", "video", "0", "file_id")
+					media.Data = string(p.GetStringBytes("video", "0", "file_id"))
+
 				}
 
 				media.Description = inc.Rest
@@ -196,33 +216,107 @@ func Handler(p *fastjson.Value, dbc *sql.DB) ([]byte, error) {
 			}
 
 		case CmdForget:
-			if p.Exists("message", "photo") {
+			if p.Exists("message", "text") {
+			} else { // Likely media
 				media := &db.Media{
 					GID: chatId,
 				}
-				sizes := p.GetArray("message", "photo")
-				if len(sizes) > 0 {
-					media.Data = string(sizes[0].GetStringBytes("file_id"))
+
+				if p.Exists("photo", "0", "file_id") {
+					media.Data = string(p.GetStringBytes("photo", "0", "file_id"))
+
+				} else if p.Exists("animation", "0", "file_id") {
+					media.Data = string(p.GetStringBytes("animation", "0", "file_id"))
+
+				} else if p.Exists("video", "0", "file_id") {
+					media.Data = string(p.GetStringBytes("video", "0", "file_id"))
 				}
 
 				if err := db.Query(ctx, dbc, media.Delete()); err != nil {
 					log.Error().Err(err).Msg("error deleting media")
+
+					res.SetText(textErr)
+				} else {
+					res.SetText(textForget)
 				}
 			}
 
 			res.SendMessage().
 				SetText(textForget)
-
 		case CmdLink:
-			res.SendMessage().
-				SetText(textRemember)
+			res.SendMessage()
 
-		case CmdNote:
-			res.SendMessage().
-				SetText(textForget)
+			l := &db.Links{
+				GID:  chatId,
+				Text: text,
+			}
+
+			switch inc.Operation {
+			case OpAdd:
+
+				entities := p.GetArray("message", "entities")
+				for _, ent := range entities {
+					if ent.Exists("url") {
+						l.URL = string(ent.GetStringBytes("url"))
+					}
+				}
+
+				if err := db.Query(ctx, dbc, l.Insert()); err != nil {
+					log.Error().Err(err).Msg("error inserting link")
+
+					res.SetText(textErr)
+				} else {
+					res.SetText(textRemember)
+				}
+
+			case OpRem:
+				entities := p.GetArray("message", "entities")
+				for _, ent := range entities {
+					if ent.Exists("url") {
+						l.URL = string(ent.GetStringBytes("url"))
+					}
+				}
+
+				if err := db.Query(ctx, dbc, l.Insert()); err != nil {
+					log.Error().Err(err).Msg("error inserting link")
+
+					res.SetText(textErr)
+				} else {
+					res.SetText(textForget)
+				}
+
+			default:
+				l := &db.Links{}
+				var searchResults []*db.Links
+
+				if err := db.QueryMany[db.Links](ctx, dbc, l.Search(), searchResults); err != nil {
+					log.Error().Err(err).Msg("error searching links")
+					res.SetText(textErr)
+
+				} else if len(searchResults) == 0 {
+					res.SetText(text404)
+
+				} else {
+					var buttons []telegram.URLButton
+					for _, v := range searchResults {
+						buttons = append(buttons, telegram.URLButton{
+							URL:  v.URL,
+							Text: v.Text,
+						})
+					}
+					res.SetText("links:").SetLinks(buttons)
+				}
+			}
 
 		case CmdDice:
-			res.SendDice()
+			dies := dicer.New(inc.Rest)
+			t := ""
+			for _, die := range dies {
+				t += die.Markdown()
+			}
+
+			res.SendDice().
+				SetText(t)
 
 		default:
 			res.SendMessage().

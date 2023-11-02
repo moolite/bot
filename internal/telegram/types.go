@@ -4,8 +4,13 @@ import (
 	"encoding/json"
 )
 
+type URLButton struct {
+	URL  string `json:"url"`
+	Text string `json:"text"`
+}
+
 type ReplyMarkup struct {
-	InlineKeyboard []string `json:"inline_keyboard"`
+	InlineKeyboard string `json:"inline_keyboard"`
 }
 
 type WebhookResponse struct {
@@ -68,6 +73,17 @@ func (w *WebhookResponse) SetText(text string) *WebhookResponse {
 	} else {
 		w.Text = &text
 	}
+	return w
+}
+
+func (w *WebhookResponse) SetLinks(data []URLButton) *WebhookResponse {
+	j, err := json.Marshal(data)
+	if err != nil {
+		return nil
+	}
+
+	w.SetKeyboard(string(j))
+
 	return w
 }
 

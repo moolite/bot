@@ -10,7 +10,7 @@ var (
 CREATE TABLE links (
 	url VARCHAR 256 NOT NULL,
 	text TEXT,
-	GID VARCHAR 64 NOT NULL,
+	gid VARCHAR 64 NOT NULL,
 
 	PRIMARY KEY(url,gid),
 	FOREIGN KEY(gid) REFERENCES groups,
@@ -59,4 +59,11 @@ func (l *Links) Delete() *sqlf.Stmt {
 	return sqlf.
 		DeleteFrom(linksTable).
 		Where("url = ? AND gid = ?", l.URL, l.GID)
+}
+
+func (l *Links) Search() *sqlf.Stmt {
+	return sqlf.
+		Select("url", "text").
+		From(linksTable).
+		Where("text LIKE ? AND gid = ?", "%"+l.Text+"%", l.GID)
 }
