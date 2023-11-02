@@ -8,8 +8,9 @@ import (
 )
 
 type TelegramConfig struct {
-	Name  string `toml:"name"`
-	Token string `toml:"token"`
+	Name   string `toml:"name"`
+	Token  string `toml:"token"`
+	Domain string `toml:"domain"`
 }
 
 type Config struct {

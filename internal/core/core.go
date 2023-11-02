@@ -1,12 +1,14 @@
 package core
 
 import (
+	"database/sql"
 	"fmt"
 	"io"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	_ "github.com/mattn/go-sqlite3"
 	"github.com/moolite/bot/internal/config"
 	"github.com/rs/zerolog/log"
 	"github.com/valyala/fastjson"
@@ -17,6 +19,12 @@ var (
 )
 
 func Listen(cfg *config.Config) error {
+	dbConn, err := sql.Open("sqlite3", "sqlite3://"+cfg.Database)
+	if err != nil {
+		log.Error().Err(err).Msg("Error opening connection")
+		return err
+	}
+
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
@@ -64,7 +72,7 @@ func Listen(cfg *config.Config) error {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		result, err := Handler(jsonParser)
+		result, err := Handler(jsonParser, dbConn)
 		if err != nil {
 			log.Error().Err(err).Msg("error producing response")
 

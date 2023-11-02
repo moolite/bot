@@ -5,15 +5,10 @@ import (
 	"database/sql"
 
 	"github.com/leporo/sqlf"
-	_ "github.com/mattn/go-sqlite3"
 )
 
 type TableTypes interface {
-	Abraxoides | Links | Callout | Groups
-}
-
-func Open(filename string) (db *sql.DB, err error) {
-	return sql.Open("sqlite3", "sqlite3://"+filename)
+	Abraxoides | Links | Media | Callout | Groups
 }
 
 func Query(ctx context.Context, db *sql.DB, stmt *sqlf.Stmt) error {
