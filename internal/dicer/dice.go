@@ -166,7 +166,7 @@ func (r *Dice) String() string {
 
 func (r *Dice) Markdown() string {
 	return fmt.Sprintf(
-		"%s\n *total*:%s, *rolls*:%s\n",
+		"%s\n *total*:%d, *rolls*:%s\n",
 		r.String(),
 		r.Total,
 		joinInts(r.Results, ", "),
@@ -177,7 +177,7 @@ func (r *Dice) MarkdownEmoji() string {
 	return fmt.Sprintf(
 		"%s\n *total*:%s, *rolls*:%s\n",
 		r.String(),
-		r.Total,
+		r.Emoji.Total,
 		strings.Join(r.Emoji.Results, ", "),
 	)
 }

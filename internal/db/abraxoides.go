@@ -7,52 +7,48 @@ import (
 var (
 	abraxoidexTable       string = "abraxoides"
 	abraxoidesCreateTable string = `
-CREATE OR UPDATE TABLE abraxoides
-(
-	abraxas VARCHAR 128 NOT NULL,
-	kind    VARCHAR 64  NOT NULL,
-	gid     VARCHAR 64  NOT NULL,
-
-	PRIMARY KEY(abraxas,gid),
-	FOREIGN KEY(gid) REFERENCES groups,
-)`
+CREATE TABLE IF NOT EXISTS abraxoides
+(	abraxas VARCHAR(128) NOT NULL
+,	kind    VARCHAR(64)  NOT NULL
+,	gid     VARCHAR(64)  NOT NULL
+,	PRIMARY KEY(abraxas,gid)
+,	FOREIGN KEY(gid) REFERENCES groups
+);`
 )
 
-type Abraxoides struct {
+type Abraxas struct {
 	Abraxas string `db:"abraxas"`
 	Kind    string `db:"kind"`
 	GID     string `db:"gid"`
 }
 
-func (a *Abraxoides) Clone() *Abraxoides {
-	return &Abraxoides{
+func (a *Abraxas) Clone() *Abraxas {
+	return &Abraxas{
 		Abraxas: a.Abraxas,
 		Kind:    a.Kind,
 		GID:     a.GID,
 	}
 }
 
-func (a *Abraxoides) One() *sqlf.Stmt {
+func SelectOneAbraxas(gid, abraxas string) *sqlf.Stmt {
 	return sqlf.
-		Select("abraxas", a.Abraxas).
-		Select("kind", a.Kind).
-		Select("gid", a.GID).
+		Select("abraxas", "kind", "gid").
 		From("abraxoides").
-		Where("abraxas = ?", a.Abraxas)
+		Where("abraxas = ? AND gid = ?", abraxas, gid)
 }
 
-func (a *Abraxoides) Insert() *sqlf.Stmt {
+func InsertAbraxas(gid, abraxas, kind string) *sqlf.Stmt {
 	return sqlf.
 		InsertInto("abraxoides").
-		Set("gid", a.GID).
-		Set("kind", a.Kind).
-		Set("abraxas", a.Abraxas).
+		Set("gid", gid).
+		Set("abraxas", abraxas).
+		Set("kind", kind).
 		Clause("ON CONFLICT abraxas,gid DO UPDATE SET kind = abraxoides.kind")
 }
 
-func (a *Abraxoides) AllKeywords() *sqlf.Stmt {
+func SelectAbraxoides(gid string) *sqlf.Stmt {
 	return sqlf.
 		Select("abraxas").
 		From("abraxoides").
-		Where("gid = ?", a.GID)
+		Where("gid = ?", gid)
 }

@@ -4,8 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
-	"os"
 	"regexp"
 	"strings"
 
@@ -80,9 +78,6 @@ func parseText(text string) *BotRequest {
 
 	for _, m := range re.FindAllStringSubmatch(text, -1) {
 		for i, name := range re.SubexpNames() {
-
-			fmt.Fprintf(os.Stderr, "parsed : name:%s m:'%s'\n", name, m[i])
-
 			switch name {
 			case "abraxas":
 				r.Abraxas = m[i]
@@ -137,7 +132,7 @@ func Handler(p *fastjson.Value, dbc *sql.DB) ([]byte, error) {
 	if !p.Exists("chat", "id") {
 		return nil, ErrParseNoChatID
 	}
-	chatId := string(p.GetStringBytes("chat", "id"))
+	gid := string(p.GetStringBytes("chat", "id"))
 
 	var text string
 	if p.Exists("text") {
@@ -150,21 +145,17 @@ func Handler(p *fastjson.Value, dbc *sql.DB) ([]byte, error) {
 
 	switch inc.Kind {
 	case KindTrigger:
-		t := &db.Abraxoides{
-			Abraxas: inc.Abraxas,
-		}
+		t := new(db.Abraxas)
 
 		// FIXME what if there is no trigger?
-		if err := db.QueryOne[db.Abraxoides](ctx, dbc, t.One(), t); err != nil {
+		if err := db.QueryOne[db.Abraxas](ctx, dbc, db.SelectOneAbraxas(gid, inc.Abraxas), t); err != nil {
 			log.Error().Err(err).Msg("abraxoides get not found")
 		}
 
 	case KindCallout:
-		callout := &db.Callout{
-			Callout: inc.Abraxas,
-		}
+		callout := new(db.Callout)
 
-		if err := db.QueryOne[db.Callout](ctx, dbc, callout.One(), callout); err != nil {
+		if err := db.QueryOne[db.Callout](ctx, dbc, db.SelectOneCallout(gid, inc.Abraxas), callout); err != nil {
 			log.Error().Err(err).Msg("callout query error")
 			return nil, err
 		}
@@ -186,7 +177,7 @@ func Handler(p *fastjson.Value, dbc *sql.DB) ([]byte, error) {
 
 			} else { // Most likely media
 				media := &db.Media{
-					GID: chatId,
+					GID: gid,
 				}
 
 				if p.Exists("photo") { // Photo
@@ -219,7 +210,7 @@ func Handler(p *fastjson.Value, dbc *sql.DB) ([]byte, error) {
 			if p.Exists("message", "text") {
 			} else { // Likely media
 				media := &db.Media{
-					GID: chatId,
+					GID: gid,
 				}
 
 				if p.Exists("photo", "0", "file_id") {
@@ -247,7 +238,7 @@ func Handler(p *fastjson.Value, dbc *sql.DB) ([]byte, error) {
 			res.SendMessage()
 
 			l := &db.Links{
-				GID:  chatId,
+				GID:  gid,
 				Text: text,
 			}
 
@@ -324,7 +315,7 @@ func Handler(p *fastjson.Value, dbc *sql.DB) ([]byte, error) {
 		}
 	}
 
-	res.SetChatID(string(chatId))
+	res.SetChatID(string(gid))
 
 	return res.Marshal()
 }

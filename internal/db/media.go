@@ -9,17 +9,14 @@ import (
 var (
 	mediaTable       = "media"
 	mediaCreateTable = `
-CREATE TABLE media
-(
-	data        VARCHAR 512 NOT NULL,
-	description TEXT
-	kind        VARCHAR 64  NOT NULL,
-	gid         VARCHAR 64  NOT NULL,
-
-	PRIMARY KEY(abraxas,gid),
-	FOREIGN KEY(gid) REFERENCES groups,
-)
-`
+CREATE TABLE IF NOT EXISTS media
+(	data        VARCHAR(512) NOT NULL
+,	description TEXT
+,	kind        VARCHAR(64)  NOT NULL
+,	gid         VARCHAR(64)  NOT NULL
+,	PRIMARY KEY(data,gid)
+,	FOREIGN KEY(gid) REFERENCES groups
+);`
 )
 
 type Media struct {

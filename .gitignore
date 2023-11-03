@@ -20,3 +20,4 @@ db.edn
 /*.sqlite
 /result
 /.direnv/
+/marrano-bot

@@ -10,27 +10,25 @@ type Groups struct {
 var (
 	groupsTable       string = "groups"
 	groupsCreateTable string = `
-CREATE TABLE groups
-(
-	gid VARCHAR 64 NOT NULL,
-	title text,
-	PRIMARY KEY(gid)
-)
-`
+CREATE TABLE IF NOT EXISTS groups
+(	gid VARCHAR(64) NOT NULL
+,	title text
+,	PRIMARY KEY(gid)
+);`
 )
 
-func (g *Groups) One() *sqlf.Stmt {
+func (g *Groups) One(gid string) *sqlf.Stmt {
 	return sqlf.
 		Select("gid, title").
 		From(groupsTable).
-		Bind(g)
+		Where("gid = ?", gid)
 }
 
-func (g *Groups) Insert() *sqlf.Stmt {
+func (g *Groups) Insert(gid, title string) *sqlf.Stmt {
 	return sqlf.
 		InsertInto(groupsTable).
-		Set("gid", g.GID).
-		Set("title", g.Title)
+		Set("gid", gid).
+		Set("title", title)
 }
 
 func (g *Groups) All() *sqlf.Stmt {

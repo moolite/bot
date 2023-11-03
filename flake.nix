@@ -230,6 +230,8 @@
           {package = pkgs.go;}
           {package = pkgs.gopls;}
           {package = pkgs.sqlite;}
+          {package = pkgs.gnumake;}
+          {package = pkgs.just;}
         ];
 
         env = [];

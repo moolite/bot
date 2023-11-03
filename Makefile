@@ -1,15 +1,16 @@
-SOURCES = $(shell find src/ -type f)
+SOURCES = $(wildcard cmd/*/*.go, internal/*/*.go)
 
-deps-lock.json: deps.edn
-	CLJNIX_ADD_NIX_STORE=true nix run "github:jlesquembre/clj-nix#deps-lock"
-
-bot.jar: deps.edn $(SOURCES)
-	clj -X:build uber
+marrano-bot: ${SOURCES}
+	go build -v ./cmd/marrano-bot
 
 bot.db: bot.sql
 	sqlite3 -init bot.sql $@ '.exit'
 
+all:
+test:
+	go test ./internal/*/
 
 clean:
-	rm -f bot.db bot.jar
-.PHONY: clean
+	rm marrano-bot
+
+.PHONY: all test clean

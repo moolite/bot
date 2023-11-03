@@ -6,15 +6,12 @@ import (
 
 var (
 	calloutsCreateTable string = `
-CREATE OR UPDATE TABLE callouts
-(
-	callout VARCHAR 128 NOT NULL,
-	gid     VARCHAR 64  NOT NULL,
-
-	PRIMARY KEY(callout,gid),
-	FOREIGN KEY(gid) REFERENCES groups,
-)
-`
+CREATE TABLE IF NOT EXISTS callouts
+(	callout VARCHAR(128) NOT NULL
+,	gid     VARCHAR(64)  NOT NULL
+,	PRIMARY KEY(callout,gid)
+,	FOREIGN KEY(gid) REFERENCES groups
+);`
 )
 
 type Callout struct {
@@ -31,31 +28,30 @@ func (c *Callout) Clone() *Callout {
 	}
 }
 
-func (c *Callout) Insert() *sqlf.Stmt {
+func InsertCallout(gid, callout, text string) *sqlf.Stmt {
 	return sqlf.
 		InsertInto("callouts").
-		Set("callout", c.Callout).
-		Set("text", c.Text).
-		Set("gid", c.GID).
+		Set("callout", callout).
+		Set("text", text).
+		Set("gid", gid).
 		Clause("ON CONFLICT callout,gid DO UPDATE SET text = callouts.text")
 }
 
-func (c *Callout) AllCallouts() *sqlf.Stmt {
-	return sqlf.
-		Select("callout").
-		Where("gid = ?", c.GID)
-}
-
-func (c *Callout) One() *sqlf.Stmt {
+func SelectOneCallout(gid, callout string) *sqlf.Stmt {
 	return sqlf.
 		Select("callout", "text").
 		From("callouts").
-		Where("callout = ? AND gid = ?", c.Callout, c.GID).
-		Bind(c)
+		Where("callout = ? AND gid = ?", callout, gid)
 }
 
-func (c *Callout) DelByCallout() *sqlf.Stmt {
+func SelectAllCallouts(gid string) *sqlf.Stmt {
+	return sqlf.
+		Select("callout").
+		Where("gid = ?", gid)
+}
+
+func DeleleOneCallout(gid, callout string) *sqlf.Stmt {
 	return sqlf.
 		DeleteFrom("callouts").
-		Where("callout = ? AND gid = ?", c.Callout, c.GID)
+		Where("callout = ? AND gid = ?", callout, gid)
 }

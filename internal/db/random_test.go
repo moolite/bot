@@ -2,6 +2,8 @@ package db
 
 import (
 	"testing"
+
+	"gotest.tools/assert"
 )
 
 func TestGetRandom(t *testing.T) {
@@ -11,7 +13,5 @@ func TestGetRandom(t *testing.T) {
 		Select("moo").
 		String()
 
-	if str != expected {
-		t.Error("SQL error", str)
-	}
+	assert.Equal(t, expected, str, "get random SQL")
 }

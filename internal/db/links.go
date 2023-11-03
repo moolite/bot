@@ -7,63 +7,53 @@ import (
 var (
 	linksTable       string = "links"
 	linksCreateTable string = `
-CREATE TABLE links (
-	url VARCHAR 256 NOT NULL,
-	text TEXT,
-	gid VARCHAR 64 NOT NULL,
-
-	PRIMARY KEY(url,gid),
-	FOREIGN KEY(gid) REFERENCES groups,
-)
-`
+CREATE TABLE IF NOT EXISTS links
+(	url VARCHAR(256) NOT NULL
+,	text TEXT
+,	gid VARCHAR(64) NOT NULL
+,	PRIMARY KEY(url,gid)
+,	FOREIGN KEY(gid) REFERENCES groups
+);`
 )
 
-type Links struct {
-	URL  string
-	Text string
-	GID  string
+type Link struct {
+	URL  string `db:"url"`
+	Text string `db:"text"`
+	GID  string `db:"gid"`
 }
 
-func (l *Links) Clone() *Links {
-	return &Links{
+func (l *Link) Clone() *Link {
+	return &Link{
 		URL:  l.URL,
 		Text: l.Text,
 		GID:  l.GID,
 	}
 }
 
-func (l *Links) Random() *sqlf.Stmt {
+func SelectRandomLink() *sqlf.Stmt {
+	l := new(Link)
 	return getRandom(linksTable, l.GID).
 		Bind(l)
 }
 
-func (l *Links) One() *sqlf.Stmt {
-	return sqlf.
-		Select("url", &l.URL).
-		Select("text", &l.Text).
-		Select("gid", &l.GID).
-		From(linksTable).
-		Where("gid = ?", l.GID)
-}
-
-func (l *Links) Insert() *sqlf.Stmt {
+func InsertLink(gid, url, text string) *sqlf.Stmt {
 	return sqlf.
 		InsertInto(linksTable).
-		Set("url", l.URL).
-		Set("text", l.Text).
-		Set("gid", l.GID).
+		Set("gid", gid).
+		Set("url", url).
+		Set("text", text).
 		Clause("ON CONFLICT url,gid DO UPDATE SET text = links.text")
 }
 
-func (l *Links) Delete() *sqlf.Stmt {
+func DeleteLink(gid, url string) *sqlf.Stmt {
 	return sqlf.
 		DeleteFrom(linksTable).
-		Where("url = ? AND gid = ?", l.URL, l.GID)
+		Where("url = ? AND gid = ?", url, gid)
 }
 
-func (l *Links) Search() *sqlf.Stmt {
+func SearchLink(gid, term string) *sqlf.Stmt {
 	return sqlf.
 		Select("url", "text").
 		From(linksTable).
-		Where("text LIKE ? AND gid = ?", "%"+l.Text+"%", l.GID)
+		Where("text LIKE ? AND gid = ?", "%"+term+"%", gid)
 }

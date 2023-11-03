@@ -8,7 +8,7 @@ import (
 )
 
 type TableTypes interface {
-	Abraxoides | Links | Media | Callout | Groups
+	Abraxas | Link | Media | Callout | Groups
 }
 
 func Query(ctx context.Context, db *sql.DB, stmt *sqlf.Stmt) error {
@@ -45,11 +45,7 @@ func QueryString(ctx context.Context, db *sql.DB, stmt *sqlf.Stmt) (string, erro
 		return r, err
 	}
 
-	if len(res) > 0 {
-		return res[0], err
-	}
-
-	return r, err
+	return res[0], err
 }
 
 func QueryStrings(ctx context.Context, db *sql.DB, stmt *sqlf.Stmt) (results []string, err error) {
