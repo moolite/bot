@@ -6,8 +6,8 @@ import (
 	"gotest.tools/assert"
 )
 
-func TestGetRandom(t *testing.T) {
-	expected := `SELECT foo, moo FROM foo WHERE gid = ? LIMIT ? OFFSET ? OFFSET ABS(RANDOM()) % MAX((SELECT COUNT(*) FROM ? WHERE gid = ?), 1)`
+func TestGetRandomSQL(t *testing.T) {
+	expected := `SELECT foo, moo FROM foo WHERE gid = ? LIMIT ? OFFSET ABS(RANDOM()) % MAX((SELECT COUNT(*) FROM ? WHERE gid = ?), 1)`
 	str := getRandom("foo", "bar").
 		Select("foo").
 		Select("moo").

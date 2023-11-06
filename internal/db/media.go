@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/leporo/sqlf"
@@ -10,47 +11,91 @@ var (
 	mediaTable       = "media"
 	mediaCreateTable = `
 CREATE TABLE IF NOT EXISTS media
-(	data        VARCHAR(512) NOT NULL
-,	description TEXT
-,	kind        VARCHAR(64)  NOT NULL
-,	gid         VARCHAR(64)  NOT NULL
-,	PRIMARY KEY(data,gid)
-,	FOREIGN KEY(gid) REFERENCES groups
+( data        VARCHAR(512) NOT NULL
+, description TEXT
+, kind        VARCHAR(64)  NOT NULL
+, gid         VARCHAR(64)  NOT NULL
+, PRIMARY KEY(data,gid)
+, FOREIGN KEY(gid) REFERENCES groups
 );`
 )
 
 type Media struct {
-	Kind        string
-	Description string
-	Data        string
-	GID         string
+	Kind        string `db:"kind"`
+	Description string `db:"description"`
+	Data        string `db:"data"`
+	GID         string `db:"gid"`
 }
 
-func (m *Media) Random() *sqlf.Stmt {
-	return getRandom(mediaTable, m.GID).
+func InsertMedia(ctx context.Context, media *Media) error {
+	q := sqlf.
+		InsertInto(mediaTable).
+		Set("gid", media.GID).
+		Set("data", media.Data).
+		Set("kind", media.Kind).
+		Set("description", media.Description).
+		Clause(
+			"ON CONFLICT(data,gid) DO UPDATE SET description = media.description, kind = media.kind")
+
+	res, err := q.Exec(ctx, dbc)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return nil
+	}
+	if n == 0 {
+		return ErrInsert
+	}
+
+	return nil
+}
+
+func SelectRandomMedia(ctx context.Context, m *Media) error {
+	q := getRandom(mediaTable, m.GID).
 		Select("kind", m.Kind).
 		Select("description", m.Description).
-		Select("data", m.Data)
+		Select("data", m.Data).
+		Where("kind = ?", m.Kind)
+
+	return q.QueryRow(ctx, dbc)
 }
 
-func (m *Media) Delete() *sqlf.Stmt {
-	return sqlf.DeleteFrom(mediaTable).
-		Where("data = ? AND gid = ?", m.Data, m.GID)
+func SearchMedia(ctx context.Context, gid, term string) (*Media, error) {
+	likeTerm := fmt.Sprintf("%%%s%%", term)
+
+	m := new(Media)
+
+	q := sqlf.
+		Select("kind", m.Kind).
+		Select("description", m.Description).
+		Select("data", m.Data).
+		From(mediaTable).
+		Where("description LIKE ? AND gid = ?", likeTerm, gid)
+
+	if err := q.QueryRow(ctx, dbc); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
-func (m *Media) Insert() *sqlf.Stmt {
-	return sqlf.
-		InsertInto(mediaTable).
-		Set("kind", m.Kind).
-		Set("description", m.Description).
-		Set("data", m.Data).
-		Set("gid", m.GID).
-		Clause(fmt.Sprintf("ON CONFLICT data,gid DO UPDATE SET description = %s.description", linksTable))
-}
+func DeleteMedia(ctx context.Context, media *Media) error {
+	q := sqlf.
+		DeleteFrom(mediaTable).
+		Where("data = ? AND gid = ?", media.Data, media.GID).
+		Limit(1)
 
-func (m *Media) Search(term string) *sqlf.Stmt {
-	likeTerm := "%" + term + "%"
-	return sqlf.
-		Select("data, description, kind, gid").
-		Where("description LIKE ? AND ", likeTerm)
+	res, err := q.Exec(ctx, dbc)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n != 1 {
+		return ErrDelete
+	}
+	return nil
 }

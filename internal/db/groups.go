@@ -1,38 +1,81 @@
 package db
 
-import "github.com/leporo/sqlf"
+import (
+	"context"
+	"database/sql"
 
-type Groups struct {
-	GID   string `db:"gid"`
-	Title string `db:"title"`
-}
+	"github.com/leporo/sqlf"
+)
 
 var (
 	groupsTable       string = "groups"
 	groupsCreateTable string = `
 CREATE TABLE IF NOT EXISTS groups
-(	gid VARCHAR(64) NOT NULL
-,	title text
-,	PRIMARY KEY(gid)
-);`
+( gid VARCHAR(64) NOT NULL
+, title text
+, PRIMARY KEY(gid)
+);
+`
 )
 
-func (g *Groups) One(gid string) *sqlf.Stmt {
-	return sqlf.
-		Select("gid, title").
-		From(groupsTable).
-		Where("gid = ?", gid)
+type Group struct {
+	GID   string `db:"gid"`
+	Title string `db:"title"`
 }
 
-func (g *Groups) Insert(gid, title string) *sqlf.Stmt {
-	return sqlf.
+func (g *Group) Clone() *Group {
+	return &Group{
+		GID:   g.GID,
+		Title: g.Title,
+	}
+}
+
+func SelectOneGroup(ctx context.Context, gid string) (*Group, error) {
+	g := &Group{GID: gid}
+
+	q := sqlf.
+		From(groupsTable).
+		Select("title", g.Title).
+		Where("gid = ?", gid).
+		Limit(1)
+
+	if err := q.QueryRow(ctx, dbc); err != nil {
+		return nil, err
+	}
+
+	return g, nil
+}
+
+func SelectAllGroups(ctx context.Context) ([]*Group, error) {
+	var g *Group
+	q := sqlf.
+		From(groupsTable).
+		Select("gid", g.GID).
+		Select("title", g.Title)
+
+	var ret []*Group
+	err := q.Query(ctx, dbc, func(r *sql.Rows) {
+		ret = append(ret, g.Clone())
+	})
+
+	return ret, err
+}
+
+func InsertGroup(ctx context.Context, gid, title string) error {
+	q := sqlf.
 		InsertInto(groupsTable).
 		Set("gid", gid).
-		Set("title", title)
-}
+		Set("title", title).
+		Clause(
+			"ON CONFLICT(gid) DO UPDATE SET title = groups.title")
 
-func (g *Groups) All() *sqlf.Stmt {
-	return sqlf.
-		Select("gid, title").
-		From(groupsTable)
+	if res, err := q.Exec(ctx, dbc); err != nil {
+		return err
+	} else if n, err := res.RowsAffected(); err != nil {
+		return err
+	} else if n == 0 {
+		return ErrInsert
+	}
+
+	return nil
 }

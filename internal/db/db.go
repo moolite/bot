@@ -1,71 +1,30 @@
 package db
 
 import (
-	"context"
 	"database/sql"
+	"fmt"
 
-	"github.com/leporo/sqlf"
+	"github.com/rs/zerolog/log"
 )
 
-type TableTypes interface {
-	Abraxas | Link | Media | Callout | Groups
-}
+var dbc *sql.DB
 
-func Query(ctx context.Context, db *sql.DB, stmt *sqlf.Stmt) error {
-	return stmt.
-		QueryRowAndClose(ctx, db)
-}
-
-func QueryOne[T TableTypes](ctx context.Context, db *sql.DB, stmt *sqlf.Stmt, t *T) error {
-	return stmt.
-		Bind(t).
-		QueryRow(ctx, db)
-}
-
-func QueryMany[T TableTypes](ctx context.Context, db *sql.DB, stmt *sqlf.Stmt, res []*T) (err error) {
-	record := new(T)
-
-	err = stmt.Bind(record).QueryAndClose(ctx, db, func(rows *sql.Rows) {
-		for rows.Next() {
-			if rows.Err() != nil {
-				continue
-			}
-
-			res = append(res, record)
-		}
-	})
-
-	return err
-}
-
-func QueryString(ctx context.Context, db *sql.DB, stmt *sqlf.Stmt) (string, error) {
-	var r string
-	res, err := QueryStrings(ctx, db, stmt)
+func Connect(filename string) error {
+	uri := fmt.Sprintf("%s?cache=shared", filename)
+	d, err := sql.Open("sqlite3", uri)
 	if err != nil {
-		return r, err
+		return err
 	}
 
-	return res[0], err
+	dbc = d
+	return nil
 }
 
-func QueryStrings(ctx context.Context, db *sql.DB, stmt *sqlf.Stmt) (results []string, err error) {
-	stmtErr := stmt.QueryAndClose(ctx, db, func(rows *sql.Rows) {
-		for rows.Next() {
-			var result string
-			if e := rows.Scan(&result); e != nil {
-				err = e
-				continue
-			}
-			results = append(results, result)
-		}
-
-		if e := rows.Err(); e != nil {
-			err = e
-		}
-	})
-	if stmtErr != nil {
-		return results, stmtErr
+func onRow(rows *sql.Rows) {
+	columns, err := rows.Columns()
+	if err != nil {
+		log.Debug().Err(err).Msg("error fetching columns")
+	} else {
+		log.Debug().Strs("columns", columns).Msg("rows")
 	}
-
-	return results, err
 }

@@ -145,23 +145,53 @@ func Handler(p *fastjson.Value, dbc *sql.DB) ([]byte, error) {
 
 	switch inc.Kind {
 	case KindTrigger:
-		t := new(db.Abraxas)
+		trigger := &db.Abraxas{GID: gid, Abraxas: inc.Abraxas}
 
 		// FIXME what if there is no trigger?
-		if err := db.QueryOne[db.Abraxas](ctx, dbc, db.SelectOneAbraxas(gid, inc.Abraxas), t); err != nil {
+		if err := db.SelectOneAbraxas(ctx, trigger); err != nil {
 			log.Error().Err(err).Msg("abraxoides get not found")
 		}
 
-	case KindCallout:
-		callout := new(db.Callout)
-
-		if err := db.QueryOne[db.Callout](ctx, dbc, db.SelectOneCallout(gid, inc.Abraxas), callout); err != nil {
-			log.Error().Err(err).Msg("callout query error")
-			return nil, err
+		if trigger.Kind == "" {
+			log.Debug().Interface("trigger", trigger).Msg("trigger has no kind")
+			return nil, nil
 		}
 
-		res.SendMessage().
-			SetText(strings.Replace(callout.Text, "%", inc.Rest, -1))
+		media := &db.Media{
+			GID:  gid,
+			Kind: trigger.Kind,
+		}
+
+		if err := db.SelectRandomMedia(ctx, media); err != nil {
+			log.Error().Err(err).Msg("error selecting random media")
+		}
+
+		switch media.Kind {
+		case "video":
+			res.SendVideo(media.Data)
+		case "animation":
+			res.SendAnimation(media.Data)
+		case "photo":
+			res.SendPhoto(media.Data)
+		default:
+			return nil, nil
+		}
+
+	case KindCallout:
+		callout := &db.Callout{
+			GID:     gid,
+			Callout: inc.Abraxas,
+		}
+
+		if err := db.SelectOneCallout(ctx, callout); err != nil {
+			log.Error().Err(err).Msg("callout query error")
+			return nil, err
+		} else if callout.Text != "" {
+			res.SendMessage().
+				SetText(strings.Replace(callout.Text, "%", inc.Rest, -1))
+		} else {
+			return nil, nil
+		}
 
 	case KindCommand:
 		// Use forwarded messages as base for data
@@ -176,29 +206,33 @@ func Handler(p *fastjson.Value, dbc *sql.DB) ([]byte, error) {
 			if p.Exists("text") {
 
 			} else { // Most likely media
-				media := &db.Media{
-					GID: gid,
-				}
+				var kind string
+				var data string
 
 				if p.Exists("photo") { // Photo
-					media.Kind = "photo"
-					media.Data = string(p.GetStringBytes("photo", "0", "file_id"))
+					kind = "photo"
+					data = string(p.GetStringBytes("photo", "0", "file_id"))
 
 				} else if p.Exists("message", "animation") { // Animations
-					media.Kind = "animation"
-					media.Data = string(p.GetStringBytes("animation", "0", "file_id"))
+					kind = "animation"
+					data = string(p.GetStringBytes("animation", "0", "file_id"))
 
 				} else if p.Exists("message", "video") { // Video
-					media.Kind = "video"
-					media.Data = string(p.GetStringBytes("video", "0", "file_id"))
+					kind = "video"
+					data = string(p.GetStringBytes("video", "0", "file_id"))
 
 				}
 
-				media.Description = inc.Rest
+				m := &db.Media{
+					GID:         gid,
+					Kind:        kind,
+					Data:        data,
+					Description: inc.Rest,
+				}
 
 				res.SendMessage()
 
-				if err := db.Query(ctx, dbc, media.Insert()); err != nil {
+				if err := db.InsertMedia(ctx, m); err != nil {
 					log.Error().Err(err).Msg("error inserting new media")
 					res.SetText(textErr)
 				} else {
@@ -223,7 +257,7 @@ func Handler(p *fastjson.Value, dbc *sql.DB) ([]byte, error) {
 					media.Data = string(p.GetStringBytes("video", "0", "file_id"))
 				}
 
-				if err := db.Query(ctx, dbc, media.Delete()); err != nil {
+				if err := db.DeleteMedia(ctx, media); err != nil {
 					log.Error().Err(err).Msg("error deleting media")
 
 					res.SetText(textErr)
@@ -234,25 +268,27 @@ func Handler(p *fastjson.Value, dbc *sql.DB) ([]byte, error) {
 
 			res.SendMessage().
 				SetText(textForget)
+
 		case CmdLink:
 			res.SendMessage()
 
-			l := &db.Links{
-				GID:  gid,
-				Text: text,
-			}
-
 			switch inc.Operation {
 			case OpAdd:
-
 				entities := p.GetArray("message", "entities")
+				var url string
 				for _, ent := range entities {
 					if ent.Exists("url") {
-						l.URL = string(ent.GetStringBytes("url"))
+						url = string(ent.GetStringBytes("url"))
 					}
 				}
 
-				if err := db.Query(ctx, dbc, l.Insert()); err != nil {
+				link := &db.Link{
+					GID:  gid,
+					URL:  url,
+					Text: text,
+				}
+
+				if err := db.InsertLink(ctx, link); err != nil {
 					log.Error().Err(err).Msg("error inserting link")
 
 					res.SetText(textErr)
@@ -262,13 +298,19 @@ func Handler(p *fastjson.Value, dbc *sql.DB) ([]byte, error) {
 
 			case OpRem:
 				entities := p.GetArray("message", "entities")
+				var url string
 				for _, ent := range entities {
 					if ent.Exists("url") {
-						l.URL = string(ent.GetStringBytes("url"))
+						url = string(ent.GetStringBytes("url"))
 					}
 				}
 
-				if err := db.Query(ctx, dbc, l.Insert()); err != nil {
+				link := &db.Link{
+					GID: gid,
+					URL: url,
+				}
+
+				if err := db.DeleteLink(ctx, link); err != nil {
 					log.Error().Err(err).Msg("error inserting link")
 
 					res.SetText(textErr)
@@ -277,25 +319,24 @@ func Handler(p *fastjson.Value, dbc *sql.DB) ([]byte, error) {
 				}
 
 			default:
-				l := &db.Links{}
-				var searchResults []*db.Links
-
-				if err := db.QueryMany[db.Links](ctx, dbc, l.Search(), searchResults); err != nil {
+				if links, err := db.SearchLinks(ctx, gid, text); err != nil {
 					log.Error().Err(err).Msg("error searching links")
+
 					res.SetText(textErr)
 
-				} else if len(searchResults) == 0 {
+				} else if len(links) == 0 {
 					res.SetText(text404)
 
 				} else {
 					var buttons []telegram.URLButton
-					for _, v := range searchResults {
+					for _, v := range links {
 						buttons = append(buttons, telegram.URLButton{
 							URL:  v.URL,
 							Text: v.Text,
 						})
 					}
-					res.SetText("links:").SetLinks(buttons)
+					res.SetText("links:").
+						SetLinks(buttons)
 				}
 			}
 

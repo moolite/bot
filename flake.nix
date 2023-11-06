@@ -230,6 +230,7 @@
           {package = pkgs.go;}
           {package = pkgs.gopls;}
           {package = pkgs.sqlite;}
+          {package = pkgs.litecli;}
           {package = pkgs.gnumake;}
           {package = pkgs.just;}
         ];

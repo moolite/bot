@@ -43,19 +43,26 @@ func (w *WebhookResponse) setMethod(method string, isMedia bool) *WebhookRespons
 }
 
 func (w *WebhookResponse) SendDice() *WebhookResponse {
-	return w.setMethod("sendDice", false)
+	return w.setMethod("sendMessage", false)
 }
 
 func (w *WebhookResponse) SendMessage() *WebhookResponse {
 	return w.setMethod("sendMessage", false)
 }
 
-func (w *WebhookResponse) SendVideo() *WebhookResponse {
+func (w *WebhookResponse) SendVideo(id string) *WebhookResponse {
+	w.Video = &id
 	return w.setMethod("sendVideo", true)
 }
 
-func (w *WebhookResponse) SendAnimation() *WebhookResponse {
+func (w *WebhookResponse) SendAnimation(id string) *WebhookResponse {
+	w.Animation = &id
 	return w.setMethod("sendAnimation", true)
+}
+
+func (w *WebhookResponse) SendPhoto(id string) *WebhookResponse {
+	w.Photo = &id
+	return w.setMethod("sendPhoto", true)
 }
 
 func (w *WebhookResponse) SendLocation() *WebhookResponse {

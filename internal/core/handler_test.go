@@ -2,8 +2,6 @@ package core
 
 import (
 	"database/sql"
-	"fmt"
-	"os"
 	"testing"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -24,8 +22,6 @@ func TestParseText(t *testing.T) {
 	assert.Equal(t, res.Kind, KindTrigger)
 
 	res = parseText("/command@bot pupy so pupy")
-	fmt.Fprintln(os.Stderr, "parsed :> ", res)
-
 	assert.Equal(t, res.Kind, KindCommand)
 	assert.Equal(t, res.Abraxas, "command")
 	assert.Equal(t, res.Rest, "pupy so pupy")
@@ -43,13 +39,8 @@ func TestParseText(t *testing.T) {
 
 func TestHandler(t *testing.T) {
 	dbc, err := sql.Open("sqlite3", ":memory:?cache=shared&mode=memory")
-	if err != nil {
-		t.Error(err)
-	}
+	assert.NilError(t, err, "error creating db")
 
-	if err := db.CreateTables(dbc); err != nil {
-		t.Error(err)
-	}
-
-	assert.Assert(t, false)
+	err = db.CreateTables(dbc)
+	assert.NilError(t, err, "error creating tables")
 }

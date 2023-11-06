@@ -1,19 +1,23 @@
 package db
 
 import (
+	"context"
+	"database/sql"
+
 	"github.com/leporo/sqlf"
 )
 
 var (
-	abraxoidexTable       string = "abraxoides"
+	abraxoidesTable       string = "abraxoides"
 	abraxoidesCreateTable string = `
 CREATE TABLE IF NOT EXISTS abraxoides
-(	abraxas VARCHAR(128) NOT NULL
-,	kind    VARCHAR(64)  NOT NULL
-,	gid     VARCHAR(64)  NOT NULL
-,	PRIMARY KEY(abraxas,gid)
-,	FOREIGN KEY(gid) REFERENCES groups
-);`
+( abraxas VARCHAR(128) NOT NULL
+, kind    VARCHAR(64)  NOT NULL
+, gid     VARCHAR(64)  NOT NULL
+, PRIMARY KEY(abraxas,gid)
+, FOREIGN KEY(gid) REFERENCES groups
+);
+`
 )
 
 type Abraxas struct {
@@ -30,25 +34,52 @@ func (a *Abraxas) Clone() *Abraxas {
 	}
 }
 
-func SelectOneAbraxas(gid, abraxas string) *sqlf.Stmt {
-	return sqlf.
-		Select("abraxas", "kind", "gid").
-		From("abraxoides").
-		Where("abraxas = ? AND gid = ?", abraxas, gid)
+func SelectOneAbraxas(ctx context.Context, a *Abraxas) error {
+	q := sqlf.
+		From(abraxoidesTable).
+		Select("abraxas", a.Abraxas).
+		Select("kind", a.Kind).
+		Where("gid = ?", a.GID).
+		Where("abraxas = ?", a.Abraxas).
+		Limit(1)
+
+	return q.QueryRow(ctx, dbc)
 }
 
-func InsertAbraxas(gid, abraxas, kind string) *sqlf.Stmt {
-	return sqlf.
-		InsertInto("abraxoides").
+func SelectAbraxoides(ctx context.Context, gid string) ([]string, error) {
+	var abraxas string
+	var abraxoides []string
+
+	q := sqlf.
+		Select("abraxas", &abraxas).
+		Where("gid = ?", gid)
+
+	err := q.Query(ctx, dbc, func(rows *sql.Rows) {
+		abraxoides = append(abraxoides, abraxas)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return abraxoides, nil
+}
+
+func InsertAbraxas(ctx context.Context, gid, abraxas, kind string) error {
+	q := sqlf.
+		InsertInto(abraxoidesTable).
 		Set("gid", gid).
 		Set("abraxas", abraxas).
 		Set("kind", kind).
-		Clause("ON CONFLICT abraxas,gid DO UPDATE SET kind = abraxoides.kind")
-}
+		Clause(
+			"ON CONFLICT(abraxas,gid) DO UPDATE SET kind = abraxoides.kind")
 
-func SelectAbraxoides(gid string) *sqlf.Stmt {
-	return sqlf.
-		Select("abraxas").
-		From("abraxoides").
-		Where("gid = ?", gid)
+	if res, err := q.Exec(ctx, dbc); err != nil {
+		return err
+	} else if n, err := res.RowsAffected(); err != nil {
+		return err
+	} else if n == 0 {
+		return ErrInsert
+	}
+
+	return nil
 }

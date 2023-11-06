@@ -4,7 +4,6 @@ go 1.21.3
 
 require (
 	github.com/go-chi/chi/v5 v5.0.10
-	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
 	github.com/leporo/sqlf v1.4.0
 	github.com/mattn/go-isatty v0.0.19
 	github.com/mattn/go-sqlite3 v1.14.16
