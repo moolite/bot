@@ -14,8 +14,8 @@ type ReplyMarkup struct {
 }
 
 type WebhookResponse struct {
-	Method string `json:"method"`
-	ChatID string `json:"chat_id"`
+	Method string `json:"method,omitempty"`
+	ChatID string `json:"chat_id,omitempty"`
 
 	// Media
 	isMedia   bool
@@ -113,6 +113,11 @@ func (w *WebhookResponse) SetLocation(lat, lon float64) *WebhookResponse {
 	w.Latitude = &lat
 	w.Longitude = &lon
 
+	return w
+}
+
+func (w *WebhookResponse) Empty() *WebhookResponse {
+	w = &WebhookResponse{}
 	return w
 }
 

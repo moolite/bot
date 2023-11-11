@@ -9,5 +9,6 @@ func getRandom(table, gid string) *sqlf.Stmt {
 		From(table).
 		Where("gid = ?", gid).
 		Clause(
-			"LIMIT 1 OFFSET ABS(RANDOM()) % MAX((SELECT COUNT(*) FROM ? WHERE gid = ?), 1)", table, gid)
+			"LIMIT 1 OFFSET ABS(RANDOM()) % MAX((SELECT COUNT(*) FROM " + table + " WHERE gid='" + gid + "'),1)",
+		)
 }

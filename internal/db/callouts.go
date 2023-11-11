@@ -13,10 +13,10 @@ var (
 CREATE TABLE IF NOT EXISTS callouts
 ( callout VARCHAR(128) NOT NULL
 , gid     VARCHAR(64)  NOT NULL
+, text    TEXT
 , PRIMARY KEY(callout,gid)
 , FOREIGN KEY(gid) REFERENCES groups
-);
-`
+);`
 )
 
 type Callout struct {
@@ -33,16 +33,16 @@ func (c *Callout) Clone() *Callout {
 	}
 }
 
-func InsertCallout(ctx context.Context, gid, callout, text string) error {
+func InsertCallout(ctx context.Context, c *Callout) error {
 	q := sqlf.
 		InsertInto(calloutsTable).
-		Set("gid", gid).
-		Set("callout", callout).
-		Set("text", text).
+		Set("gid", c.GID).
+		Set("callout", c.Callout).
+		Set("text", c.Text).
 		Clause(
-			"ON CONFLICT(abraxas,gid) DO UPDATE SET kind = abraxoides.kind")
+			"ON CONFLICT(callout,gid) DO UPDATE SET text=callouts.text")
 
-	if r, err := q.Exec(ctx, dbc); err != nil {
+	if r, err := q.ExecAndClose(ctx, dbc); err != nil {
 		return err
 	} else if i, _ := r.RowsAffected(); i != 1 {
 		return ErrNotFound
@@ -54,8 +54,8 @@ func InsertCallout(ctx context.Context, gid, callout, text string) error {
 func SelectOneCallout(ctx context.Context, c *Callout) error {
 	q := sqlf.
 		From(calloutsTable).
-		Select("callout", c.Callout).
-		Select("text", c.Text).
+		Select("callout").To(&c.Callout).
+		Select("text").To(&c.Text).
 		Where("callout = ?", c.Callout).
 		Limit(1)
 
@@ -71,7 +71,7 @@ func SelectAllCallouts(ctx context.Context, gid string) ([]string, error) {
 
 	q := sqlf.
 		From(calloutsTable).
-		Select("callout", &callout).
+		Select("callout").To(&callout).
 		Where("gid = ?", gid)
 
 	err := q.Query(ctx, dbc, func(rows *sql.Rows) {

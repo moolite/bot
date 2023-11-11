@@ -1,7 +1,6 @@
 package core
 
 import (
-	"database/sql"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,6 +9,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/moolite/bot/internal/config"
+	"github.com/moolite/bot/internal/db"
 	"github.com/rs/zerolog/log"
 	"github.com/valyala/fastjson"
 )
@@ -19,7 +19,7 @@ var (
 )
 
 func Listen(cfg *config.Config) error {
-	dbConn, err := sql.Open("sqlite3", "sqlite3://"+cfg.Database)
+	err := db.Open(cfg.Database)
 	if err != nil {
 		log.Error().Err(err).Msg("Error opening connection")
 		return err
@@ -72,7 +72,15 @@ func Listen(cfg *config.Config) error {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		result, err := Handler(jsonParser, dbConn)
+		result, err := Handler(jsonParser)
+		if err != nil {
+			log.Error().Err(err).Msg("error producing response")
+
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		body, err = result.Marshal()
 		if err != nil {
 			log.Error().Err(err).Msg("error producing response")
 
@@ -81,7 +89,7 @@ func Listen(cfg *config.Config) error {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		w.Write(result)
+		w.Write(body)
 	})
 
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {

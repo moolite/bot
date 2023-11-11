@@ -39,7 +39,7 @@ func SelectOneGroup(ctx context.Context, gid string) (*Group, error) {
 		Where("gid = ?", gid).
 		Limit(1)
 
-	if err := q.QueryRow(ctx, dbc); err != nil {
+	if err := q.QueryRowAndClose(ctx, dbc); err != nil {
 		return nil, err
 	}
 
@@ -54,7 +54,7 @@ func SelectAllGroups(ctx context.Context) ([]*Group, error) {
 		Select("title", g.Title)
 
 	var ret []*Group
-	err := q.Query(ctx, dbc, func(r *sql.Rows) {
+	err := q.QueryAndClose(ctx, dbc, func(r *sql.Rows) {
 		ret = append(ret, g.Clone())
 	})
 
@@ -69,7 +69,7 @@ func InsertGroup(ctx context.Context, gid, title string) error {
 		Clause(
 			"ON CONFLICT(gid) DO UPDATE SET title = groups.title")
 
-	if res, err := q.Exec(ctx, dbc); err != nil {
+	if res, err := q.ExecAndClose(ctx, dbc); err != nil {
 		return err
 	} else if n, err := res.RowsAffected(); err != nil {
 		return err

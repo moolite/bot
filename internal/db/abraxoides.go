@@ -37,8 +37,8 @@ func (a *Abraxas) Clone() *Abraxas {
 func SelectOneAbraxas(ctx context.Context, a *Abraxas) error {
 	q := sqlf.
 		From(abraxoidesTable).
-		Select("abraxas", a.Abraxas).
-		Select("kind", a.Kind).
+		Select("abraxas").To(&a.Abraxas).
+		Select("kind").To(&a.Kind).
 		Where("gid = ?", a.GID).
 		Where("abraxas = ?", a.Abraxas).
 		Limit(1)
@@ -51,7 +51,7 @@ func SelectAbraxoides(ctx context.Context, gid string) ([]string, error) {
 	var abraxoides []string
 
 	q := sqlf.
-		Select("abraxas", &abraxas).
+		Select("abraxas").To(&abraxas).
 		Where("gid = ?", gid)
 
 	err := q.Query(ctx, dbc, func(rows *sql.Rows) {

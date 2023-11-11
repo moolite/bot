@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -15,18 +16,23 @@ import (
 )
 
 var (
-	ErrParseNoChatID error = errors.New("chat id not defined")
+	ErrParseNoChatID  error = errors.New("chat id not defined")
+	ErrParseNoMessage error = errors.New("message not defined")
 )
 
 var (
 	re = regexp.MustCompile(
 		`(([/!])?(?P<abraxas>[^@\s]+)(@[^\s]+)?)\s*(?P<rest>(?P<add>(\+|add|ricorda|record|put))?(?P<rem>(\-|rem|del|dimentica|forget|drop))?.*)`)
 
-	reMember = regexp.MustCompile(`^(\+|add|ricorda)$`)
-	reForget = regexp.MustCompile(`^(\-|del|dimentica)$`)
-	reDice   = regexp.MustCompile(`^(d|dice|r|roll)$`)
-	rePhoto  = regexp.MustCompile(`^(p|photo|f|foto)$`)
-	reVideo  = regexp.MustCompile(`^(v|video|clip|ani)$`)
+	reCallout = regexp.MustCompile(
+		`(!)(?P<abraxas>[^\s]+)\s+(?P<rest>.+)`)
+
+	reBackup = regexp.MustCompile(`^(back(up)?)$`)
+	reMember = regexp.MustCompile(`^(\+|add|remember|ricorda)[^\s]*$`)
+	reForget = regexp.MustCompile(`^(\-|del|forget|dimentica)[^\s]*$`)
+	reDice   = regexp.MustCompile(`^(d|dice|r|roll)[^\s]*$`)
+	rePhoto  = regexp.MustCompile(`^(p|photo|f|foto)[^\s]*$`)
+	reVideo  = regexp.MustCompile(`^(v|video|clip|ani)[^\s]*$`)
 )
 
 var (
@@ -38,6 +44,7 @@ var (
 
 const (
 	_ = iota
+	CmdBackup
 	CmdRemember
 	CmdForget
 	CmdLink
@@ -82,7 +89,9 @@ func parseText(text string) *BotRequest {
 			case "abraxas":
 				r.Abraxas = m[i]
 
-				if reMember.MatchString(r.Abraxas) {
+				if reBackup.MatchString(r.Abraxas) {
+					r.Command = CmdBackup
+				} else if reMember.MatchString(r.Abraxas) {
 					r.Command = CmdRemember
 				} else if reForget.MatchString(r.Abraxas) {
 					r.Command = CmdForget
@@ -110,29 +119,40 @@ func parseText(text string) *BotRequest {
 		}
 	}
 
+	if strings.HasPrefix(r.Rest, "!") {
+		for _, m := range reCallout.FindAllStringSubmatch(r.Rest, -1) {
+			for i, name := range reCallout.SubexpNames() {
+				switch name {
+				case "abraxas":
+					r.Abraxas = m[i]
+				case "rest":
+					r.Rest = m[i]
+				}
+			}
+		}
+		r.Kind = KindCallout
+	}
+
 	return r
 }
 
-func Handler(p *fastjson.Value, dbc *sql.DB) ([]byte, error) {
+func Handler(p *fastjson.Value) (*telegram.WebhookResponse, error) {
 	ctx := context.Background()
-
 	res := new(telegram.WebhookResponse)
 
 	// Early exit
 	if !p.Exists("message") {
-		return res.
-			SetText(textErr).
-			SendMessage().
-			Marshal()
+		return res, ErrParseNoMessage
 	}
 
-	// move parser into the "message" part
+	// move parser into the "p" part
 	p = p.Get("message")
 
 	if !p.Exists("chat", "id") {
-		return nil, ErrParseNoChatID
+		return res, ErrParseNoChatID
 	}
 	gid := string(p.GetStringBytes("chat", "id"))
+	res.SetChatID(string(gid))
 
 	var text string
 	if p.Exists("text") {
@@ -141,15 +161,26 @@ func Handler(p *fastjson.Value, dbc *sql.DB) ([]byte, error) {
 		text = string(p.GetStringBytes("caption"))
 	}
 
+	// Use forwarded messages as base for data
+	if p.Exists("message", "reply_to_message") {
+		p = p.Get("message", "reply_to_message")
+	}
+
 	inc := parseText(text)
 
 	switch inc.Kind {
 	case KindTrigger:
-		trigger := &db.Abraxas{GID: gid, Abraxas: inc.Abraxas}
+		trigger := &db.Abraxas{
+			GID:     gid,
+			Abraxas: inc.Abraxas,
+		}
 
 		// FIXME what if there is no trigger?
-		if err := db.SelectOneAbraxas(ctx, trigger); err != nil {
+		if err := db.SelectOneAbraxas(ctx, trigger); errors.Is(err, sql.ErrNoRows) {
 			log.Error().Err(err).Msg("abraxoides get not found")
+			return res, nil
+		} else if err != nil {
+			return res, err
 		}
 
 		if trigger.Kind == "" {
@@ -194,51 +225,63 @@ func Handler(p *fastjson.Value, dbc *sql.DB) ([]byte, error) {
 		}
 
 	case KindCommand:
-		// Use forwarded messages as base for data
-		if p.Exists("message", "reply_to_message") {
-			p = p.Get("message", "reply_to_message")
-		} else {
-			p = p.Get("message")
-		}
-
 		switch inc.Command {
 		case CmdRemember:
-			if p.Exists("text") {
-
-			} else { // Most likely media
-				var kind string
-				var data string
-
-				if p.Exists("photo") { // Photo
-					kind = "photo"
-					data = string(p.GetStringBytes("photo", "0", "file_id"))
-
-				} else if p.Exists("message", "animation") { // Animations
-					kind = "animation"
-					data = string(p.GetStringBytes("animation", "0", "file_id"))
-
-				} else if p.Exists("message", "video") { // Video
-					kind = "video"
-					data = string(p.GetStringBytes("video", "0", "file_id"))
-
-				}
-
+			if p.Exists("photo") || p.Exists("animation") || p.Exists("video") {
 				m := &db.Media{
 					GID:         gid,
-					Kind:        kind,
-					Data:        data,
 					Description: inc.Rest,
 				}
 
+				if p.Exists("photo") { // Photo
+					m.Kind = "photo"
+					m.Data = string(p.GetStringBytes("photo", "0", "file_id"))
+
+				} else if p.Exists("animation") { // Animations
+					m.Kind = "animation"
+					m.Data = string(p.GetStringBytes("animation", "0", "file_id"))
+
+				} else if p.Exists("video") { // Video
+					m.Kind = "video"
+					m.Data = string(p.GetStringBytes("video", "0", "file_id"))
+				} else {
+					return res, fmt.Errorf("something is wrong")
+				}
+
+				log.Error().Str("kind", m.Kind).Str("data", m.Data).Msg("new media")
+
 				res.SendMessage()
 
-				if err := db.InsertMedia(ctx, m); err != nil {
+				err := db.InsertMedia(ctx, m)
+				if err != nil {
 					log.Error().Err(err).Msg("error inserting new media")
-					res.SetText(textErr)
-				} else {
-					res.SetText(textRemember)
+					return res.SetText(textErr), err
+				}
+
+				return res.SetText(textRemember), nil
+
+			} else if inc.Kind == KindCallout && len(inc.Abraxas) > 0 {
+				c := &db.Callout{GID: gid, Callout: inc.Abraxas, Text: inc.Rest}
+
+				err := db.InsertCallout(ctx, c)
+				if err != nil {
+					log.Error().
+						Err(err).
+						Str("callout", inc.Abraxas).
+						Str("rest", inc.Rest).
+						Msg("error inserting callout.")
+					return res.SetText(textErr), nil
 				}
 			}
+
+			log.Error().
+				Bool("photo", p.Exists("photo")).
+				Bool("video", p.Exists("video")).
+				Bool("animation", p.Exists("animation")).
+				Str("p", string(p.GetStringBytes("video", "0", "file_id"))).
+				Msg("WRTFD")
+
+			return res.SendMessage().SetText(textErr), nil
 
 		case CmdForget:
 			if p.Exists("message", "text") {
@@ -356,7 +399,5 @@ func Handler(p *fastjson.Value, dbc *sql.DB) ([]byte, error) {
 		}
 	}
 
-	res.SetChatID(string(gid))
-
-	return res.Marshal()
+	return res.Empty(), nil
 }

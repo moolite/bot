@@ -2,23 +2,21 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"testing"
 
 	"github.com/leporo/sqlf"
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/rs/zerolog/log"
 	"gotest.tools/assert"
 )
 
 func TestTables(t *testing.T) {
-	ctx := context.Background()
 	var err error
 
-	dbc, err := sql.Open("sqlite3", ":memory:?cache=shared&mode=memory")
+	err = Open(":memory:")
+	defer Close()
 	assert.NilError(t, err)
 
-	err = CreateTables(dbc)
+	err = CreateTables()
 	assert.NilError(t, err)
 
 	gid := "one"
@@ -26,31 +24,39 @@ func TestTables(t *testing.T) {
 	data := "123456"
 	kind := "photo"
 
-	err = Query(ctx, dbc, InsertGroup(gid, "group name"))
-	assert.ErrorType(t, err, sql.ErrNoRows)
+	err = InsertGroup(context.TODO(), gid, "group name")
+	assert.NilError(t, err)
 
-	err = Query(ctx, dbc, InsertAbraxas(gid, text, kind))
-	assert.ErrorType(t, err, sql.ErrNoRows)
+	err = InsertAbraxas(context.TODO(), gid, text, kind)
+	assert.NilError(t, err)
 
-	err = Query(ctx, dbc, InsertMedia(gid, data, kind, text))
-	assert.ErrorType(t, err, sql.ErrNoRows)
+	err = InsertMedia(context.TODO(), &Media{gid, data, kind, text})
+	assert.NilError(t, err)
 
-	n := new(Media)
+	var c int64
+	err = sqlf.From(mediaTable).
+		Select("COUNT(*)").To(&c).
+		QueryRowAndClose(context.TODO(), dbc)
+	assert.NilError(t, err)
+	assert.Equal(t, c, int64(1))
+
+	n := &Media{}
 
 	err = sqlf.
 		From(mediaTable).
-		Select("kind", n.Kind).
-		Select("description", n.Description).
-		Select("data", n.Data).
-		Select("gid", n.GID).
+		Select("kind").To(&n.Kind).
+		Select("description").To(&n.Description).
+		Select("data").To(&n.Data).
+		Select("gid").To(&n.GID).
+		Where("data = ?", data).
 		Limit(1).
-		QueryRow(ctx, dbc)
+		QueryRow(context.TODO(), dbc)
 	assert.NilError(t, err)
+	assert.Equal(t, n.GID, gid)
+	assert.Equal(t, n.Data, data)
 
-	m := new(Media)
-	stmt := SelectRandomMedia(gid, kind)
-	err = QueryOne[Media](ctx, dbc, stmt, m)
-	log.Debug().Msg(stmt.String())
+	m := &Media{GID: gid, Kind: kind}
+	err = SelectRandomMedia(context.TODO(), m)
 	assert.NilError(t, err)
 
 	assert.Equal(t, m.GID, gid)

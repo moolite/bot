@@ -9,15 +9,18 @@ import (
 
 var dbc *sql.DB
 
-func Connect(filename string) error {
+func Open(filename string) error {
+	var err error
 	uri := fmt.Sprintf("%s?cache=shared", filename)
-	d, err := sql.Open("sqlite3", uri)
+	dbc, err = sql.Open("sqlite3", uri)
 	if err != nil {
 		return err
 	}
+	return dbc.Ping()
+}
 
-	dbc = d
-	return nil
+func Close() error {
+	return dbc.Close()
 }
 
 func onRow(rows *sql.Rows) {

@@ -7,7 +7,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func CreateTables(dbc *sql.DB) (err error) {
+func CreateTables() (err error) {
 	tx, err := dbc.Begin()
 	if err != nil {
 		return err

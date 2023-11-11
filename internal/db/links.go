@@ -39,7 +39,7 @@ func SelectRandomLink(ctx context.Context, l *Link) error {
 		Select("url", l.URL).
 		Select("text", l.Text)
 
-	return q.QueryRow(ctx, dbc)
+	return q.QueryRowAndClose(ctx, dbc)
 }
 
 func SearchLinks(ctx context.Context, gid, term string) ([]*Link, error) {
@@ -52,7 +52,7 @@ func SearchLinks(ctx context.Context, gid, term string) ([]*Link, error) {
 		Where("text LIKE ? AND gid = ?", "%"+term+"%", gid)
 
 	var results []*Link
-	if err := q.Query(ctx, dbc, func(rows *sql.Rows) {
+	if err := q.QueryAndClose(ctx, dbc, func(rows *sql.Rows) {
 		results = append(results, l.Clone())
 	}); err != nil {
 		return nil, err
@@ -69,7 +69,7 @@ func InsertLink(ctx context.Context, link *Link) error {
 		Set("text", link.Text).
 		Clause("ON CONFLICT(url,gid) DO UPDATE SET(text = ?, url = ?)", link.Text, link.URL)
 
-	res, err := q.Exec(ctx, dbc)
+	res, err := q.ExecAndClose(ctx, dbc)
 	if err != nil {
 		return err
 	}
@@ -90,5 +90,5 @@ func DeleteLink(ctx context.Context, l *Link) error {
 		Where("url = ? AND gid = ?", l.URL, l.GID).
 		Limit(1)
 
-	return q.QueryRow(ctx, dbc)
+	return q.QueryRowAndClose(ctx, dbc)
 }
