@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 
 	"github.com/leporo/sqlf"
@@ -28,6 +29,15 @@ type Media struct {
 	Description string `db:"description"`
 }
 
+func (m *Media) Clone() *Media {
+	return &Media{
+		GID:         m.GID,
+		Data:        m.Data,
+		Kind:        m.Kind,
+		Description: m.Description,
+	}
+}
+
 func InsertMedia(ctx context.Context, media *Media) error {
 	q := sqlf.
 		InsertInto(mediaTable).
@@ -38,7 +48,7 @@ func InsertMedia(ctx context.Context, media *Media) error {
 		Clause(
 			"ON CONFLICT(data,gid) DO UPDATE SET description = media.description, kind = media.kind")
 
-	log.Error().
+	log.Debug().
 		Str("stmt", q.String()).
 		Interface("args", q.Args()).
 		Msg("statement")
@@ -68,12 +78,28 @@ func SelectOneMediaByData(ctx context.Context, m *Media) error {
 		Where("data = ? AND gid = ?", m.Data, m.GID).
 		Limit(1)
 
-	log.Error().
+	log.Debug().
 		Str("stmt", q.String()).
 		Interface("args", q.Args()).
 		Msg("statement")
 
 	return q.QueryRowAndClose(ctx, dbc)
+}
+
+func SelectAllMedia(ctx context.Context, gid string) ([]*Media, error) {
+	var results []*Media
+	m := &Media{}
+	q := sqlf.
+		From(mediaTable).
+		Select("data").To(&m.Data).
+		Select("description").To(&m.Description).
+		Select("gid").To(&m.GID).
+		Select("kind").To(&m.Kind).
+		Where("gid = ?", gid)
+	err := q.QueryAndClose(ctx, dbc, func(rows *sql.Rows) {
+		results = append(results, m.Clone())
+	})
+	return results, err
 }
 
 func SelectRandomMedia(ctx context.Context, m *Media) error {
@@ -83,6 +109,11 @@ func SelectRandomMedia(ctx context.Context, m *Media) error {
 		Select("gid").To(&m.GID).
 		Select("kind").To(&m.Kind).
 		Where("kind = ?", m.Kind)
+
+	log.Debug().
+		Str("stmt", q.String()).
+		Interface("args", q.Args()).
+		Msg("SelectRandomMedia")
 
 	return q.QueryRowAndClose(ctx, dbc)
 }

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 
 	"github.com/leporo/sqlf"
+	"github.com/rs/zerolog/log"
 )
 
 var (
@@ -40,12 +41,23 @@ func InsertCallout(ctx context.Context, c *Callout) error {
 		Set("callout", c.Callout).
 		Set("text", c.Text).
 		Clause(
-			"ON CONFLICT(callout,gid) DO UPDATE SET text=callouts.text")
+			"ON CONFLICT(callout,gid) DO UPDATE SET text = callouts.text")
 
-	if r, err := q.ExecAndClose(ctx, dbc); err != nil {
+	log.Debug().
+		Str("stmt", q.String()).
+		Interface("args", q.Args()).
+		Msg("statement")
+
+	res, err := q.ExecAndClose(ctx, dbc)
+	if err != nil {
 		return err
-	} else if i, _ := r.RowsAffected(); i != 1 {
-		return ErrNotFound
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return ErrInsert
 	}
 
 	return nil
@@ -59,10 +71,7 @@ func SelectOneCallout(ctx context.Context, c *Callout) error {
 		Where("callout = ?", c.Callout).
 		Limit(1)
 
-	if err := q.QueryRow(ctx, dbc); err != nil {
-		return err
-	}
-	return nil
+	return q.QueryRowAndClose(ctx, dbc)
 }
 
 func SelectAllCallouts(ctx context.Context, gid string) ([]string, error) {
@@ -74,7 +83,7 @@ func SelectAllCallouts(ctx context.Context, gid string) ([]string, error) {
 		Select("callout").To(&callout).
 		Where("gid = ?", gid)
 
-	err := q.Query(ctx, dbc, func(rows *sql.Rows) {
+	err := q.QueryAndClose(ctx, dbc, func(rows *sql.Rows) {
 		callouts = append(callouts, callout)
 	})
 	if err != nil {
@@ -84,17 +93,22 @@ func SelectAllCallouts(ctx context.Context, gid string) ([]string, error) {
 	return callouts, nil
 }
 
-func DeleleOneCallout(ctx context.Context, gid, callout string) error {
+func DeleleOneCallout(ctx context.Context, c *Callout) error {
 	q := sqlf.
 		DeleteFrom(calloutsTable).
-		Where("gid = ? AND callout = ?", gid, callout).
+		Where("gid = ? AND callout = ?", c.GID, c.Callout).
 		Limit(1)
 
-	if r, err := q.Exec(ctx, dbc); err != nil {
+	res, err := q.ExecAndClose(ctx, dbc)
+	if err != nil {
 		return err
-	} else if i, _ := r.RowsAffected(); i != 1 {
-		return ErrNotFound
 	}
-
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n != 1 {
+		return ErrDelete
+	}
 	return nil
 }

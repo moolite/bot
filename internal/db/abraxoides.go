@@ -5,6 +5,7 @@ import (
 	"database/sql"
 
 	"github.com/leporo/sqlf"
+	"github.com/rs/zerolog/log"
 )
 
 var (
@@ -34,28 +35,36 @@ func (a *Abraxas) Clone() *Abraxas {
 	}
 }
 
-func SelectOneAbraxas(ctx context.Context, a *Abraxas) error {
+func SelectOneAbraxasByAbraxas(ctx context.Context, a *Abraxas) error {
 	q := sqlf.
 		From(abraxoidesTable).
+		Select("gid").To(&a.GID).
 		Select("abraxas").To(&a.Abraxas).
 		Select("kind").To(&a.Kind).
 		Where("gid = ?", a.GID).
 		Where("abraxas = ?", a.Abraxas).
 		Limit(1)
 
-	return q.QueryRow(ctx, dbc)
+	log.Debug().
+		Str("stmt", q.String()).
+		Interface("args", q.Args()).
+		Msg("SelectOneAbraxasByAbraxas statement")
+
+	return q.QueryRowAndClose(ctx, dbc)
 }
 
-func SelectAbraxoides(ctx context.Context, gid string) ([]string, error) {
-	var abraxas string
-	var abraxoides []string
+func SelectAbraxoides(ctx context.Context, gid string) ([]*Abraxas, error) {
+	a := &Abraxas{}
+	var abraxoides []*Abraxas
 
 	q := sqlf.
-		Select("abraxas").To(&abraxas).
+		Select("abraxas").To(&a.Abraxas).
+		Select("gid").To(&a.GID).
+		Select("kind").To(&a.Kind).
 		Where("gid = ?", gid)
 
-	err := q.Query(ctx, dbc, func(rows *sql.Rows) {
-		abraxoides = append(abraxoides, abraxas)
+	err := q.QueryAndClose(ctx, dbc, func(rows *sql.Rows) {
+		abraxoides = append(abraxoides, a.Clone())
 	})
 	if err != nil {
 		return nil, err
@@ -64,20 +73,57 @@ func SelectAbraxoides(ctx context.Context, gid string) ([]string, error) {
 	return abraxoides, nil
 }
 
-func InsertAbraxas(ctx context.Context, gid, abraxas, kind string) error {
+func SelectAbraxoidesAbraxas(ctx context.Context, gid string) ([]string, error) {
+	var results []string
+	abs, err := SelectAbraxoides(ctx, gid)
+	if err != nil {
+		return results, err
+	}
+
+	for _, a := range abs {
+		results = append(results, a.Abraxas)
+	}
+
+	return results, err
+}
+
+func SelectAbraxoidesAbraxasKind(ctx context.Context, gid string) ([][]string, error) {
+	var results [][]string
+	abs, err := SelectAbraxoides(ctx, gid)
+	if err != nil {
+		return results, err
+	}
+
+	for _, a := range abs {
+		results = append(results, []string{a.Abraxas, a.Kind})
+	}
+
+	return results, err
+}
+
+func InsertAbraxas(ctx context.Context, a *Abraxas) error {
 	q := sqlf.
 		InsertInto(abraxoidesTable).
-		Set("gid", gid).
-		Set("abraxas", abraxas).
-		Set("kind", kind).
+		Set("gid", a.GID).
+		Set("abraxas", a.Abraxas).
+		Set("kind", a.Kind).
 		Clause(
-			"ON CONFLICT(abraxas,gid) DO UPDATE SET kind = abraxoides.kind")
+			"ON CONFLICT(abraxas,gid) DO UPDATE SET kind = " + abraxoidesTable + ".kind")
 
-	if res, err := q.Exec(ctx, dbc); err != nil {
+	log.Debug().
+		Str("stmt", q.String()).
+		Interface("args", q.Args()).
+		Msg("InsertAbraxas")
+
+	res, err := q.ExecAndClose(ctx, dbc)
+	if err != nil {
 		return err
-	} else if n, err := res.RowsAffected(); err != nil {
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
 		return err
-	} else if n == 0 {
+	}
+	if n == 0 {
 		return ErrInsert
 	}
 

@@ -27,7 +27,7 @@ func TestTables(t *testing.T) {
 	err = InsertGroup(context.TODO(), gid, "group name")
 	assert.NilError(t, err)
 
-	err = InsertAbraxas(context.TODO(), gid, text, kind)
+	err = InsertAbraxas(context.TODO(), &Abraxas{GID: gid, Abraxas: "something", Kind: "photo"})
 	assert.NilError(t, err)
 
 	err = InsertMedia(context.TODO(), &Media{gid, data, kind, text})

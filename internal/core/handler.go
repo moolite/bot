@@ -24,8 +24,8 @@ var (
 	re = regexp.MustCompile(
 		`(([/!])?(?P<abraxas>[^@\s]+)(@[^\s]+)?)\s*(?P<rest>(?P<add>(\+|add|ricorda|record|put))?(?P<rem>(\-|rem|del|dimentica|forget|drop))?.*)`)
 
-	reCallout = regexp.MustCompile(
-		`(!)(?P<abraxas>[^\s]+)\s+(?P<rest>.+)`)
+	reMemberCmd = regexp.MustCompile(
+		`(!)?(?P<abraxas>[^\s]+)\s+(?P<rest>.+)?`)
 
 	reBackup = regexp.MustCompile(`^(back(up)?)$`)
 	reMember = regexp.MustCompile(`^(\+|add|remember|ricorda)[^\s]*$`)
@@ -43,7 +43,7 @@ var (
 )
 
 const (
-	_ = iota
+	_None = iota
 	CmdBackup
 	CmdRemember
 	CmdForget
@@ -57,7 +57,9 @@ const (
 	_
 	KindCommand
 	KindCallout
+	KindCalloutCmd
 	KindTrigger
+	KindTriggerCmd
 )
 
 type BotRequest struct {
@@ -66,6 +68,10 @@ type BotRequest struct {
 	Command   int
 	Abraxas   string
 	Rest      string
+	// Remember
+	RememberKind    int
+	RememberAbraxas string
+	RememberRest    string
 }
 
 func isCallout(text string) bool {
@@ -73,7 +79,11 @@ func isCallout(text string) bool {
 }
 
 func parseText(text string) *BotRequest {
-	r := &BotRequest{}
+	r := &BotRequest{
+		Command:   _None,
+		Kind:      _None,
+		Operation: _None,
+	}
 
 	if strings.HasPrefix(text, "/") {
 		r.Kind = KindCommand
@@ -119,18 +129,23 @@ func parseText(text string) *BotRequest {
 		}
 	}
 
-	if strings.HasPrefix(r.Rest, "!") {
-		for _, m := range reCallout.FindAllStringSubmatch(r.Rest, -1) {
-			for i, name := range reCallout.SubexpNames() {
+	if r.Command == CmdRemember {
+		if strings.HasPrefix(r.Rest, "!") {
+			r.RememberKind = KindCalloutCmd
+		} else {
+			r.RememberKind = KindTriggerCmd
+		}
+
+		for _, m := range reMemberCmd.FindAllStringSubmatch(r.Rest, -1) {
+			for i, name := range reMemberCmd.SubexpNames() {
 				switch name {
 				case "abraxas":
-					r.Abraxas = m[i]
+					r.RememberAbraxas = m[i]
 				case "rest":
-					r.Rest = m[i]
+					r.RememberRest = m[i]
 				}
 			}
 		}
-		r.Kind = KindCallout
 	}
 
 	return r
@@ -175,16 +190,14 @@ func Handler(p *fastjson.Value) (*telegram.WebhookResponse, error) {
 			Abraxas: inc.Abraxas,
 		}
 
-		// FIXME what if there is no trigger?
-		if err := db.SelectOneAbraxas(ctx, trigger); errors.Is(err, sql.ErrNoRows) {
-			log.Error().Err(err).Msg("abraxoides get not found")
+		err := db.SelectOneAbraxasByAbraxas(ctx, trigger)
+		if errors.Is(err, sql.ErrNoRows) {
 			return res, nil
 		} else if err != nil {
+			log.Error().Err(err).Str("abraxas", inc.Abraxas).Msg("handler SelectOneAbraxasByAbraxas error")
 			return res, err
-		}
-
-		if trigger.Kind == "" {
-			log.Debug().Interface("trigger", trigger).Msg("trigger has no kind")
+		} else if trigger.Kind == "" {
+			log.Debug().Interface("trigger", trigger).Msg("handler trigger has no kind")
 			return nil, nil
 		}
 
@@ -192,7 +205,6 @@ func Handler(p *fastjson.Value) (*telegram.WebhookResponse, error) {
 			GID:  gid,
 			Kind: trigger.Kind,
 		}
-
 		if err := db.SelectRandomMedia(ctx, media); err != nil {
 			log.Error().Err(err).Msg("error selecting random media")
 		}
@@ -200,13 +212,11 @@ func Handler(p *fastjson.Value) (*telegram.WebhookResponse, error) {
 		switch media.Kind {
 		case "video":
 			res.SendVideo(media.Data)
-		case "animation":
-			res.SendAnimation(media.Data)
 		case "photo":
 			res.SendPhoto(media.Data)
-		default:
-			return nil, nil
 		}
+
+		return res, nil
 
 	case KindCallout:
 		callout := &db.Callout{
@@ -216,13 +226,17 @@ func Handler(p *fastjson.Value) (*telegram.WebhookResponse, error) {
 
 		if err := db.SelectOneCallout(ctx, callout); err != nil {
 			log.Error().Err(err).Msg("callout query error")
+
+			if errors.Is(err, sql.ErrNoRows) {
+				return res.SendMessage().SetText(textErr), nil
+			}
 			return nil, err
 		} else if callout.Text != "" {
-			res.SendMessage().
-				SetText(strings.Replace(callout.Text, "%", inc.Rest, -1))
-		} else {
-			return nil, nil
+			return res.SendMessage().
+				SetText(strings.Replace(callout.Text, "%", inc.Rest, -1)), nil
 		}
+
+		return res, nil
 
 	case KindCommand:
 		switch inc.Command {
@@ -237,8 +251,8 @@ func Handler(p *fastjson.Value) (*telegram.WebhookResponse, error) {
 					m.Kind = "photo"
 					m.Data = string(p.GetStringBytes("photo", "0", "file_id"))
 
-				} else if p.Exists("animation") { // Animations
-					m.Kind = "animation"
+				} else if p.Exists("animation") { // Animations are saved as video
+					m.Kind = "video"
 					m.Data = string(p.GetStringBytes("animation", "0", "file_id"))
 
 				} else if p.Exists("video") { // Video
@@ -248,7 +262,10 @@ func Handler(p *fastjson.Value) (*telegram.WebhookResponse, error) {
 					return res, fmt.Errorf("something is wrong")
 				}
 
-				log.Error().Str("kind", m.Kind).Str("data", m.Data).Msg("new media")
+				log.Error().
+					Str("kind", m.Kind).
+					Str("data", m.Data).
+					Msg("new media")
 
 				res.SendMessage()
 
@@ -260,26 +277,47 @@ func Handler(p *fastjson.Value) (*telegram.WebhookResponse, error) {
 
 				return res.SetText(textRemember), nil
 
-			} else if inc.Kind == KindCallout && len(inc.Abraxas) > 0 {
-				c := &db.Callout{GID: gid, Callout: inc.Abraxas, Text: inc.Rest}
+			} else {
+				if inc.RememberKind == KindCalloutCmd {
+					c := &db.Callout{
+						GID:     gid,
+						Callout: inc.RememberAbraxas,
+						Text:    inc.RememberRest,
+					}
 
-				err := db.InsertCallout(ctx, c)
-				if err != nil {
-					log.Error().
-						Err(err).
-						Str("callout", inc.Abraxas).
-						Str("rest", inc.Rest).
-						Msg("error inserting callout.")
-					return res.SetText(textErr), nil
+					err := db.InsertCallout(ctx, c)
+					if err != nil {
+						log.Error().
+							Err(err).
+							Str("callout", inc.RememberAbraxas).
+							Str("rest", inc.RememberRest).
+							Msg("error inserting callout.")
+						return res.SetText(textErr), nil
+					}
+					return res.SetText(textRemember), nil
+				}
+
+				if inc.RememberKind == KindTriggerCmd {
+					a := &db.Abraxas{
+						GID:     gid,
+						Abraxas: inc.RememberAbraxas,
+					}
+
+					if rePhoto.MatchString(inc.RememberRest) {
+						a.Kind = "photo"
+					} else if reVideo.MatchString(inc.RememberRest) {
+						a.Kind = "video"
+					} else {
+						a.Kind = "photo"
+					}
+
+					if err := db.InsertAbraxas(ctx, a); err != nil {
+						return res, err
+					}
+
+					return res.SetText(textRemember), nil
 				}
 			}
-
-			log.Error().
-				Bool("photo", p.Exists("photo")).
-				Bool("video", p.Exists("video")).
-				Bool("animation", p.Exists("animation")).
-				Str("p", string(p.GetStringBytes("video", "0", "file_id"))).
-				Msg("WRTFD")
 
 			return res.SendMessage().SetText(textErr), nil
 
