@@ -33,6 +33,7 @@ var (
 	reDice   = regexp.MustCompile(`^(d|dice|r|roll)[^\s]*$`)
 	rePhoto  = regexp.MustCompile(`^(p|photo|f|foto)[^\s]*$`)
 	reVideo  = regexp.MustCompile(`^(v|video|clip|ani)[^\s]*$`)
+	reLink   = regexp.MustCompile(`^(l|link|url)[^\s]*$`)
 )
 
 var (
@@ -40,6 +41,11 @@ var (
 	textForget   string = "ho dimenticato _qualcosa_."
 	textErr      string = "qualcosa è andato storto."
 	text404      string = "non ho capito."
+)
+
+var (
+	ErrNotFound    error = errors.New("not found")
+	ErrURLNotFound error = errors.New("url not found")
 )
 
 const (
@@ -78,6 +84,20 @@ func isCallout(text string) bool {
 	return strings.HasPrefix(text, "!")
 }
 
+func getURL(p *fastjson.Value) (string, error) {
+	entities := p.GetArray("entities")
+	var url string
+	for _, ent := range entities {
+		if ent.Exists("url") {
+			url = string(ent.GetStringBytes("url"))
+		}
+	}
+	if url == "" {
+		return url, ErrURLNotFound
+	}
+	return url, nil
+}
+
 func parseText(text string) *BotRequest {
 	r := &BotRequest{
 		Command:   _None,
@@ -107,6 +127,8 @@ func parseText(text string) *BotRequest {
 					r.Command = CmdForget
 				} else if reDice.MatchString(r.Abraxas) {
 					r.Command = CmdDice
+				} else if reLink.MatchString(r.Abraxas) {
+					r.Command = CmdLink
 				} else if rePhoto.MatchString(r.Abraxas) {
 					r.Command = CmdPhoto
 				} else if reVideo.MatchString(r.Abraxas) {
@@ -351,16 +373,14 @@ func Handler(p *fastjson.Value) (*telegram.WebhookResponse, error) {
 				SetText(textForget)
 
 		case CmdLink:
-			res.SendMessage()
-
 			switch inc.Operation {
 			case OpAdd:
-				entities := p.GetArray("message", "entities")
-				var url string
-				for _, ent := range entities {
-					if ent.Exists("url") {
-						url = string(ent.GetStringBytes("url"))
-					}
+				log.Debug().Msg("CmdLink#OpAdd")
+
+				url, err := getURL(p)
+				if err != nil {
+					return res.SendMessage().
+						SetText(textErr), err
 				}
 
 				link := &db.Link{
@@ -372,18 +392,20 @@ func Handler(p *fastjson.Value) (*telegram.WebhookResponse, error) {
 				if err := db.InsertLink(ctx, link); err != nil {
 					log.Error().Err(err).Msg("error inserting link")
 
-					res.SetText(textErr)
-				} else {
-					res.SetText(textRemember)
+					return res.SendMessage().
+						SetText(textErr), err
 				}
 
+				return res.SendMessage().
+					SetText(textRemember), nil
+
 			case OpRem:
-				entities := p.GetArray("message", "entities")
-				var url string
-				for _, ent := range entities {
-					if ent.Exists("url") {
-						url = string(ent.GetStringBytes("url"))
-					}
+				log.Debug().Msg("CmdLink#OpRem")
+
+				url, err := getURL(p)
+				if err != nil {
+					return res.SendMessage().
+						SetText(textErr), err
 				}
 
 				link := &db.Link{
@@ -392,33 +414,35 @@ func Handler(p *fastjson.Value) (*telegram.WebhookResponse, error) {
 				}
 
 				if err := db.DeleteLink(ctx, link); err != nil {
-					log.Error().Err(err).Msg("error inserting link")
+					log.Error().Err(err).Msg("error deleting link")
 
-					res.SetText(textErr)
-				} else {
-					res.SetText(textForget)
+					return res.SendMessage().
+						SetText(textErr), err
 				}
+
+				return res.SendMessage().
+					SetText(textForget), nil
 
 			default:
-				if links, err := db.SearchLinks(ctx, gid, text); err != nil {
+				log.Debug().Msg("CmdLink#default")
+
+				links, err := db.SearchLinks(ctx, gid, text)
+				if err != nil {
 					log.Error().Err(err).Msg("error searching links")
 
-					res.SetText(textErr)
-
+					return res.SetText(textErr), err
 				} else if len(links) == 0 {
-					res.SetText(text404)
-
-				} else {
-					var buttons []telegram.URLButton
-					for _, v := range links {
-						buttons = append(buttons, telegram.URLButton{
-							URL:  v.URL,
-							Text: v.Text,
-						})
-					}
-					res.SetText("links:").
-						SetLinks(buttons)
+					return res.SetText(text404), nil
 				}
+				var buttons []telegram.URLButton
+				for _, v := range links {
+					buttons = append(buttons, telegram.URLButton{
+						URL:  v.URL,
+						Text: v.Text,
+					})
+				}
+				return res.SetText("links:").
+					SetLinks(buttons), nil
 			}
 
 		case CmdDice:

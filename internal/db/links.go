@@ -5,6 +5,7 @@ import (
 	"database/sql"
 
 	"github.com/leporo/sqlf"
+	"github.com/rs/zerolog/log"
 )
 
 var (
@@ -32,6 +33,18 @@ func (l *Link) Clone() *Link {
 		Text: l.Text,
 		GID:  l.GID,
 	}
+}
+
+func SelectLinkByURL(ctx context.Context, l *Link) error {
+	q := sqlf.
+		From(linksTable).
+		Select("url").To(&l.URL).
+		Select("gid").To(&l.GID).
+		Select("text").To(&l.Text).
+		Where("gid = ?", l.GID).
+		Limit(1)
+
+	return q.QueryRowAndClose(ctx, dbc)
 }
 
 func SelectRandomLink(ctx context.Context, l *Link) error {
@@ -67,7 +80,10 @@ func InsertLink(ctx context.Context, link *Link) error {
 		Set("gid", link.GID).
 		Set("url", link.URL).
 		Set("text", link.Text).
-		Clause("ON CONFLICT(url,gid) DO UPDATE SET(text = ?, url = ?)", link.Text, link.URL)
+		Clause(
+			"ON CONFLICT(url,gid) DO UPDATE SET text=" + linksTable + ".text")
+
+	log.Debug().Str("stmt", q.String()).Msg("InsertLink")
 
 	res, err := q.ExecAndClose(ctx, dbc)
 	if err != nil {
@@ -87,8 +103,18 @@ func InsertLink(ctx context.Context, link *Link) error {
 func DeleteLink(ctx context.Context, l *Link) error {
 	q := sqlf.
 		DeleteFrom(linksTable).
-		Where("url = ? AND gid = ?", l.URL, l.GID).
-		Limit(1)
+		Where("url = ? AND gid = ?", l.URL, l.GID)
 
-	return q.QueryRowAndClose(ctx, dbc)
+	log.Debug().Str("stmt", q.String()).Interface("args", q.Args()).Msg("DeleteLink")
+
+	r, err := q.ExecAndClose(ctx, dbc)
+	if err != nil {
+		return err
+	}
+	if n, err := r.RowsAffected(); err != nil {
+		return err
+	} else if n != 1 {
+		return ErrNotFound
+	}
+	return nil
 }

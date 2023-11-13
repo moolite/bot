@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"database/sql"
 	"testing"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -24,7 +25,7 @@ func prepareDB(t *testing.T, gid string) {
 	assert.NilError(t, err)
 }
 
-func tryHandle(t *testing.T, text string) (*telegram.WebhookResponse, error) {
+func invokeHandler(t *testing.T, text string) (*telegram.WebhookResponse, error) {
 	json, err := fastjson.Parse(text)
 	if err != nil {
 		t.Log("fastjson test error", err, "input:", text)
@@ -40,19 +41,19 @@ func TestHandlerRemember(t *testing.T) {
 	prepareDB(t, gid)
 	defer db.Close()
 
-	_, err = tryHandle(t, `{
+	_, err = invokeHandler(t, `{
 		"chat": {"fid": 0 },
 		"message": {}
 	}`)
 	assert.ErrorType(t, err, ErrParseNoChatID)
 
-	_, err = tryHandle(t, `{
+	_, err = invokeHandler(t, `{
 		"chat": {"fid": 0 }
 	}`)
 	assert.ErrorType(t, err, ErrParseNoMessage)
 
 	t.Run("empty photo", func(t *testing.T) {
-		_, err := tryHandle(t, `{
+		_, err := invokeHandler(t, `{
 			"message": {
 				"chat": { "id": "`+gid+`" },
 				"text": "/ricorda just a photo"
@@ -94,7 +95,7 @@ func TestHandlerRemember(t *testing.T) {
 			var err error
 			var res *telegram.WebhookResponse
 
-			res, err = tryHandle(t, `{
+			res, err = invokeHandler(t, `{
 				"message": {
 					"chat": { "id": "`+test.gid+`" },
 					"text": "/ricorda `+test.description+`",
@@ -157,7 +158,7 @@ func TestHandlerCallout(t *testing.T) {
 	for name, test := range tests {
 		test := test
 		t.Run(name, func(t *testing.T) {
-			res, err := tryHandle(t, `{
+			res, err := invokeHandler(t, `{
 				"message": {
 					"chat": {"id":"`+gid+`"},
 					"text": "`+test.remember+`"
@@ -174,7 +175,7 @@ func TestHandlerCallout(t *testing.T) {
 			assert.NilError(t, err)
 			assert.Equal(t, c.Text, test.text)
 
-			res, err = tryHandle(t, `{
+			res, err = invokeHandler(t, `{
 				"message": {
 					"chat": { "id": "`+gid+`" },
 					"text": "`+test.message+`"
@@ -222,7 +223,7 @@ func TestHandlerAbraxas(t *testing.T) {
 	for name, test := range testsRemember {
 		test := test
 		t.Run(name, func(t *testing.T) {
-			res, err := tryHandle(t, `{
+			res, err := invokeHandler(t, `{
 				"message": {
 					"chat": {"id":"`+gid+`"},
 					"text": "`+test.message+`"
@@ -291,7 +292,7 @@ func TestHandlerAbraxas(t *testing.T) {
 	for name, test := range testsInvoke {
 		test := test
 		t.Run(name, func(t *testing.T) {
-			res, err := tryHandle(t, `{
+			res, err := invokeHandler(t, `{
 				"message": {
 					"chat": {"id":"`+gid+`"},
 					"text": "`+test.message+`"
@@ -301,6 +302,129 @@ func TestHandlerAbraxas(t *testing.T) {
 			assert.Check(t, res != nil)
 			t.Log("message", test.message, "method", res.Method)
 			assert.Check(t, res.Method == test.method)
+		})
+	}
+}
+
+func TestHandlerLinks(t *testing.T) {
+	gid := "123456"
+
+	prepareDB(t, gid)
+	defer db.Close()
+
+	testsLinkOpAdd := map[string]struct {
+		word string
+		url  string
+		text string
+	}{
+		"+": {
+			word: "+",
+			url:  "https://example.com/1",
+			text: "I love 1",
+		},
+		"add": {
+			word: "add",
+			url:  "https://example.com/2",
+			text: "I love 2",
+		},
+		"ricorda": {
+			word: "ricorda",
+			url:  "https://example.com/3",
+			text: "I love 3",
+		},
+		"record": {
+			word: "record",
+			url:  "https://example.com/4",
+			text: "I love 4",
+		},
+		"put": {
+			word: "put",
+			url:  "https://example.com/5",
+			text: "I love 5",
+		},
+	}
+	for id, test := range testsLinkOpAdd {
+		test := test
+		t.Run("add#"+id, func(t *testing.T) {
+			res, err := invokeHandler(t, `{
+				"message": {
+					"chat": {"id":"`+gid+`"},
+					"text": "/link `+test.word+` I love this link",
+					"entities": [
+						{"url": "`+test.url+`"},
+						{"something":"else"}
+					]
+				}
+			}`)
+			assert.NilError(t, err)
+			assert.Check(t, res.Text != nil)
+
+			l := &db.Link{
+				GID: gid,
+				URL: test.url,
+			}
+			err = db.DeleteLink(context.TODO(), l)
+			assert.NilError(t, err)
+		})
+	}
+
+	testsLinkOpRem := map[string]struct {
+		word string
+		url  string
+	}{
+		"-": {
+			word: "-",
+			url:  "https://example.com/1",
+		},
+		"rem": {
+			word: "rem",
+			url:  "https://example.com/2",
+		},
+		"del": {
+			word: "del",
+			url:  "https://example.com/3",
+		},
+		"dimentica": {
+			word: "dimentica",
+			url:  "https://example.com/4",
+		},
+		"forget": {
+			word: "forget",
+			url:  "https://example.com/5",
+		},
+		"drop": {
+			word: "drop",
+			url:  "https://example.com/6",
+		},
+	}
+	for id, test := range testsLinkOpRem {
+		test := test
+		t.Run("del#"+id, func(t *testing.T) {
+			l := &db.Link{
+				GID: gid,
+				URL: test.url,
+			}
+			err := db.InsertLink(context.TODO(), l)
+			assert.NilError(t, err)
+
+			err = db.SelectLinkByURL(context.TODO(), l)
+			assert.NilError(t, err)
+
+			res, err := invokeHandler(t, `{
+				"message" : {
+					"chat": {"id":"`+gid+`"},
+					"text": "/link `+test.word+` I hate this link",
+					"entities": [
+						{"url": "`+test.url+`"},
+						{"something":"else"}
+					]
+				}
+			}`)
+			assert.NilError(t, err)
+			assert.Check(t, *res.Text == textForget)
+
+			err = db.SelectLinkByURL(context.TODO(), l)
+			assert.ErrorType(t, err, sql.ErrNoRows)
 		})
 	}
 }
