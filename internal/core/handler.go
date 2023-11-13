@@ -452,12 +452,12 @@ func Handler(p *fastjson.Value) (*telegram.WebhookResponse, error) {
 				t += die.Markdown()
 			}
 
-			res.SendDice().
-				SetText(t)
+			return res.SendDice().
+				SetText(t), nil
 
 		default:
-			res.SendMessage().
-				SetText(text404)
+			return res.SendMessage().
+				SetText(text404), ErrNotFound
 		}
 	}
 

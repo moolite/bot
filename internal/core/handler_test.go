@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"database/sql"
+	"regexp"
 	"testing"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -425,6 +426,31 @@ func TestHandlerLinks(t *testing.T) {
 
 			err = db.SelectLinkByURL(context.TODO(), l)
 			assert.ErrorType(t, err, sql.ErrNoRows)
+		})
+	}
+}
+
+func TestHandlerDice(t *testing.T) {
+	gid := "132456"
+
+	testDies := map[string]struct {
+		d string
+	}{
+		"d20":  {d: "2d20"},
+		"d100": {d: "8d100k3"},
+	}
+	for id, test := range testDies {
+		test := test
+		t.Run(id, func(t *testing.T) {
+			r := regexp.MustCompile(test.d + `\n \*total\*:\d+, \*rolls\*:[\d+(,\s)]+`)
+			res, err := invokeHandler(t, `{
+				"message" : {
+					"chat": {"id":"`+gid+`"},
+					"text": "/r `+test.d+` useless unparsed garbage"
+				}
+			}`)
+			assert.NilError(t, err)
+			assert.Check(t, r.MatchString(*res.Text))
 		})
 	}
 }
