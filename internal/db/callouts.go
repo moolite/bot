@@ -2,10 +2,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
-
-	"github.com/leporo/sqlf"
-	"github.com/rs/zerolog/log"
 )
 
 var (
@@ -35,20 +31,13 @@ func (c *Callout) Clone() *Callout {
 }
 
 func InsertCallout(ctx context.Context, c *Callout) error {
-	q := sqlf.
-		InsertInto(calloutsTable).
-		Set("gid", c.GID).
-		Set("callout", c.Callout).
-		Set("text", c.Text).
-		Clause(
-			"ON CONFLICT(callout,gid) DO UPDATE SET text = callouts.text")
+	q, err := prepr(`INSERT INTO ` + calloutsTable + ` (gid,callout,text) VALUES (?,?,?)
+	  ON CONFLICT(callout,gid) DO UPDATE SET text=` + calloutsTable + `.text`)
+	if err != nil {
+		return err
+	}
 
-	log.Debug().
-		Str("stmt", q.String()).
-		Interface("args", q.Args()).
-		Msg("statement")
-
-	res, err := q.ExecAndClose(ctx, dbc)
+	res, err := q.ExecContext(ctx, c.GID, c.Callout, c.Text)
 	if err != nil {
 		return err
 	}
@@ -64,42 +53,50 @@ func InsertCallout(ctx context.Context, c *Callout) error {
 }
 
 func SelectOneCallout(ctx context.Context, c *Callout) error {
-	q := sqlf.
-		From(calloutsTable).
-		Select("callout").To(&c.Callout).
-		Select("text").To(&c.Text).
-		Where("callout = ?", c.Callout).
-		Limit(1)
+	q, err := prepr(`SELECT gid,callout,text FROM ` + calloutsTable + `
+     WHERE callout=? AND gid=? LIMIT 1`)
+	if err != nil {
+		return err
+	}
 
-	return q.QueryRowAndClose(ctx, dbc)
+	row := q.QueryRowContext(ctx, c.Callout, c.GID)
+	return row.Scan(&c.GID, &c.Callout, &c.Text)
 }
 
 func SelectAllCallouts(ctx context.Context, gid string) ([]string, error) {
 	var callouts []string
-	var callout string
 
-	q := sqlf.
-		From(calloutsTable).
-		Select("callout").To(&callout).
-		Where("gid = ?", gid)
-
-	err := q.QueryAndClose(ctx, dbc, func(rows *sql.Rows) {
-		callouts = append(callouts, callout)
-	})
+	q, err := prepr(`SELECT callout FROM ` + calloutsTable + ` WHERE gid=?`)
 	if err != nil {
-		return nil, err
+		return callouts, err
+	}
+
+	rows, err := q.QueryContext(ctx, gid)
+	if err != nil {
+		return callouts, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var callout string
+		err := rows.Scan(&callout)
+		if err != nil {
+			return callouts, err
+		}
+
+		callouts = append(callouts, callout)
 	}
 
 	return callouts, nil
 }
 
 func DeleleOneCallout(ctx context.Context, c *Callout) error {
-	q := sqlf.
-		DeleteFrom(calloutsTable).
-		Where("gid = ? AND callout = ?", c.GID, c.Callout).
-		Limit(1)
+	q, err := prepr(`DELETE FROM ` + calloutsTable + ` WHERE gid=? AND callout=? LIMIT 1`)
+	if err != nil {
+		return err
+	}
 
-	res, err := q.ExecAndClose(ctx, dbc)
+	res, err := q.ExecContext(ctx, c.GID, c.Callout)
 	if err != nil {
 		return err
 	}

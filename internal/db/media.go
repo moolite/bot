@@ -2,11 +2,7 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
-
-	"github.com/leporo/sqlf"
-	"github.com/rs/zerolog/log"
 )
 
 var (
@@ -38,22 +34,17 @@ func (m *Media) Clone() *Media {
 	}
 }
 
-func InsertMedia(ctx context.Context, media *Media) error {
-	q := sqlf.
-		InsertInto(mediaTable).
-		Set("gid", media.GID).
-		Set("data", media.Data).
-		Set("kind", media.Kind).
-		Set("description", media.Description).
-		Clause(
-			"ON CONFLICT(data,gid) DO UPDATE SET description = media.description, kind = media.kind")
+func InsertMedia(ctx context.Context, m *Media) error {
+	q, err := prepr(`INSERT INTO ` + mediaTable + `
+	(gid,data,kind,description)
+	  VALUES (?,?,?,?)
+	ON CONFLICT(data,gid) DO
+	  UPDATE SET description=media.description, kind=media.kind`)
+	if err != nil {
+		return err
+	}
 
-	log.Debug().
-		Str("stmt", q.String()).
-		Interface("args", q.Args()).
-		Msg("statement")
-
-	res, err := q.ExecAndClose(ctx, dbc)
+	res, err := q.ExecContext(ctx, m.GID, m.Data, m.Kind, m.Description)
 	if err != nil {
 		return err
 	}
@@ -69,81 +60,82 @@ func InsertMedia(ctx context.Context, media *Media) error {
 }
 
 func SelectOneMediaByData(ctx context.Context, m *Media) error {
-	q := sqlf.
-		From(mediaTable).
-		Select("data").To(&m.Data).
-		Select("description").To(&m.Description).
-		Select("gid").To(&m.GID).
-		Select("kind").To(&m.Kind).
-		Where("data = ? AND gid = ?", m.Data, m.GID).
-		Limit(1)
+	q, err := prepr(`
+	SELECT data,description,gid,kind FROM ` + mediaTable + `
+	WHERE data=? AND gid=?
+	LIMIT 1`)
+	if err != nil {
+		return err
+	}
 
-	log.Debug().
-		Str("stmt", q.String()).
-		Interface("args", q.Args()).
-		Msg("statement")
-
-	return q.QueryRowAndClose(ctx, dbc)
+	row := q.QueryRow(m.Data, m.GID)
+	return row.Scan(&m.Data, &m.Description, &m.GID, &m.Kind)
 }
 
-func SelectAllMedia(ctx context.Context, gid string) ([]*Media, error) {
-	var results []*Media
-	m := &Media{}
-	q := sqlf.
-		From(mediaTable).
-		Select("data").To(&m.Data).
-		Select("description").To(&m.Description).
-		Select("gid").To(&m.GID).
-		Select("kind").To(&m.Kind).
-		Where("gid = ?", gid)
-	err := q.QueryAndClose(ctx, dbc, func(rows *sql.Rows) {
-		results = append(results, m.Clone())
-	})
-	return results, err
+func SelectAllMedia(ctx context.Context, gid string) ([]Media, error) {
+	var results []Media
+	q, err := prepr(`SELECT data,description,gid,kind FROM ` + mediaTable + ` WHERE gid=?`)
+	if err != nil {
+		return results, err
+	}
+
+	rows, err := q.Query(gid)
+	if err != nil {
+		return results, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var m *Media
+		err = rows.Scan(&m.Data, &m.Description, &m.GID, &m.Kind)
+		if err != nil {
+			return results, err
+		}
+	}
+
+	return results, nil
 }
 
 func SelectRandomMedia(ctx context.Context, m *Media) error {
-	q := getRandom(mediaTable, m.GID).
-		Select("data").To(&m.Data).
-		Select("description").To(&m.Description).
-		Select("gid").To(&m.GID).
-		Select("kind").To(&m.Kind).
-		Where("kind = ?", m.Kind)
+	q, err := prepr(`SELECT gid,data,description,kind FROM media
+	WHERE gid=? AND kind=?
+	LIMIT 1
+	OFFSET ABS(RANDOM() %
+	           MAX((SELECT COUNT(*) FROM media WHERE gid=? AND kind=?),1))`)
+	if err != nil {
+		return err
+	}
 
-	log.Debug().
-		Str("stmt", q.String()).
-		Interface("args", q.Args()).
-		Msg("SelectRandomMedia")
-
-	return q.QueryRowAndClose(ctx, dbc)
+	row := q.QueryRowContext(ctx, m.GID, m.Kind, m.GID, m.Kind)
+	if err := row.Scan(&m.GID, &m.Data, &m.Description, &m.Kind); err != nil {
+		return err
+	}
+	return nil
 }
 
 func SearchMedia(ctx context.Context, gid, term string) (*Media, error) {
 	likeTerm := fmt.Sprintf("%%%s%%", term)
+	var m *Media
 
-	m := new(Media)
+	q, err := prepr(`SELECT gid,kind,data,description FROM ` + mediaTable + ` WHERE description LIKE ? AND gid=?`)
+	if err != nil {
+		return m, err
+	}
 
-	q := sqlf.
-		From(mediaTable).
-		Select("gid").To(&m.GID).
-		Select("kind").To(&m.Kind).
-		Select("data").To(&m.Data).
-		Select("description").To(&m.Description).
-		Where("description LIKE ? AND gid = ?", likeTerm, gid)
-
-	if err := q.QueryRowAndClose(ctx, dbc); err != nil {
-		return nil, err
+	row := q.QueryRowContext(ctx, likeTerm, m.GID)
+	if err := row.Scan(&m.GID, &m.Data, &m.Description, &m.Kind); err != nil {
+		return m, err
 	}
 	return m, nil
 }
 
-func DeleteMedia(ctx context.Context, media *Media) error {
-	q := sqlf.
-		DeleteFrom(mediaTable).
-		Where("data = ? AND gid = ?", media.Data, media.GID).
-		Limit(1)
+func DeleteMedia(ctx context.Context, m *Media) error {
+	q, err := prepr(`DELETE FROM ` + mediaTable + ` WHERE data=? AND gid=? LIMIT 1`)
+	if err != nil {
+		return err
+	}
 
-	res, err := q.ExecAndClose(ctx, dbc)
+	res, err := q.ExecContext(ctx, m.Data, m.GID)
 	if err != nil {
 		return err
 	}

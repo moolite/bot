@@ -8,6 +8,7 @@ import (
 )
 
 var dbc *sql.DB
+var stmts map[string]*sql.Stmt = make(map[string]*sql.Stmt)
 
 func Open(filename string) error {
 	var err error
@@ -20,6 +21,9 @@ func Open(filename string) error {
 }
 
 func Close() error {
+	// reset prepared statements
+	stmts = make(map[string]*sql.Stmt)
+
 	return dbc.Close()
 }
 
@@ -30,4 +34,18 @@ func onRow(rows *sql.Rows) {
 	} else {
 		log.Debug().Strs("columns", columns).Msg("rows")
 	}
+}
+
+func prepr(stmt string) (*sql.Stmt, error) {
+	if prepared, ok := stmts[stmt]; ok {
+		return prepared, nil
+	}
+
+	s, err := dbc.Prepare(stmt)
+	if err != nil {
+		return nil, err
+	}
+
+	stmts[stmt] = s
+	return s, nil
 }

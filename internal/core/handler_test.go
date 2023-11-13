@@ -193,6 +193,7 @@ func TestHandlerAbraxas(t *testing.T) {
 
 	prepareDB(t, gid)
 	defer db.Close()
+	t.Log("Testing abraxas")
 
 	testsRemember := map[string]struct {
 		message string
@@ -312,6 +313,7 @@ func TestHandlerLinks(t *testing.T) {
 
 	prepareDB(t, gid)
 	defer db.Close()
+	t.Log("Testing links")
 
 	testsLinkOpAdd := map[string]struct {
 		word string

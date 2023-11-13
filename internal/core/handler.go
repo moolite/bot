@@ -223,12 +223,22 @@ func Handler(p *fastjson.Value) (*telegram.WebhookResponse, error) {
 			return nil, nil
 		}
 
+		log.Debug().Str("kind", trigger.Kind).Msg("trigger")
+
 		media := &db.Media{
 			GID:  gid,
 			Kind: trigger.Kind,
 		}
-		if err := db.SelectRandomMedia(ctx, media); err != nil {
-			log.Error().Err(err).Msg("error selecting random media")
+
+		err = db.SelectRandomMedia(ctx, media)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return res.SendMessage().
+					SetText(text404), err
+			} else {
+				log.Error().Err(err).Msg("error selecting random media")
+				return res.Empty(), err
+			}
 		}
 
 		switch media.Kind {
@@ -283,11 +293,6 @@ func Handler(p *fastjson.Value) (*telegram.WebhookResponse, error) {
 				} else {
 					return res, fmt.Errorf("something is wrong")
 				}
-
-				log.Error().
-					Str("kind", m.Kind).
-					Str("data", m.Data).
-					Msg("new media")
 
 				res.SendMessage()
 

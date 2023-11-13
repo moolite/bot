@@ -2,10 +2,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
-
-	"github.com/leporo/sqlf"
-	"github.com/rs/zerolog/log"
 )
 
 var (
@@ -36,40 +32,37 @@ func (a *Abraxas) Clone() *Abraxas {
 }
 
 func SelectOneAbraxasByAbraxas(ctx context.Context, a *Abraxas) error {
-	q := sqlf.
-		From(abraxoidesTable).
-		Select("gid").To(&a.GID).
-		Select("abraxas").To(&a.Abraxas).
-		Select("kind").To(&a.Kind).
-		Where("gid = ?", a.GID).
-		Where("abraxas = ?", a.Abraxas).
-		Limit(1)
+	q, err := prepr(`SELECT gid,abraxas,kind FROM ` + abraxoidesTable + ` WHERE gid=? AND abraxas=? LIMIT 1`)
+	if err != nil {
+		return err
+	}
 
-	log.Debug().
-		Str("stmt", q.String()).
-		Interface("args", q.Args()).
-		Msg("SelectOneAbraxasByAbraxas statement")
+	row := q.QueryRowContext(ctx, a.GID, a.Abraxas)
 
-	return q.QueryRowAndClose(ctx, dbc)
+	return row.Scan(&a.GID, &a.Abraxas, &a.Kind)
 }
 
 func SelectAbraxoides(ctx context.Context, gid string) ([]*Abraxas, error) {
-	a := &Abraxas{}
 	var abraxoides []*Abraxas
 
-	q := sqlf.
-		Select("abraxas").To(&a.Abraxas).
-		Select("gid").To(&a.GID).
-		Select("kind").To(&a.Kind).
-		Where("gid = ?", gid)
-
-	err := q.QueryAndClose(ctx, dbc, func(rows *sql.Rows) {
-		abraxoides = append(abraxoides, a.Clone())
-	})
+	q, err := prepr(`SELECT abraxas,kind,gid FROM ` + abraxoidesTable + ` WHERE gid=?`)
 	if err != nil {
-		return nil, err
+		return abraxoides, err
 	}
 
+	rows, err := q.QueryContext(ctx, gid)
+	if err != nil {
+		return abraxoides, err
+	}
+
+	for rows.Next() {
+		var a *Abraxas
+		err := rows.Scan(&a.Abraxas, &a.Kind, &a.GID)
+		if err != nil {
+			return abraxoides, err
+		}
+		abraxoides = append(abraxoides, a)
+	}
 	return abraxoides, nil
 }
 
@@ -102,20 +95,13 @@ func SelectAbraxoidesAbraxasKind(ctx context.Context, gid string) ([][]string, e
 }
 
 func InsertAbraxas(ctx context.Context, a *Abraxas) error {
-	q := sqlf.
-		InsertInto(abraxoidesTable).
-		Set("gid", a.GID).
-		Set("abraxas", a.Abraxas).
-		Set("kind", a.Kind).
-		Clause(
-			"ON CONFLICT(abraxas,gid) DO UPDATE SET kind = " + abraxoidesTable + ".kind")
+	q, err := prepr(`INSERT INTO ` + abraxoidesTable + ` (gid,abraxas,kind) VALUES (?,?,?)
+	ON CONFLICT(abraxas,gid) DO UPDATE SET kind=` + abraxoidesTable + `.kind`)
+	if err != nil {
+		return err
+	}
 
-	log.Debug().
-		Str("stmt", q.String()).
-		Interface("args", q.Args()).
-		Msg("InsertAbraxas")
-
-	res, err := q.ExecAndClose(ctx, dbc)
+	res, err := q.ExecContext(ctx, a.GID, a.Abraxas, a.Kind)
 	if err != nil {
 		return err
 	}
