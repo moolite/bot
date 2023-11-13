@@ -454,10 +454,6 @@ func Handler(p *fastjson.Value) (*telegram.WebhookResponse, error) {
 
 			return res.SendDice().
 				SetText(t), nil
-
-		default:
-			return res.SendMessage().
-				SetText(text404), ErrNotFound
 		}
 	}
 
