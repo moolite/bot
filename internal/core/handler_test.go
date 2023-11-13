@@ -6,7 +6,6 @@ import (
 	"regexp"
 	"testing"
 
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/moolite/bot/internal/db"
 	"github.com/moolite/bot/internal/telegram"
 	"github.com/valyala/fastjson"
