@@ -1,4 +1,4 @@
-SOURCES = $(wildcard cmd/*/*.go, internal/*/*.go)
+SOURCES = $(wildcard cmd/*/*.go) $(wildcard internal/*/*.go)
 
 marrano-bot: ${SOURCES}
 	go build -tags "sqlite_foreign_keys"\

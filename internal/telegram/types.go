@@ -122,7 +122,12 @@ func (w *WebhookResponse) Empty() *WebhookResponse {
 }
 
 func (w *WebhookResponse) Marshal() ([]byte, error) {
-	w.ParseMode = "MarkdownV2"
+	// empty response
+	// spare a 46 bytes
+	if len(w.Method) == 0 && !w.isMedia {
+		return []byte{}, nil
+	}
 
+	w.ParseMode = "MarkdownV2"
 	return json.Marshal(w)
 }

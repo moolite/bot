@@ -219,6 +219,11 @@ func TestHandlerAbraxas(t *testing.T) {
 			trigger: "moo",
 			kind:    "photo",
 		},
+		"type omitted": {
+			message: "/remember something",
+			trigger: "something",
+			kind:    "photo",
+		},
 	}
 
 	for name, test := range testsRemember {

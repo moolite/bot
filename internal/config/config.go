@@ -25,6 +25,14 @@ func concileWithEnv(cfg *Config) {
 			cfg.Port = p
 		}
 	}
+
+	if database := os.Getenv("DATABASE"); database != "" {
+		cfg.Database = database
+	}
+
+	if token := os.Getenv("TELEGRAM_TOKEN"); token != "" {
+		cfg.Telegram.Token = token
+	}
 }
 
 func LoadFromEnv() (*Config, error) {

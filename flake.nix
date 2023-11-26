@@ -232,7 +232,7 @@
           {package = pkgs.sqlite;}
           {package = pkgs.litecli;}
           {package = pkgs.gnumake;}
-          {package = pkgs.just;}
+          {package = pkgs.xh;}
         ];
 
         env = [];

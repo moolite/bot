@@ -22,10 +22,11 @@ var (
 
 var (
 	re = regexp.MustCompile(
-		`(([/!])?(?P<abraxas>[^@\s]+)(@[^\s]+)?)\s*(?P<rest>(?P<add>(\+|add|ricorda|record|put))?(?P<rem>(\-|rem|del|dimentica|forget|drop))?.*)`)
+		`^(([/!])?(?P<abraxas>[^@\s]+)(@[^\s]+)?)\s*(?P<rest>(?P<add>(\+|add|ricorda|record|put))?(?P<rem>(\-|rem|del|dimentica|forget|drop))?.*)\s*$`)
 
 	reMemberCmd = regexp.MustCompile(
-		`(!)?(?P<abraxas>[^\s]+)\s+(?P<rest>.+)?`)
+		`^!?(?P<abraxas>[^\s]+)\s*(?P<rest>.+)?\s*$`)
+	//`^!?(?P<abraxas>[^\s]+)(\s+(?P<rest>.+)?)?$`)
 
 	reBackup = regexp.MustCompile(`^(back(up)?)$`)
 	reMember = regexp.MustCompile(`^(\+|add|remember|ricorda)[^\s]*$`)
@@ -157,16 +158,23 @@ func parseText(text string) *BotRequest {
 		} else {
 			r.RememberKind = KindTriggerCmd
 		}
-
+		hasRest := false
 		for _, m := range reMemberCmd.FindAllStringSubmatch(r.Rest, -1) {
+			log.Debug().Interface("re", m).Msg("damnit")
 			for i, name := range reMemberCmd.SubexpNames() {
 				switch name {
 				case "abraxas":
 					r.RememberAbraxas = m[i]
 				case "rest":
+					hasRest = true
 					r.RememberRest = m[i]
 				}
 			}
+		}
+
+		// cleanup rest when omitted
+		if !hasRest {
+			r.RememberRest = ""
 		}
 	}
 

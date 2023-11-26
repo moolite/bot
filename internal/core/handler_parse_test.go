@@ -30,10 +30,17 @@ func TestParseText(t *testing.T) {
 	assert.Equal(t, req.Command, CmdBackup)
 
 	req = parseText("/remember !callout text text")
-	assert.Equal(t, req.Rest, "!callout text text")
 	assert.Equal(t, req.Command, CmdRemember)
+	assert.Equal(t, req.Rest, "!callout text text")
+	assert.Equal(t, req.RememberRest, "text text")
 	assert.Equal(t, req.RememberKind, KindCalloutCmd)
 	assert.Equal(t, req.RememberAbraxas, "callout")
+
+	req = parseText("/ricorda something  ")
+	assert.Equal(t, req.Rest, "something  ")
+	assert.Equal(t, req.Command, CmdRemember)
+	assert.Equal(t, req.RememberRest, "")
+	assert.Equal(t, req.RememberAbraxas, "something")
 
 	req = parseText("!call me out baby!")
 	assert.Equal(t, req.Kind, KindCallout)

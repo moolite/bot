@@ -21,3 +21,4 @@ db.edn
 /result
 /.direnv/
 /marrano-bot
+/marrano-bot.toml

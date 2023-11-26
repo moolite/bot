@@ -1,6 +1,8 @@
 package core
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -34,7 +36,7 @@ func Listen(cfg *config.Config) error {
 		w.Write([]byte("marrano-bot"))
 	})
 
-	r.Post("/{token}", func(w http.ResponseWriter, r *http.Request) {
+	r.Get("/{token}", func(w http.ResponseWriter, r *http.Request) {
 		token := chi.URLParam(r, "token")
 		if token != cfg.Telegram.Token {
 			w.WriteHeader(http.StatusNotFound)
@@ -74,8 +76,13 @@ func Listen(cfg *config.Config) error {
 		}
 		result, err := Handler(jsonParser)
 		if err != nil {
-			log.Error().Err(err).Msg("error producing response")
+			if errors.Is(err, sql.ErrNoRows) {
+				log.Debug().Err(err).Msg("handler returned empty response")
+				w.WriteHeader(http.StatusOK)
+				return
+			}
 
+			log.Error().Err(err).Msg("error producing response")
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -97,5 +104,6 @@ func Listen(cfg *config.Config) error {
 		w.Write(resp404)
 	})
 
+	log.Info().Int("port", cfg.Port).Msg("http handler listening")
 	return http.ListenAndServe(fmt.Sprintf(":%d", cfg.Port), r)
 }
