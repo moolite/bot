@@ -5,15 +5,7 @@ import (
 )
 
 var (
-	calloutsTable       string = "callouts"
-	calloutsCreateTable string = `
-CREATE TABLE IF NOT EXISTS callouts
-( callout VARCHAR(128) NOT NULL
-, gid     VARCHAR(64)  NOT NULL
-, text    TEXT
-, PRIMARY KEY(callout,gid)
-, FOREIGN KEY(gid) REFERENCES groups
-);`
+	calloutsTable string = "callouts"
 )
 
 type Callout struct {
@@ -31,7 +23,7 @@ func (c *Callout) Clone() *Callout {
 }
 
 func InsertCallout(ctx context.Context, c *Callout) error {
-	q, err := prepr(`INSERT INTO ` + calloutsTable + ` (gid,callout,text) VALUES (?,?,?)
+	q, err := prepareStmt(`INSERT INTO ` + calloutsTable + ` (gid,callout,text) VALUES (?,?,?)
 	  ON CONFLICT(callout,gid) DO UPDATE SET text=` + calloutsTable + `.text`)
 	if err != nil {
 		return err
@@ -53,7 +45,7 @@ func InsertCallout(ctx context.Context, c *Callout) error {
 }
 
 func SelectOneCallout(ctx context.Context, c *Callout) error {
-	q, err := prepr(`SELECT gid,callout,text FROM ` + calloutsTable + `
+	q, err := prepareStmt(`SELECT gid,callout,text FROM ` + calloutsTable + `
      WHERE callout=? AND gid=? LIMIT 1`)
 	if err != nil {
 		return err
@@ -66,7 +58,7 @@ func SelectOneCallout(ctx context.Context, c *Callout) error {
 func SelectAllCallouts(ctx context.Context, gid string) ([]string, error) {
 	var callouts []string
 
-	q, err := prepr(`SELECT callout FROM ` + calloutsTable + ` WHERE gid=?`)
+	q, err := prepareStmt(`SELECT callout FROM ` + calloutsTable + ` WHERE gid=?`)
 	if err != nil {
 		return callouts, err
 	}
@@ -91,7 +83,7 @@ func SelectAllCallouts(ctx context.Context, gid string) ([]string, error) {
 }
 
 func DeleleOneCallout(ctx context.Context, c *Callout) error {
-	q, err := prepr(`DELETE FROM ` + calloutsTable + ` WHERE gid=? AND callout=? LIMIT 1`)
+	q, err := prepareStmt(`DELETE FROM ` + calloutsTable + ` WHERE gid=? AND callout=? LIMIT 1`)
 	if err != nil {
 		return err
 	}

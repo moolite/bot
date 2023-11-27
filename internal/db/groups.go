@@ -5,14 +5,7 @@ import (
 )
 
 var (
-	groupsTable       string = "groups"
-	groupsCreateTable string = `
-CREATE TABLE IF NOT EXISTS groups
-( gid VARCHAR(64) NOT NULL
-, title text
-, PRIMARY KEY(gid)
-);
-`
+	groupsTable string = "groups"
 )
 
 type Group struct {
@@ -28,7 +21,7 @@ func (g *Group) Clone() *Group {
 }
 
 func SelectOneGroup(ctx context.Context, g *Group) error {
-	q, err := prepr(`SELECT title FROM ` + groupsTable + ` WHERE gid=? LIMIT 1`)
+	q, err := prepareStmt(`SELECT title FROM ` + groupsTable + ` WHERE gid=? LIMIT 1`)
 	if err != nil {
 		return err
 	}
@@ -44,7 +37,7 @@ func SelectOneGroup(ctx context.Context, g *Group) error {
 func SelectAllGroups(ctx context.Context) ([]*Group, error) {
 	var ret []*Group
 
-	q, err := prepr(`SELECT gid,title FROM ` + groupsTable)
+	q, err := prepareStmt(`SELECT gid,title FROM ` + groupsTable)
 	if err != nil {
 		return ret, err
 	}
@@ -67,7 +60,7 @@ func SelectAllGroups(ctx context.Context) ([]*Group, error) {
 }
 
 func InsertGroup(ctx context.Context, gid, title string) error {
-	q, err := prepr(`INSERT INTO ` + groupsTable + ` (gid,title) VALUES(?,?)
+	q, err := prepareStmt(`INSERT INTO ` + groupsTable + ` (gid,title) VALUES(?,?)
 	  ON CONFLICT(gid) DO UPDATE SET title=groups.title`)
 	if err != nil {
 		return err

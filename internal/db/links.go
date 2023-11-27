@@ -6,16 +6,7 @@ import (
 )
 
 var (
-	linksTable       string = "links"
-	linksCreateTable string = `
-CREATE TABLE IF NOT EXISTS links
-( url VARCHAR(256) NOT NULL
-, text TEXT
-, gid VARCHAR(64) NOT NULL
-, PRIMARY KEY(url,gid)
-, FOREIGN KEY(gid) REFERENCES groups
-);
-`
+	linksTable string = "links"
 )
 
 type Link struct {
@@ -33,7 +24,7 @@ func (l *Link) Clone() *Link {
 }
 
 func SelectLinkByURL(ctx context.Context, l *Link) error {
-	q, err := prepr(`SELECT url,text,gid FROM ` + linksTable + ` WHERE gid=? LIMIT 1`)
+	q, err := prepareStmt(`SELECT url,text,gid FROM ` + linksTable + ` WHERE gid=? LIMIT 1`)
 	if err != nil {
 		return err
 	}
@@ -45,7 +36,7 @@ func SelectLinkByURL(ctx context.Context, l *Link) error {
 
 func SearchLinks(ctx context.Context, gid, term string) (links []*Link, err error) {
 	likeTerm := fmt.Sprintf("%%%s%%", term)
-	q, err := prepr(`SELECT text,url,gid FROM ` + linksTable + ` WHERE text LIKE ? AND gid=?`)
+	q, err := prepareStmt(`SELECT text,url,gid FROM ` + linksTable + ` WHERE text LIKE ? AND gid=?`)
 	if err != nil {
 		return links, err
 	}
@@ -69,7 +60,7 @@ func SearchLinks(ctx context.Context, gid, term string) (links []*Link, err erro
 }
 
 func InsertLink(ctx context.Context, l *Link) error {
-	q, err := prepr(`INSERT INTO ` + linksTable + ` (url,text,gid) VALUES(?,?,?)
+	q, err := prepareStmt(`INSERT INTO ` + linksTable + ` (url,text,gid) VALUES(?,?,?)
 	  ON CONFLICT(url,gid) DO UPDATE SET text=` + linksTable + `.text`)
 	if err != nil {
 		return err
@@ -88,7 +79,7 @@ func InsertLink(ctx context.Context, l *Link) error {
 }
 
 func DeleteLink(ctx context.Context, l *Link) error {
-	q, err := prepr(`DELETE FROM ` + linksTable + ` WHERE url=? AND gid=?`)
+	q, err := prepareStmt(`DELETE FROM ` + linksTable + ` WHERE url=? AND gid=?`)
 	if err != nil {
 		return err
 	}

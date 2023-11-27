@@ -1,10 +1,13 @@
 package core
 
 import (
+	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -12,7 +15,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/moolite/bot/internal/config"
 	"github.com/moolite/bot/internal/db"
-	"github.com/rs/zerolog/log"
+	"github.com/moolite/bot/internal/statistics"
 	"github.com/valyala/fastjson"
 )
 
@@ -23,9 +26,16 @@ var (
 func Listen(cfg *config.Config) error {
 	err := db.Open(cfg.Database)
 	if err != nil {
-		log.Error().Err(err).Msg("Error opening connection")
+		slog.Error("error opening connection", "err", err)
 		return err
 	}
+
+	err = statistics.Init()
+	if err != nil {
+		slog.Error("error initializing statistics", "err", err)
+		return err
+	}
+	defer statistics.Stop()
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -34,6 +44,41 @@ func Listen(cfg *config.Config) error {
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("marrano-bot"))
+	})
+
+	r.Get("/stats", func(w http.ResponseWriter, r *http.Request) {
+		prometheusData, err := statistics.Prometheus(context.Background())
+		if err != nil {
+			slog.Error("error producing prometheus statistics", "err", err)
+
+			http.Error(w, "Error producing prometheus statistics", http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		w.Header().Add("Content-Type", "text")
+		w.Write([]byte(prometheusData))
+	})
+
+	r.Get("/stats.json", func(w http.ResponseWriter, r *http.Request) {
+		data, err := db.SelectStatisticsLatest(context.Background())
+		if err != nil {
+			slog.Error("error selecting latest statistics", "err", err)
+
+			http.Error(w, "Error producing statistics", http.StatusInternalServerError)
+			return
+		}
+
+		resp, err := json.Marshal(data)
+		if err != nil {
+			slog.Error("error mashaling statistics", "err", err)
+
+			http.Error(w, "error mashaling statistics", http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Header().Add("Content-Type", "application/json")
+		w.Write(resp)
 	})
 
 	r.Get("/{token}", func(w http.ResponseWriter, r *http.Request) {
@@ -61,7 +106,7 @@ func Listen(cfg *config.Config) error {
 
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
-			log.Error().Err(err).Msg("error reading body")
+			slog.Error("error reading body", "err", err)
 
 			w.WriteHeader(http.StatusBadRequest)
 			return
@@ -69,7 +114,7 @@ func Listen(cfg *config.Config) error {
 
 		jsonParser, err := fastjson.ParseBytes(body)
 		if err != nil {
-			log.Error().Err(err).Msg("error parsing JSON")
+			slog.Error("error parsing JSON", "err", err)
 
 			w.WriteHeader(http.StatusBadRequest)
 			return
@@ -77,19 +122,19 @@ func Listen(cfg *config.Config) error {
 		result, err := Handler(jsonParser)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
-				log.Debug().Err(err).Msg("handler returned empty response")
+				slog.Debug("handler returned empty response", "err", err)
 				w.WriteHeader(http.StatusOK)
 				return
 			}
 
-			log.Error().Err(err).Msg("error producing response")
+			slog.Error("error producing response", "err", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
 		body, err = result.Marshal()
 		if err != nil {
-			log.Error().Err(err).Msg("error producing response")
+			slog.Error("error producing response", "err", err)
 
 			w.WriteHeader(http.StatusInternalServerError)
 			return
@@ -104,6 +149,6 @@ func Listen(cfg *config.Config) error {
 		w.Write(resp404)
 	})
 
-	log.Info().Int("port", cfg.Port).Msg("http handler listening")
+	slog.Info("http handler listening", "port", cfg.Port)
 	return http.ListenAndServe(fmt.Sprintf(":%d", cfg.Port), r)
 }

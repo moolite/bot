@@ -1,15 +1,15 @@
 package main
 
 import (
+	"log/slog"
 	"os"
 	"strings"
 
+	"github.com/lmittmann/tint"
 	"github.com/mattn/go-isatty"
 	"github.com/moolite/bot/internal/config"
 	"github.com/moolite/bot/internal/core"
 	"github.com/moolite/bot/internal/db"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/pflag"
 )
 
@@ -17,53 +17,75 @@ var version string = "0.10.0"
 var Cfg *config.Config
 
 var (
-	flagHelp       bool
-	flagDebug      bool
-	flagConfigPath string
-	flagInit       bool
-	flagDump       bool
+	flagHelp         bool
+	flagDebug        bool
+	flagConfigPath   string
+	flagInit         bool
+	flagDump         bool
+	flagExportDB     bool
+	flagExportDBPath string
 )
 
-func parseLogLevel() {
+func setupLogging() {
 	logLevel := strings.ToLower(os.Getenv("LOG_LEVEL"))
 
 	if flagDebug {
 		logLevel = "debug"
 	}
 
+	var level slog.Level
 	switch logLevel {
 	case "error":
-		zerolog.SetGlobalLevel(zerolog.ErrorLevel)
+		level = slog.LevelError
 	case "warn":
-		zerolog.SetGlobalLevel(zerolog.WarnLevel)
+		level = slog.LevelWarn
 	case "debug":
-		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+		level = slog.LevelDebug
 	default:
-		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+		level = slog.LevelInfo
 	}
+
+	var h slog.Handler
+
+	if isatty.IsTerminal(os.Stderr.Fd()) {
+		h = tint.NewHandler(os.Stderr, &tint.Options{
+			AddSource: true,
+			Level:     level,
+		})
+	} else {
+		h = slog.NewJSONHandler(
+			os.Stderr,
+			&slog.HandlerOptions{
+				AddSource: true,
+				Level:     level,
+			},
+		)
+	}
+
+	slog.SetDefault(slog.New(h))
 }
 
 func main() {
 	var err error
 
-	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-	if isatty.IsTerminal(os.Stderr.Fd()) {
-		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	cwd, err := os.Getwd()
+	if err != nil {
+		cwd = os.TempDir()
+		slog.Error("error selecting current working directory, using temp dir", "err", err, "temp dir", cwd)
 	}
 
-	log.Info().Str("version", version).
-		Msg("starting marrano-bot")
+	slog.Info("starting marrano-bot", "version", version)
 
 	pflag.BoolVarP(&flagDebug, "verbose", "v", false, "set verbose output")
 	pflag.StringVarP(&flagConfigPath, "config", "c", "./marrano-bot.toml", "bot configuration path")
 	pflag.BoolVarP(&flagHelp, "help", "h", false, "this message")
 	pflag.BoolVarP(&flagInit, "init", "I", false, "initialize the database")
 	pflag.BoolVarP(&flagDump, "dump", "D", false, "dump configuration object")
+	pflag.BoolVarP(&flagExportDB, "export", "E", false, "export database data as csv (defaults to stdout)")
+	pflag.StringVar(&flagExportDBPath, "export-dir", cwd, "folder to write database exported data csv files")
 	pflag.Parse()
 
-	if flagDebug {
-		zerolog.SetGlobalLevel(zerolog.DebugLevel)
-	}
+	setupLogging()
 
 	if flagHelp {
 		pflag.Usage()
@@ -73,20 +95,20 @@ func main() {
 
 	Cfg, err = config.LoadFile(flagConfigPath)
 	if err != nil {
-		log.Error().Err(err).Msg("error loading config file")
+		slog.Error("error loading config file", "err", err)
 		os.Exit(1)
 		return
 	}
 
 	err = db.Open(Cfg.Database)
 	if err != nil {
-		log.Error().Err(err).Msg("error opening db")
+		slog.Error("error opening db", "err", err)
 	}
 
 	if flagInit {
-		err := db.CreateTables()
+		err := db.Migrate()
 		if err != nil {
-			log.Error().Err(err).Msg("error initializing DB")
+			slog.Error("error initializing DB", "err", err)
 			os.Exit(1)
 			return
 		}
@@ -95,14 +117,29 @@ func main() {
 	}
 
 	if flagDump {
-		log.Info().Interface("obj", Cfg).Msg("parsed configuration")
+		slog.Info("parsed configuration", "cfg", Cfg)
+		os.Exit(0)
+		return
+	}
+
+	if flagExportDB {
+		files, err := db.ExportDBToFiles(flagExportDBPath)
+		if err != nil {
+			slog.Error("error exporting to files", "export path", flagExportDBPath, "err", err)
+			return
+		}
+
+		for _, f := range files {
+			slog.Info("written", "file", f)
+		}
+
 		os.Exit(0)
 		return
 	}
 
 	err = core.Listen(Cfg)
 	if err != nil {
-		log.Error().Err(err).Msg("server error")
+		slog.Error("server error", "err", err)
 		os.Exit(2)
 	}
 

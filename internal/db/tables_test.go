@@ -14,7 +14,7 @@ func TestTables(t *testing.T) {
 	defer Close()
 	assert.NilError(t, err)
 
-	err = CreateTables()
+	err = Migrate()
 	assert.NilError(t, err)
 
 	gid := "one"
@@ -52,4 +52,7 @@ func TestTables(t *testing.T) {
 	assert.Equal(t, m.Data, data)
 	assert.Equal(t, m.Kind, kind)
 	assert.Equal(t, m.Description, text)
+
+	err = MigrateDown()
+	assert.NilError(t, err)
 }

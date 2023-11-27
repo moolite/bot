@@ -18,7 +18,7 @@ func prepareDB(t *testing.T, gid string) {
 	err = db.Open(":memory:")
 	assert.NilError(t, err, "error creating db")
 
-	err = db.CreateTables()
+	err = db.Migrate()
 	assert.NilError(t, err, "error creating tables")
 
 	err = db.InsertGroup(context.TODO(), gid, "title")

@@ -6,16 +6,7 @@ import (
 )
 
 var (
-	mediaTable       = "media"
-	mediaCreateTable = `
-CREATE TABLE IF NOT EXISTS media
-( data        VARCHAR(512) NOT NULL
-, kind        VARCHAR(64)  NOT NULL
-, gid         VARCHAR(64)  NOT NULL
-, description TEXT
-, PRIMARY KEY(data,gid)
-, FOREIGN KEY(gid) REFERENCES groups(gid)
-);`
+	mediaTable = "media"
 )
 
 type Media struct {
@@ -35,7 +26,7 @@ func (m *Media) Clone() *Media {
 }
 
 func InsertMedia(ctx context.Context, m *Media) error {
-	q, err := prepr(`INSERT INTO ` + mediaTable + `
+	q, err := prepareStmt(`INSERT INTO ` + mediaTable + `
 	(gid,data,kind,description)
 	  VALUES (?,?,?,?)
 	ON CONFLICT(data,gid) DO
@@ -60,7 +51,7 @@ func InsertMedia(ctx context.Context, m *Media) error {
 }
 
 func SelectOneMediaByData(ctx context.Context, m *Media) error {
-	q, err := prepr(`
+	q, err := prepareStmt(`
 	SELECT data,description,gid,kind FROM ` + mediaTable + `
 	WHERE data=? AND gid=?
 	LIMIT 1`)
@@ -74,7 +65,7 @@ func SelectOneMediaByData(ctx context.Context, m *Media) error {
 
 func SelectAllMedia(ctx context.Context, gid string) ([]Media, error) {
 	var results []Media
-	q, err := prepr(`SELECT data,description,gid,kind FROM ` + mediaTable + ` WHERE gid=?`)
+	q, err := prepareStmt(`SELECT data,description,gid,kind FROM ` + mediaTable + ` WHERE gid=?`)
 	if err != nil {
 		return results, err
 	}
@@ -97,7 +88,7 @@ func SelectAllMedia(ctx context.Context, gid string) ([]Media, error) {
 }
 
 func SelectRandomMedia(ctx context.Context, m *Media) error {
-	q, err := prepr(`SELECT gid,data,description,kind FROM media
+	q, err := prepareStmt(`SELECT gid,data,description,kind FROM media
 	WHERE gid=? AND kind=?
 	LIMIT 1
 	OFFSET ABS(RANDOM() %
@@ -117,7 +108,7 @@ func SearchMedia(ctx context.Context, gid, term string) (*Media, error) {
 	likeTerm := fmt.Sprintf("%%%s%%", term)
 	var m *Media
 
-	q, err := prepr(`SELECT gid,kind,data,description FROM ` + mediaTable + ` WHERE description LIKE ? AND gid=?`)
+	q, err := prepareStmt(`SELECT gid,kind,data,description FROM ` + mediaTable + ` WHERE description LIKE ? AND gid=?`)
 	if err != nil {
 		return m, err
 	}
@@ -130,7 +121,7 @@ func SearchMedia(ctx context.Context, gid, term string) (*Media, error) {
 }
 
 func DeleteMedia(ctx context.Context, m *Media) error {
-	q, err := prepr(`DELETE FROM ` + mediaTable + ` WHERE data=? AND gid=? LIMIT 1`)
+	q, err := prepareStmt(`DELETE FROM ` + mediaTable + ` WHERE data=? AND gid=? LIMIT 1`)
 	if err != nil {
 		return err
 	}

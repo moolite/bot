@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS abraxoides
+( abraxas VARCHAR(128) NOT NULL
+, kind    VARCHAR(64)  NOT NULL
+, gid     VARCHAR(64)  NOT NULL
+, PRIMARY KEY(abraxas,gid)
+, FOREIGN KEY(gid) REFERENCES groups
+);

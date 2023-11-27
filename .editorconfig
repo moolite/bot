@@ -1,0 +1,21 @@
+root = true
+
+[*]
+end_of_file = lf
+insert_final_newline = true
+
+[Makefile]
+indent_style = tab
+indent_size = 8
+
+
+[*.go]
+indent_style = tab
+indent_size = 4
+
+[*.nix]
+indent_style = space
+
+[*.{json,sql}]
+indent_style = space
+indent_size = 4

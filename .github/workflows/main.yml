@@ -20,13 +20,13 @@ jobs:
       - name: prepare java
         uses: actions/setup-java@v3
         with:
-          distribution: 'temurin'
+          distribution: "temurin"
           java-version: 17
 
       - name: prepare clojure
         uses: DeLaGuardo/setup-clojure@11.0
         with:
-          cli: 'latest'
+          cli: "latest"
 
       # Optional step:
       - name: cache clojure dependencies
@@ -66,4 +66,3 @@ jobs:
               --generate-notes \
               "${version#v}" \
               ./${TARGET}
-

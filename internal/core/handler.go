@@ -5,13 +5,14 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log/slog"
 	"regexp"
 	"strings"
 
 	"github.com/moolite/bot/internal/db"
 	"github.com/moolite/bot/internal/dicer"
+	"github.com/moolite/bot/internal/statistics"
 	"github.com/moolite/bot/internal/telegram"
-	"github.com/rs/zerolog/log"
 	"github.com/valyala/fastjson"
 )
 
@@ -26,7 +27,6 @@ var (
 
 	reMemberCmd = regexp.MustCompile(
 		`^!?(?P<abraxas>[^\s]+)\s*(?P<rest>.+)?\s*$`)
-	//`^!?(?P<abraxas>[^\s]+)(\s+(?P<rest>.+)?)?$`)
 
 	reBackup = regexp.MustCompile(`^(back(up)?)$`)
 	reMember = regexp.MustCompile(`^(\+|add|remember|ricorda)[^\s]*$`)
@@ -160,7 +160,6 @@ func parseText(text string) *BotRequest {
 		}
 		hasRest := false
 		for _, m := range reMemberCmd.FindAllStringSubmatch(r.Rest, -1) {
-			log.Debug().Interface("re", m).Msg("damnit")
 			for i, name := range reMemberCmd.SubexpNames() {
 				switch name {
 				case "abraxas":
@@ -199,6 +198,11 @@ func Handler(p *fastjson.Value) (*telegram.WebhookResponse, error) {
 	gid := string(p.GetStringBytes("chat", "id"))
 	res.SetChatID(string(gid))
 
+	username := "dummy"
+	if p.Exists("from", "username") {
+		username = string(p.GetStringBytes("from", "username"))
+	}
+
 	var text string
 	if p.Exists("text") {
 		text = string(p.GetStringBytes("text"))
@@ -210,6 +214,8 @@ func Handler(p *fastjson.Value) (*telegram.WebhookResponse, error) {
 	if p.Exists("message", "reply_to_message") {
 		p = p.Get("message", "reply_to_message")
 	}
+
+	go statistics.ApplyTriggers(gid, username, text)
 
 	inc := parseText(text)
 
@@ -224,14 +230,14 @@ func Handler(p *fastjson.Value) (*telegram.WebhookResponse, error) {
 		if errors.Is(err, sql.ErrNoRows) {
 			return res, nil
 		} else if err != nil {
-			log.Error().Err(err).Str("abraxas", inc.Abraxas).Msg("handler SelectOneAbraxasByAbraxas error")
+			slog.Error("handler SelectOneAbraxasByAbraxas error", "abraxas", inc.Abraxas, "err", err)
 			return res, err
 		} else if trigger.Kind == "" {
-			log.Debug().Interface("trigger", trigger).Msg("handler trigger has no kind")
+			slog.Debug("handler trigger has no kind", "trigger", trigger)
 			return nil, nil
 		}
 
-		log.Debug().Str("kind", trigger.Kind).Msg("trigger")
+		slog.Debug("trigger", "kind", trigger.Kind)
 
 		media := &db.Media{
 			GID:  gid,
@@ -244,7 +250,7 @@ func Handler(p *fastjson.Value) (*telegram.WebhookResponse, error) {
 				return res.SendMessage().
 					SetText(text404), err
 			} else {
-				log.Error().Err(err).Msg("error selecting random media")
+				slog.Error("error selecting random media", "err", err)
 				return res.Empty(), err
 			}
 		}
@@ -265,7 +271,7 @@ func Handler(p *fastjson.Value) (*telegram.WebhookResponse, error) {
 		}
 
 		if err := db.SelectOneCallout(ctx, callout); err != nil {
-			log.Error().Err(err).Msg("callout query error")
+			slog.Error("callout query error", "err", err)
 
 			if errors.Is(err, sql.ErrNoRows) {
 				return res.SendMessage().SetText(textErr), nil
@@ -306,7 +312,7 @@ func Handler(p *fastjson.Value) (*telegram.WebhookResponse, error) {
 
 				err := db.InsertMedia(ctx, m)
 				if err != nil {
-					log.Error().Err(err).Msg("error inserting new media")
+					slog.Error("error inserting new media", "err", err)
 					return res.SetText(textErr), err
 				}
 
@@ -322,11 +328,10 @@ func Handler(p *fastjson.Value) (*telegram.WebhookResponse, error) {
 
 					err := db.InsertCallout(ctx, c)
 					if err != nil {
-						log.Error().
-							Err(err).
-							Str("callout", inc.RememberAbraxas).
-							Str("rest", inc.RememberRest).
-							Msg("error inserting callout.")
+						slog.Error("error inserting callout.",
+							"callout", inc.RememberAbraxas,
+							"rest", inc.RememberRest,
+						)
 						return res.SetText(textErr), nil
 					}
 					return res.SetText(textRemember), nil
@@ -374,7 +379,7 @@ func Handler(p *fastjson.Value) (*telegram.WebhookResponse, error) {
 				}
 
 				if err := db.DeleteMedia(ctx, media); err != nil {
-					log.Error().Err(err).Msg("error deleting media")
+					slog.Error("error deleting media", "err", err)
 
 					res.SetText(textErr)
 				} else {
@@ -388,7 +393,7 @@ func Handler(p *fastjson.Value) (*telegram.WebhookResponse, error) {
 		case CmdLink:
 			switch inc.Operation {
 			case OpAdd:
-				log.Debug().Msg("CmdLink#OpAdd")
+				slog.Debug("CmdLink#OpAdd")
 
 				url, err := getURL(p)
 				if err != nil {
@@ -403,7 +408,7 @@ func Handler(p *fastjson.Value) (*telegram.WebhookResponse, error) {
 				}
 
 				if err := db.InsertLink(ctx, link); err != nil {
-					log.Error().Err(err).Msg("error inserting link")
+					slog.Error("error inserting link", "err", err)
 
 					return res.SendMessage().
 						SetText(textErr), err
@@ -413,7 +418,7 @@ func Handler(p *fastjson.Value) (*telegram.WebhookResponse, error) {
 					SetText(textRemember), nil
 
 			case OpRem:
-				log.Debug().Msg("CmdLink#OpRem")
+				slog.Debug("CmdLink#OpRem")
 
 				url, err := getURL(p)
 				if err != nil {
@@ -427,7 +432,7 @@ func Handler(p *fastjson.Value) (*telegram.WebhookResponse, error) {
 				}
 
 				if err := db.DeleteLink(ctx, link); err != nil {
-					log.Error().Err(err).Msg("error deleting link")
+					slog.Error("error deleting link", "err", err)
 
 					return res.SendMessage().
 						SetText(textErr), err
@@ -437,11 +442,11 @@ func Handler(p *fastjson.Value) (*telegram.WebhookResponse, error) {
 					SetText(textForget), nil
 
 			default:
-				log.Debug().Msg("CmdLink#default")
+				slog.Debug("CmdLink#default")
 
 				links, err := db.SearchLinks(ctx, gid, text)
 				if err != nil {
-					log.Error().Err(err).Msg("error searching links")
+					slog.Error("error searching links", "err", err)
 
 					return res.SetText(textErr), err
 				} else if len(links) == 0 {

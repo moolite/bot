@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/rs/zerolog/log"
 )
 
 var dbc *sql.DB
@@ -28,16 +27,7 @@ func Close() error {
 	return dbc.Close()
 }
 
-func onRow(rows *sql.Rows) {
-	columns, err := rows.Columns()
-	if err != nil {
-		log.Debug().Err(err).Msg("error fetching columns")
-	} else {
-		log.Debug().Strs("columns", columns).Msg("rows")
-	}
-}
-
-func prepr(stmt string) (*sql.Stmt, error) {
+func prepareStmt(stmt string) (*sql.Stmt, error) {
 	if prepared, ok := stmts[stmt]; ok {
 		return prepared, nil
 	}

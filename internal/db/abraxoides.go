@@ -5,16 +5,7 @@ import (
 )
 
 var (
-	abraxoidesTable       string = "abraxoides"
-	abraxoidesCreateTable string = `
-CREATE TABLE IF NOT EXISTS abraxoides
-( abraxas VARCHAR(128) NOT NULL
-, kind    VARCHAR(64)  NOT NULL
-, gid     VARCHAR(64)  NOT NULL
-, PRIMARY KEY(abraxas,gid)
-, FOREIGN KEY(gid) REFERENCES groups
-);
-`
+	abraxoidesTable string = "abraxoides"
 )
 
 type Abraxas struct {
@@ -32,7 +23,7 @@ func (a *Abraxas) Clone() *Abraxas {
 }
 
 func SelectOneAbraxasByAbraxas(ctx context.Context, a *Abraxas) error {
-	q, err := prepr(`SELECT gid,abraxas,kind FROM ` + abraxoidesTable + ` WHERE gid=? AND abraxas=? LIMIT 1`)
+	q, err := prepareStmt(`SELECT gid,abraxas,kind FROM ` + abraxoidesTable + ` WHERE gid=? AND abraxas=? LIMIT 1`)
 	if err != nil {
 		return err
 	}
@@ -45,7 +36,7 @@ func SelectOneAbraxasByAbraxas(ctx context.Context, a *Abraxas) error {
 func SelectAbraxoides(ctx context.Context, gid string) ([]*Abraxas, error) {
 	var abraxoides []*Abraxas
 
-	q, err := prepr(`SELECT abraxas,kind,gid FROM ` + abraxoidesTable + ` WHERE gid=?`)
+	q, err := prepareStmt(`SELECT abraxas,kind,gid FROM ` + abraxoidesTable + ` WHERE gid=?`)
 	if err != nil {
 		return abraxoides, err
 	}
@@ -95,7 +86,7 @@ func SelectAbraxoidesAbraxasKind(ctx context.Context, gid string) ([][]string, e
 }
 
 func InsertAbraxas(ctx context.Context, a *Abraxas) error {
-	q, err := prepr(`INSERT INTO ` + abraxoidesTable + ` (gid,abraxas,kind) VALUES (?,?,?)
+	q, err := prepareStmt(`INSERT INTO ` + abraxoidesTable + ` (gid,abraxas,kind) VALUES (?,?,?)
 	ON CONFLICT(abraxas,gid) DO UPDATE SET kind=` + abraxoidesTable + `.kind`)
 	if err != nil {
 		return err
