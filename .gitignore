@@ -20,3 +20,5 @@ db.edn
 /*.sqlite
 /result
 /.direnv/
+/marrano-bot
+/marrano-bot.toml
