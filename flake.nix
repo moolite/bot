@@ -22,7 +22,7 @@
       lastModifiedDate = self.lastModifiedDate or self.lastModified or "19700101";
       version = builtins.substring 0 8 lastModifiedDate;
 
-      vendorSha256 = pkgs.lib.fakeSha256;
+      vendorSha256 = "sha256-4ooWsoJywl6v5MNtkjMGlZf+6cWNfAaoxU7WMcOSRII=";
 
       pkgs = import nixpkgs {
         inherit system;
