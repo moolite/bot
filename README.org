@@ -4,43 +4,105 @@ A marrano bot
 
 ** Usage
 
-#+BEGIN_SRC shell
-java -Dconfig="<path/to/config.edn>" -jar target/bot-0.2.123-standalone.jar
+#+BEGIN_SRC
+2024/01/10 17:19:18 INFO starting marrano-bot version=0.10.0
+Usage of ./marrano-bot:
+  -c, --config string       bot configuration path (default "./marrano-bot.toml")
+  -D, --dump                dump configuration object
+  -E, --export              export database data as csv (defaults to stdout)
+      --export-dir string   folder to write database exported data csv files
+  -h, --help                this message
+  -I, --init                initialize the database
+  -v, --verbose             set verbose output
 #+END_SRC
 
 ** Options
 
-#+BEGIN_SRC clojure
-{:webhook        "https://bot.example.net"
- :webhook-secret "some-random-string"
- :telegram-token "botABC:123467"
- :telegram-api   false
- :database-file  "/tmp/bot.sqlite"
- :port           8080
- :log-level      :warn}
+#+BEGIN_SRC toml
+database = "marrano-bot.sqlite"
+port = 6446
+
+[telegram]
+name = "marrano-bot"
+token = "123456789-bot"
+domain = "bot.marrani.lol"
 #+END_SRC
 
-- ~:webhook~ Bot's *base* webhook URL
-- ~:webhook-secret~ bot's secret (used by the webhook)
-- ~:telegram-token~ telegram's bot secret token
-- ~:telegram-api~ use telegram's bot api instead of a webhook response (use with caution)
-- ~:log-level~ [timbre](http://ptaoussanis.github.io/timbre/index.html) log level
-- ~:port~ webserver port
+**** config.toml
+- ~database~ the database filename
+- ~port~ port to listen to (the web server listens to loopback, hardcoded)
+- ~telegram.name~ colloquial name of the bot, update only when updating the subscription
+- ~telegram.token~ telegram bot token secret
+- ~telegram.domain~ domain name to register for webhooks
 
-The bot will register the webhook ~<:webhook>/t/<:secret>~
+**** envars
+- ~DATABASE~ envar can be used to override the config option ~database~
+- ~TELEGRAM_TOKEN~ envar can be used to override the config option ~telegram.token~
 
 ** Building
 
 This project is using [[https://clojure.org/reference/deps_and_cli][clj]] to manage it's dependencies and build process:
 
 #+BEGIN_SRC
-clj -X:build <command>
+go build \
+    -tags "sqlite_foreign_keys" \
+    -v ./cmd/marrano-bot
 #+END_SRC
 
-List of possible ~:build~ commands:
+Or using the makefile
 
-- ~uber~ create a new uberjar file
-- ~jar~ create a new source jar file
+#+BEGIN_SRC
+make
+#+END_SRC
+
+Or building the nix derivation producing ~./results/bin/marrano-bot~
+
+#+BEGIN_SRC
+nix build .#default
+#+END_SRC
+
+** NixOS flake usage
+
+#+BEGIN_SRC nix
+{
+  description = "my flake";
+
+  outputs = { nixpkgs, marrano-bot, ... }:
+    let
+      system = "x86_64-linux";
+      pkgs = import nixpkgs {
+        inherit system;
+        overlays = [
+        ];
+      };
+    in
+      {
+        nixosConfigurations.my-machine = pkgs.lib.nixosSystem {
+          inherit system;
+          modules = [
+            inputs.ragenix.nixosModules.default
+            inputs.marrano-bot.nixosModules.default
+            ./configuration.nix
+          ];
+
+          age.secrets.marrano-bot.file = ./secrets/marrano-bot.age;
+          services.marrano-bot = {
+            enable = true;
+            hostName = "bot.example-bot-farm.lol";
+            logLevel = "debug";
+          };
+        };
+      };
+
+  inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-23.11";
+    ragenix.url = "github:yaxitech/ragenix";
+    ragenix.inputs.nixpkgs.follows = "nixpkgs";
+    marrano-bot.url = "github:moolite/bot";
+    marrano-bot.inputs.nixpkgs.follows = "nixpkgs";
+  };
+}
+#+END_SRC
 
 * License
 
