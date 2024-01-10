@@ -17,52 +17,18 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: prepare java
-        uses: actions/setup-java@v3
-        with:
-          distribution: "temurin"
-          java-version: 17
+      # - name: bootstrap nix
 
-      - name: prepare clojure
-        uses: DeLaGuardo/setup-clojure@11.0
-        with:
-          cli: "latest"
-
-      # Optional step:
-      - name: cache clojure dependencies
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.m2/repository
-            ~/.gitlibs
-            ~/.deps.clj
-          key: cljdeps-${{ hashFiles('deps.edn') }}
-          restore-keys: cljdeps-
-
-      - name: build uberjar
-        id: uberjar
-        run: |
-          VERSION=$(clojure -X:build get-version)
-          TARGET=$(clojure -X:build uber-target)
-          echo "target=${TARGET}" >> $GITHUB_OUTPUT
-          echo "filename=$(basename ${TARGET})" >> $GITHUB_OUTPUT
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
-
-          clojure -X:build uber
-
-          mkdir -p /tmp/release
-          cp ${TARGET} /tmp/release/
-
-      - name: Create release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ref: ${{ github.ref_name }}
-          version: ${{ steps.uberjar.outputs.version }}
-          TARGET: ${{ steps.uberjar.outputs.target }}
-        run: |
-          gh release create \
-              --repo="$GITHUB_REPOSITORY" \
-              --title="snapshot ${version#v}" \
-              --generate-notes \
-              "${version#v}" \
-              ./${TARGET}
+      # - name: Create release
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #     ref: ${{ github.ref_name }}
+      #     version: ${{ steps.uberjar.outputs.version }}
+      #     TARGET: ${{ steps.uberjar.outputs.target }}
+      #   run: |
+      #     gh release create \
+      #         --repo="$GITHUB_REPOSITORY" \
+      #         --title="snapshot ${version#v}" \
+      #         --generate-notes \
+      #         "${version#v}" \
+      #         ./${TARGET}
