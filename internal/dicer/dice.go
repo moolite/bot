@@ -169,7 +169,7 @@ func (r *Dice) Markdown() string {
 	die = strings.ReplaceAll(die, `+`, `\+`)
 	die = strings.ReplaceAll(die, `-`, `\-`)
 	return fmt.Sprintf(
-		"%s\n *total*:%d, *rolls*:%s",
+		"%s\n *total*:%d, *rolls*:%s\n",
 		die,
 		r.Total,
 		joinInts(r.Results, ", "),
