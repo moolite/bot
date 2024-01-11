@@ -15,7 +15,7 @@ type ReplyMarkup struct {
 
 type WebhookResponse struct {
 	Method string `json:"method,omitempty"`
-	ChatID string `json:"chat_id,omitempty"`
+	ChatID string `json:"chat_id"`
 
 	// Media
 	isMedia   bool

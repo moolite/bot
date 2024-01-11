@@ -196,7 +196,7 @@ func Handler(p *fastjson.Value) (*telegram.WebhookResponse, error) {
 		return res, ErrParseNoChatID
 	}
 	gid := string(p.GetStringBytes("chat", "id"))
-	res.SetChatID(string(gid))
+	res.SetChatID(gid)
 
 	username := "dummy"
 	if p.Exists("from", "username") {
