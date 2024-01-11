@@ -38,7 +38,8 @@
       };
 
       nixosModule =
-        { config
+        { self
+        , config
         , pkgs
         , lib
         , system
@@ -173,14 +174,14 @@
 
                 serviceConfig = {
                   # NOTE: needed (r)agenix secret!
-                  LoadCredential = "config.edn:${config.age.secrets.marrano-bot.path}";
+                  LoadCredential = "marrano-bot.toml:${config.age.secrets.marrano-bot.path}";
 
                   User = cfg.user;
                   Group = cfg.group;
                   Type = "simple";
                   Restart = "on-failure";
                   WorkingDirectory = cfg.dataDir;
-                  ExecStart = "${pkgs.marrano-bot}/bin/marrano-bot \${CREDENTIALS_DIRECTORY}/config.edn";
+                  ExecStart = "${pkgs.marrano-bot}/bin/marrano-bot -c \${CREDENTIALS_DIRECTORY}/marrano-bot.toml";
                 };
               };
 

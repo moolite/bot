@@ -63,6 +63,36 @@ nix build .#default
 
 ** NixOS flake usage
 
+flake outputs:
+#+BEGIN_SRC
+├───checks
+│   ├───aarch64-linux
+│   │   ├───editorconfig: derivation 'check-editorconfig'
+│   │   ├───formatting: derivation 'check-formatting'
+│   │   └───packages-default: derivation 'marrano-bot'
+│   └───x86_64-linux
+│       ├───editorconfig: derivation 'check-editorconfig'
+│       ├───formatting: derivation 'check-formatting'
+│       └───packages-default: derivation 'marrano-bot'
+├───devShells
+│   ├───aarch64-linux
+│   │   └───default: development environment 'nix-shell'
+│   └───x86_64-linux
+│       └───default: development environment 'nix-shell'
+├───formatter
+│   ├───aarch64-linux: package 'formatter'
+│   └───x86_64-linux: package 'formatter'
+├───nixosModules
+│   └───default: NixOS module
+├───overlays
+│   └───default: Nixpkgs overlay
+└───packages
+    ├───aarch64-linux
+    │   └───default: package 'marrano-bot'
+    └───x86_64-linux
+        └───default: package 'marrano-bot'
+#+END_SRC
+
 #+BEGIN_SRC nix
 {
   description = "my flake";
