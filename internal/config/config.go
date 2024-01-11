@@ -9,8 +9,9 @@ import (
 
 type TelegramConfig struct {
 	Name   string `toml:"name"`
-	Token  string `toml:"token"`
 	Domain string `toml:"domain"`
+	Token  string `toml:"token"`
+	ApiKey string `toml:"apikey"`
 }
 
 type Config struct {
@@ -32,6 +33,10 @@ func concileWithEnv(cfg *Config) {
 
 	if token := os.Getenv("TELEGRAM_TOKEN"); token != "" {
 		cfg.Telegram.Token = token
+	}
+
+	if apikey := os.Getenv("TELEGRAM_KEY"); apikey != "" {
+		cfg.Telegram.ApiKey = apikey
 	}
 }
 

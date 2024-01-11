@@ -81,9 +81,8 @@ func Listen(cfg *config.Config) error {
 		w.Write(resp)
 	})
 
-	r.Get("/{token}", func(w http.ResponseWriter, r *http.Request) {
-		token := chi.URLParam(r, "token")
-		if token != cfg.Telegram.Token {
+	r.Get("/t/{apikey}", func(w http.ResponseWriter, r *http.Request) {
+		if apikey := chi.URLParam(r, "apikey"); apikey != cfg.Telegram.ApiKey {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
@@ -92,9 +91,8 @@ func Listen(cfg *config.Config) error {
 		w.Write([]byte("hello bot!"))
 	})
 
-	r.Post("/{token}", func(w http.ResponseWriter, r *http.Request) {
-		token := chi.URLParam(r, "token")
-		if token != cfg.Telegram.Token {
+	r.Post("/t/{apikey}", func(w http.ResponseWriter, r *http.Request) {
+		if apikey := chi.URLParam(r, "apikey"); apikey != cfg.Telegram.ApiKey {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
