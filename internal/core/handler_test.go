@@ -53,12 +53,11 @@ func TestHandlerRemember(t *testing.T) {
 	assert.ErrorType(t, err, ErrParseNoMessage)
 
 	t.Run("empty photo", func(t *testing.T) {
-		_, err := invokeHandler(t, `{
-			"message": {
-				"chat": { "id": "`+gid+`" },
+		_, err := invokeHandler(t,
+			`{"message": {
+				"chat": { "id": `+gid+` },
 				"text": "/ricorda just a photo"
-			}
-		}`)
+			}}`)
 		expected := &telegram.WebhookResponse{}
 		assert.NilError(t, err)
 		assert.Equal(t, expected.ChatID, "")
@@ -97,7 +96,7 @@ func TestHandlerRemember(t *testing.T) {
 
 			res, err = invokeHandler(t, `{
 				"message": {
-					"chat": { "id": "`+test.gid+`" },
+					"chat": { "id": `+test.gid+` },
 					"text": "/ricorda `+test.description+`",
 					"`+test.kind+`": [{"file_id":"`+test.fileId+`"},
 									  {"file_id":"wrong"}]
@@ -160,7 +159,7 @@ func TestHandlerCallout(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			res, err := invokeHandler(t, `{
 				"message": {
-					"chat": {"id":"`+gid+`"},
+					"chat": {"id":`+gid+`},
 					"text": "`+test.remember+`"
 				}
 			}`)
@@ -177,7 +176,7 @@ func TestHandlerCallout(t *testing.T) {
 
 			res, err = invokeHandler(t, `{
 				"message": {
-					"chat": { "id": "`+gid+`" },
+					"chat": { "id": `+gid+` },
 					"text": "`+test.message+`"
 				}
 			}`)
@@ -231,7 +230,7 @@ func TestHandlerAbraxas(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			res, err := invokeHandler(t, `{
 				"message": {
-					"chat": {"id":"`+gid+`"},
+					"chat": {"id":`+gid+`},
 					"text": "`+test.message+`"
 				}
 			}`)
@@ -300,7 +299,7 @@ func TestHandlerAbraxas(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			res, err := invokeHandler(t, `{
 				"message": {
-					"chat": {"id":"`+gid+`"},
+					"chat": {"id":`+gid+`},
 					"text": "`+test.message+`"
 				}
 			}`)
@@ -355,7 +354,7 @@ func TestHandlerLinks(t *testing.T) {
 		t.Run("add#"+id, func(t *testing.T) {
 			res, err := invokeHandler(t, `{
 				"message": {
-					"chat": {"id":"`+gid+`"},
+					"chat": {"id":`+gid+`},
 					"text": "/link `+test.word+` I love this link",
 					"entities": [
 						{"url": "`+test.url+`"},
@@ -419,7 +418,7 @@ func TestHandlerLinks(t *testing.T) {
 
 			res, err := invokeHandler(t, `{
 				"message" : {
-					"chat": {"id":"`+gid+`"},
+					"chat": {"id":`+gid+`},
 					"text": "/link `+test.word+` I hate this link",
 					"entities": [
 						{"url": "`+test.url+`"},
@@ -451,7 +450,7 @@ func TestHandlerDice(t *testing.T) {
 			r := regexp.MustCompile(test.d + `\n \*total\*:\d+, \*rolls\*:[\d+(,\s)]+`)
 			res, err := invokeHandler(t, `{
 				"message" : {
-					"chat": {"id":"`+gid+`"},
+					"chat": {"id":`+gid+`},
 					"text": "/r `+test.d+` useless unparsed garbage"
 				}
 			}`)
