@@ -6,7 +6,7 @@
     flakelight.url = "github:nix-community/flakelight";
   };
 
-  outputs = { flakelight, ... }@inputs:
+  outputs = { self, flakelight, ... }@inputs:
     flakelight ./. {
 
       inherit inputs;
@@ -38,8 +38,7 @@
       };
 
       nixosModule =
-        { self
-        , config
+        { config
         , pkgs
         , lib
         , system
