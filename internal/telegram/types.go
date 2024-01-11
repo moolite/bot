@@ -76,8 +76,6 @@ func (w *WebhookResponse) SetChatID(chatID string) *WebhookResponse {
 }
 
 func (w *WebhookResponse) SetText(text string) *WebhookResponse {
-	text = escapeText(text)
-
 	if w.isMedia {
 		w.Caption = &text
 	} else {
