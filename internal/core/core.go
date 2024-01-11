@@ -134,6 +134,8 @@ func Listen(cfg *config.Config) error {
 			return
 		}
 
+		oplog.Debug("fastjson is killing me!", "body", string(body))
+
 		jsonParser, err := fastjson.ParseBytes(body)
 		if err != nil {
 			oplog.Error("body parse error", "err", err)
