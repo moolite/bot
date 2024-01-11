@@ -218,7 +218,16 @@ func Handler(p *fastjson.Value) (*telegram.WebhookResponse, error) {
 	go statistics.ApplyTriggers(gid, username, text)
 
 	inc := parseText(text)
-	slog.Debug("incoming message", "gid", gid, "username", username, "parsed", inc)
+	slog.Debug("incoming message", "gid", gid, "username", username,
+		"inc.Abraxas", inc.Abraxas,
+		"inc.Command", inc.Command,
+		"inc.Kind", inc.Kind,
+		"inc.Operation", inc.Operation,
+		"inc.RememberAbraxas", inc.RememberAbraxas,
+		"inc.Remember", inc.RememberKind,
+		"inc.RememberRest", inc.RememberRest,
+		"inc.Rest", inc.Rest,
+	)
 
 	switch inc.Kind {
 	case KindTrigger:

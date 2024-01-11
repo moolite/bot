@@ -28,22 +28,19 @@ var (
 func Listen(cfg *config.Config) error {
 
 	logger := httplog.NewLogger("marrano-bot", httplog.Options{
-		// JSON:             true,
-		LogLevel:         slog.LevelDebug,
-		Concise:          true,
-		RequestHeaders:   true,
+		JSON:     true,
+		LogLevel: slog.LevelDebug,
+		Concise:  true,
+		// RequestHeaders:  true,
+		// ResponseHeaders: true,
 		MessageFieldName: "message",
 		// TimeFieldFormat: time.RFC850,
-		Tags: map[string]string{
-			"version": "v1.0-81aa4244d9fc8076a",
-			"env":     "dev",
-		},
+		// SourceFieldName: "source",
 		QuietDownRoutes: []string{
 			"/",
 			"/ping",
 		},
 		QuietDownPeriod: 10 * time.Second,
-		SourceFieldName: "source",
 	})
 
 	err := db.Open(cfg.Database)
@@ -105,8 +102,10 @@ func Listen(cfg *config.Config) error {
 	})
 
 	r.Get("/t/{apikey}", func(w http.ResponseWriter, r *http.Request) {
+		oplog := httplog.LogEntry(r.Context())
 		if apikey := chi.URLParam(r, "apikey"); apikey != cfg.Telegram.ApiKey {
 			w.WriteHeader(http.StatusNotFound)
+			oplog.Error("apikey not found")
 			return
 		}
 
@@ -115,52 +114,56 @@ func Listen(cfg *config.Config) error {
 	})
 
 	r.Post("/t/{apikey}", func(w http.ResponseWriter, r *http.Request) {
+		oplog := httplog.LogEntry(r.Context())
 		if apikey := chi.URLParam(r, "apikey"); apikey != cfg.Telegram.ApiKey {
 			w.WriteHeader(http.StatusNotFound)
+			oplog.Error("apikey not found")
 			return
 		}
 
 		if r.Body == nil {
 			w.WriteHeader(http.StatusBadRequest)
+			oplog.Error("body not defined")
 			return
 		}
 
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
-			slog.Error("error reading body", "err", err)
-
+			oplog.Error("body read error", "err", err)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
 		jsonParser, err := fastjson.ParseBytes(body)
 		if err != nil {
-			slog.Error("error parsing JSON", "err", err)
-
+			oplog.Error("body parse error", "err", err)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 		result, err := Handler(jsonParser)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
-				slog.Debug("handler returned empty response", "err", err)
+				oplog.Debug("handler returned empty response", "err", err)
 				w.WriteHeader(http.StatusOK)
 				return
 			}
 
-			slog.Error("error producing response", "err", err)
+			oplog.Error("error producing response", "err", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
 		body, err = result.Marshal()
 		if err != nil {
-			slog.Error("error producing response", "err", err)
+			oplog.Error("error producing response", "err", err)
 
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
+		oplog.Debug("bot response", "body", body)
+
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		w.Write(body)
 	})

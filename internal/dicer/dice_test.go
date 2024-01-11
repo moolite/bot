@@ -33,10 +33,15 @@ func TestParse(t *testing.T) {
 }
 
 func TestParseMulti(t *testing.T) {
-	dies := New("3d6 4d8 8d4")
 
-	if len(dies) != 3 {
-		t.Error("parser failed to parse 3 dies")
+	dd := [][]*Dice{
+		New("3d6 4d8 8d4"),
+		New(" 1d8+5 1d4  4d8   "),
+	}
+	for _, dies := range dd {
+		if len(dies) != 3 {
+			t.Error("parser failed to parse 3 dies", dies)
+		}
 	}
 }
 
