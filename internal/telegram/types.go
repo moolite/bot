@@ -43,7 +43,8 @@ func (w *WebhookResponse) setMethod(method string, isMedia bool) *WebhookRespons
 }
 
 func (w *WebhookResponse) SendDice() *WebhookResponse {
-	return w.setMethod("sendMessage", false)
+	return w.setMethod("sendMessage", false).
+		UseMarkdown()
 }
 
 func (w *WebhookResponse) SendMessage() *WebhookResponse {
@@ -75,6 +76,8 @@ func (w *WebhookResponse) SetChatID(chatID string) *WebhookResponse {
 }
 
 func (w *WebhookResponse) SetText(text string) *WebhookResponse {
+	text = escapeText(text)
+
 	if w.isMedia {
 		w.Caption = &text
 	} else {
@@ -91,6 +94,11 @@ func (w *WebhookResponse) SetLinks(data []URLButton) *WebhookResponse {
 
 	w.SetKeyboard(string(j))
 
+	return w
+}
+
+func (w *WebhookResponse) UseMarkdown() *WebhookResponse {
+	w.ParseMode = "MarkdownV2"
 	return w
 }
 
@@ -123,11 +131,10 @@ func (w *WebhookResponse) Empty() *WebhookResponse {
 
 func (w *WebhookResponse) Marshal() ([]byte, error) {
 	// empty response
-	// spare a 46 bytes
+	// spare 46 bytes
 	if len(w.Method) == 0 && !w.isMedia {
 		return []byte{}, nil
 	}
 
-	w.ParseMode = "MarkdownV2"
 	return json.Marshal(w)
 }
