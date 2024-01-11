@@ -245,10 +245,10 @@ func TestHandlerAbraxas(t *testing.T) {
 	}
 
 	dummyMedia := []*db.Media{
-		{GID: gid, Data: "123456", Kind: "photo", Description: ""},
-		{GID: gid, Data: "234567", Kind: "photo", Description: ""},
-		{GID: gid, Data: "345678", Kind: "video", Description: ""},
-		{GID: gid, Data: "456789", Kind: "video", Description: ""},
+		{GID: gid, Data: "123456", Kind: "photo", Description: "Description describing photo"},
+		{GID: gid, Data: "234567", Kind: "photo", Description: "funny text"},
+		{GID: gid, Data: "345678", Kind: "video", Description: "more text"},
+		{GID: gid, Data: "456789", Kind: "video", Description: "some description"},
 	}
 	for _, m := range dummyMedia {
 		err := db.InsertMedia(context.TODO(), m)
@@ -307,6 +307,10 @@ func TestHandlerAbraxas(t *testing.T) {
 			assert.Check(t, res != nil)
 			t.Log("message", test.message, "method", res.Method)
 			assert.Check(t, res.Method == test.method)
+			if test.method != "" {
+				assert.Check(t, res.Caption != nil)
+				t.Log("data", res)
+			}
 		})
 	}
 }

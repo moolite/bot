@@ -272,6 +272,7 @@ func Handler(p *fastjson.Value) (*telegram.WebhookResponse, error) {
 		case "photo":
 			res.SendPhoto(media.Data)
 		}
+		res.SetText(media.Description)
 
 		return res, nil
 
