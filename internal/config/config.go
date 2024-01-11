@@ -1,8 +1,10 @@
 package config
 
 import (
+	"log/slog"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/pelletier/go-toml"
 )
@@ -18,6 +20,7 @@ type Config struct {
 	Database string         `toml:"database"`
 	Port     int            `toml:"port" default:"6446"`
 	Telegram TelegramConfig `toml:"telegram"`
+	LogLevel slog.Level
 }
 
 func concileWithEnv(cfg *Config) {
@@ -38,6 +41,20 @@ func concileWithEnv(cfg *Config) {
 	if apikey := os.Getenv("TELEGRAM_KEY"); apikey != "" {
 		cfg.Telegram.ApiKey = apikey
 	}
+
+	logLevel := strings.ToLower(os.Getenv("LOG_LEVEL"))
+	var level slog.Level
+	switch logLevel {
+	case "error":
+		level = slog.LevelError
+	case "warn":
+		level = slog.LevelWarn
+	case "debug":
+		level = slog.LevelDebug
+	default:
+		level = slog.LevelInfo
+	}
+	cfg.LogLevel = level
 }
 
 func LoadFromEnv() (*Config, error) {

@@ -9,9 +9,11 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/httplog/v2"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/moolite/bot/internal/config"
 	"github.com/moolite/bot/internal/db"
@@ -24,6 +26,26 @@ var (
 )
 
 func Listen(cfg *config.Config) error {
+
+	logger := httplog.NewLogger("marrano-bot", httplog.Options{
+		// JSON:             true,
+		LogLevel:         slog.LevelDebug,
+		Concise:          true,
+		RequestHeaders:   true,
+		MessageFieldName: "message",
+		// TimeFieldFormat: time.RFC850,
+		Tags: map[string]string{
+			"version": "v1.0-81aa4244d9fc8076a",
+			"env":     "dev",
+		},
+		QuietDownRoutes: []string{
+			"/",
+			"/ping",
+		},
+		QuietDownPeriod: 10 * time.Second,
+		SourceFieldName: "source",
+	})
+
 	err := db.Open(cfg.Database)
 	if err != nil {
 		slog.Error("error opening connection", "err", err)
@@ -38,7 +60,8 @@ func Listen(cfg *config.Config) error {
 	defer statistics.Stop()
 
 	r := chi.NewRouter()
-	r.Use(middleware.Logger)
+	r.Use(httplog.RequestLogger(logger))
+	r.Use(middleware.Heartbeat("/ping"))
 	r.Use(middleware.Recoverer)
 
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {

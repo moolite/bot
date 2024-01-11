@@ -27,7 +27,7 @@
         name = "marrano-bot";
         src = ./.;
         nativeBuildInputs = [ pkgs.go ];
-        vendorHash = "sha256-oA/fw9e6MRQ5+ZMULuppjkPpUJix9UP3FYfoshf/wEU=";
+        vendorHash = "sha256-x4KV95HWtYouO9Ah603wkbCAiA94H8Tl8fwYiUsAweo=";
         meta = {
           platforms = lib.platforms.all;
         };
