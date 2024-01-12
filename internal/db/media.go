@@ -27,7 +27,7 @@ func (m *Media) Clone() *Media {
 
 func InsertMedia(ctx context.Context, m *Media) error {
 	q, err := prepareStmt(
-		`INSERT OR REPLACE INTO `+mediaTable+` (gid,data,kind,description)
+		`INSERT OR REPLACE INTO ` + mediaTable + ` (gid,data,kind,description)
 		VALUES(?,?,?,?)`,
 	)
 	if err != nil {
@@ -65,7 +65,7 @@ func SelectOneMediaByData(ctx context.Context, m *Media) error {
 func SelectAllMedia(ctx context.Context, gid string) ([]Media, error) {
 	var results []Media
 	q, err := prepareStmt(
-		`SELECT data,description,gid,kind FROM ` + mediaTable + ` WHERE gid=?`
+		`SELECT data,description,gid,kind FROM ` + mediaTable + ` WHERE gid=?`,
 	)
 	if err != nil {
 		return results, err

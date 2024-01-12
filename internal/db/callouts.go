@@ -90,7 +90,7 @@ func SelectAllCallouts(ctx context.Context, gid string) ([]string, error) {
 
 func DeleleOneCallout(ctx context.Context, c *Callout) error {
 	q, err := prepareStmt(
-		`DELETE FROM ` + calloutsTable + ` WHERE gid=? AND callout=? LIMIT 1`
+		`DELETE FROM ` + calloutsTable + ` WHERE gid=? AND callout=? LIMIT 1`,
 	)
 	if err != nil {
 		return err
