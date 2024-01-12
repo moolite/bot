@@ -23,7 +23,10 @@ func (a *Abraxas) Clone() *Abraxas {
 }
 
 func SelectOneAbraxasByAbraxas(ctx context.Context, a *Abraxas) error {
-	q, err := prepareStmt(`SELECT gid,abraxas,kind FROM ` + abraxoidesTable + ` WHERE gid=? AND abraxas=? LIMIT 1`)
+	q, err := prepareStmt(
+		`SELECT gid,abraxas,kind FROM ` + abraxoidesTable + `
+		WHERE gid=? AND abraxas=? LIMIT 1`,
+	)
 	if err != nil {
 		return err
 	}
@@ -36,7 +39,9 @@ func SelectOneAbraxasByAbraxas(ctx context.Context, a *Abraxas) error {
 func SelectAbraxoides(ctx context.Context, gid string) ([]*Abraxas, error) {
 	var abraxoides []*Abraxas
 
-	q, err := prepareStmt(`SELECT abraxas,kind,gid FROM ` + abraxoidesTable + ` WHERE gid=?`)
+	q, err := prepareStmt(
+		`SELECT abraxas,kind,gid FROM ` + abraxoidesTable + ` WHERE gid=?`,
+	)
 	if err != nil {
 		return abraxoides, err
 	}
@@ -86,8 +91,9 @@ func SelectAbraxoidesAbraxasKind(ctx context.Context, gid string) ([][]string, e
 }
 
 func InsertAbraxas(ctx context.Context, a *Abraxas) error {
-	q, err := prepareStmt(`INSERT INTO ` + abraxoidesTable + ` (gid,abraxas,kind) VALUES (?,?,?)
-	ON CONFLICT(abraxas,gid) DO UPDATE SET kind=` + abraxoidesTable + `.kind`)
+	q, err := prepareStmt(
+		`INSERT OR REPLACE INTO ` + abraxoidesTable + ` (gid,abraxas,kind) VALUES (?,?,?)`,
+	)
 	if err != nil {
 		return err
 	}

@@ -31,9 +31,9 @@ type StatisticsJoin struct {
 
 func SelectStatisticKinds(ctx context.Context) ([]*StatisticsKind, error) {
 	var results []*StatisticsKind
-	q, err := prepareStmt(`
-		SELECT kind_id,name,is_regexp
-		FROM statistics_kind`)
+	q, err := prepareStmt(
+		`SELECT kind_id,name,is_regexp FROM ` + statisticsKindTable,
+	)
 	if err != nil {
 		return results, err
 	}
@@ -57,9 +57,9 @@ func SelectStatisticKinds(ctx context.Context) ([]*StatisticsKind, error) {
 }
 
 func InsertStatistics(ctx context.Context, val, kind int64) error {
-	q, err := prepareStmt(`
-		INSERT INTO statistics SET(value,kind)
-		VALUES(?,?)`)
+	q, err := prepareStmt(
+		`INSERT INTO statistics SET(value,kind) VALUES(?,?)`,
+	)
 	if err != nil {
 		return err
 	}
@@ -83,11 +83,11 @@ func InsertStatistics(ctx context.Context, val, kind int64) error {
 func SelectStatisticsByDateRange(ctx context.Context, timeFrom, timeTo time.Time) ([]*StatisticsJoin, error) {
 	var results []*StatisticsJoin
 
-	q, err := prepareStmt(`
-		SELECT name,value,date
-		FROM statistics
+	q, err := prepareStmt(
+		`SELECT name,value,date FROM statistics
 		WHERE date < ? AND date > ?
-		LEFT JOIN statistics_kind USING(kind_id)`)
+		LEFT JOIN statistics_kind USING(kind_id)`,
+	)
 	if err != nil {
 		return results, err
 	}
@@ -112,11 +112,12 @@ func SelectStatisticsByDateRange(ctx context.Context, timeFrom, timeTo time.Time
 
 func SelectStatisticsLatest(ctx context.Context) ([]*StatisticsJoin, error) {
 	var results []*StatisticsJoin
-	q, err := prepareStmt(`
-		SELECT name,value,date FROM statistics
+	q, err := prepareStmt(
+		`SELECT name,value,date FROM statistics
 		LEFT JOIN statistics_kind USING(kind_id)
 		WHERE date > date('now','-30 minutes')
-		ORDER BY date`)
+		ORDER BY date`,
+	)
 	if err != nil {
 		return results, err
 	}
@@ -140,9 +141,9 @@ func SelectStatisticsLatest(ctx context.Context) ([]*StatisticsJoin, error) {
 }
 
 func InsertStatisticsKind(ctx context.Context, k *StatisticsKind) (int64, error) {
-	q, err := prepareStmt(`
-		INSERT INTO statistics_kind (name,trigger,is_regexp)
-		VALUES(?,?,?)`)
+	q, err := prepareStmt(
+		`INSERT INTO statistics_kind (name,trigger,is_regexp) VALUES(?,?,?)`,
+	)
 	if err != nil {
 		return -1, err
 	}

@@ -24,7 +24,9 @@ func (l *Link) Clone() *Link {
 }
 
 func SelectLinkByURL(ctx context.Context, l *Link) error {
-	q, err := prepareStmt(`SELECT url,text,gid FROM ` + linksTable + ` WHERE gid=? LIMIT 1`)
+	q, err := prepareStmt(
+		`SELECT url,text,gid FROM ` + linksTable + ` WHERE gid=? LIMIT 1`,
+	)
 	if err != nil {
 		return err
 	}
@@ -36,7 +38,9 @@ func SelectLinkByURL(ctx context.Context, l *Link) error {
 
 func SearchLinks(ctx context.Context, gid, term string) (links []*Link, err error) {
 	likeTerm := fmt.Sprintf("%%%s%%", term)
-	q, err := prepareStmt(`SELECT text,url,gid FROM ` + linksTable + ` WHERE text LIKE ? AND gid=?`)
+	q, err := prepareStmt(
+		`SELECT text,url,gid FROM ` + linksTable + ` WHERE text LIKE ? AND gid=?`,
+	)
 	if err != nil {
 		return links, err
 	}
@@ -60,8 +64,10 @@ func SearchLinks(ctx context.Context, gid, term string) (links []*Link, err erro
 }
 
 func InsertLink(ctx context.Context, l *Link) error {
-	q, err := prepareStmt(`INSERT INTO ` + linksTable + ` (url,text,gid) VALUES(?,?,?)
-	  ON CONFLICT(url,gid) DO UPDATE SET text=` + linksTable + `.text`)
+	q, err := prepareStmt(
+		`INSERT OR REPLACE INTO ` + linksTable + `
+		(url,text,gid) VALUES(?,?,?)`,
+	)
 	if err != nil {
 		return err
 	}
@@ -79,7 +85,9 @@ func InsertLink(ctx context.Context, l *Link) error {
 }
 
 func DeleteLink(ctx context.Context, l *Link) error {
-	q, err := prepareStmt(`DELETE FROM ` + linksTable + ` WHERE url=? AND gid=?`)
+	q, err := prepareStmt(
+		`DELETE FROM ` + linksTable + ` WHERE url=? AND gid=?`,
+	)
 	if err != nil {
 		return err
 	}
