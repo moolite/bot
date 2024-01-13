@@ -279,7 +279,7 @@ func Handler(p *fastjson.Value) (*telegram.WebhookResponse, error) {
 	case KindCallout:
 		callout := &db.Callout{
 			GID:     gid,
-			Callout: inc.Abraxas,
+			Callout: strings.ToLower(inc.Abraxas),
 		}
 
 		if err := db.SelectOneCallout(ctx, callout); err != nil {
@@ -334,7 +334,7 @@ func Handler(p *fastjson.Value) (*telegram.WebhookResponse, error) {
 				if inc.RememberKind == KindCalloutCmd {
 					c := &db.Callout{
 						GID:     gid,
-						Callout: inc.RememberAbraxas,
+						Callout: strings.ToLower(inc.RememberAbraxas),
 						Text:    inc.RememberRest,
 					}
 
