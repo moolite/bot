@@ -18,8 +18,8 @@ CREATE TABLE IF NOT EXISTS statistics
 CREATE TRIGGER "statistics_date"
 AFTER INSERT ON "statistics"
 BEGIN
-	UPDATE statistics
-	SET date = datetime('now')
-	WHERE rowid = NEW.rowid
+UPDATE statistics
+SET date = datetime('now')
+WHERE rowid = NEW.rowid
 ;
 END;

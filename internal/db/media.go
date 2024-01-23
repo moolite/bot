@@ -62,8 +62,8 @@ func SelectOneMediaByData(ctx context.Context, m *Media) error {
 	return row.Scan(&m.Data, &m.Description, &m.GID, &m.Kind)
 }
 
-func SelectAllMedia(ctx context.Context, gid string) ([]Media, error) {
-	var results []Media
+func SelectAllMediaGroup(ctx context.Context, gid string) ([]*Media, error) {
+	var results []*Media
 	q, err := prepareStmt(
 		`SELECT data,description,gid,kind FROM ` + mediaTable + ` WHERE gid=?`,
 	)
@@ -78,11 +78,39 @@ func SelectAllMedia(ctx context.Context, gid string) ([]Media, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		var m *Media
-		err = rows.Scan(&m.Data, &m.Description, &m.GID, &m.Kind)
-		if err != nil {
+		m := new(Media)
+
+		if err = rows.Scan(&m.Data, &m.Description, &m.GID, &m.Kind); err != nil {
 			return results, err
 		}
+		results = append(results, m)
+	}
+
+	return results, nil
+}
+
+func SelectAllMedia(ctx context.Context) ([]*Media, error) {
+	var results []*Media
+	q, err := prepareStmt(
+		`SELECT data,description,gid,kind FROM ` + mediaTable,
+	)
+	if err != nil {
+		return results, err
+	}
+
+	rows, err := q.Query()
+	if err != nil {
+		return results, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		m := new(Media)
+
+		if err = rows.Scan(&m.Data, &m.Description, &m.GID, &m.Kind); err != nil {
+			return results, err
+		}
+		results = append(results, m)
 	}
 
 	return results, nil
@@ -109,7 +137,7 @@ func SelectRandomMedia(ctx context.Context, m *Media) error {
 
 func SearchMedia(ctx context.Context, gid, term string) (*Media, error) {
 	likeTerm := fmt.Sprintf("%%%s%%", term)
-	var m *Media
+	m := new(Media)
 
 	q, err := prepareStmt(
 		`SELECT gid,kind,data,description FROM ` + mediaTable + `

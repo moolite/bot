@@ -17,13 +17,15 @@ var version string = "0.10.0"
 var Cfg *config.Config
 
 var (
-	flagHelp         bool
-	flagDebug        bool
-	flagConfigPath   string
-	flagInit         bool
-	flagDump         bool
-	flagExportDB     bool
-	flagExportDBPath string
+	flagHelp            bool
+	flagDebug           bool
+	flagConfigPath      string
+	flagInit            bool
+	flagDump            bool
+	flagExportDB        bool
+	flagExportDBPath    string
+	flagSyncMedia       bool
+	flagSyncMediaFolder string
 )
 
 func setupLogging() {
@@ -83,6 +85,7 @@ func main() {
 	pflag.BoolVarP(&flagDump, "dump", "D", false, "dump configuration object")
 	pflag.BoolVarP(&flagExportDB, "export", "E", false, "export database data as csv (defaults to stdout)")
 	pflag.StringVar(&flagExportDBPath, "export-dir", cwd, "folder to write database exported data csv files")
+	pflag.StringVarP(&flagSyncMediaFolder, "export-media", "M", "", "sync media files to the specified folder.")
 	pflag.Parse()
 
 	setupLogging()
@@ -133,6 +136,16 @@ func main() {
 			slog.Info("written", "file", f)
 		}
 
+		os.Exit(0)
+		return
+	}
+
+	if flagSyncMediaFolder != "" {
+		slog.Info("sync media to folder", "folder", flagSyncMediaFolder)
+		if err := SyncFolder(flagSyncMediaFolder); err != nil {
+			slog.Error("error syncronizing media folder", "folder", flagSyncMediaFolder, "err", err)
+			os.Exit(1)
+		}
 		os.Exit(0)
 		return
 	}
