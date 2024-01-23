@@ -98,8 +98,10 @@ func TestHandlerRemember(t *testing.T) {
 				"message": {
 					"chat": { "id": `+test.gid+` },
 					"text": "/ricorda `+test.description+`",
-					"`+test.kind+`": [{"file_id":"`+test.fileId+`"},
-									  {"file_id":"wrong"}]
+					"`+test.kind+`": [
+						{"file_id":"`+test.fileId+`"},
+						{"file_id":"wrong"}
+					]
 				}
 			}`)
 			assert.NilError(t, err)

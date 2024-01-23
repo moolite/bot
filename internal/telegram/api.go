@@ -4,28 +4,38 @@ import (
 	"bytes"
 	"io"
 	"net/http"
+	"time"
 )
 
 var (
 	tgBaseApi string = "https://api.telegram.org/bot"
 )
 
-func apiRequest(token string, body []byte) ([]byte, error) {
-	bodyReader := bytes.NewReader(body)
+func apiRequest(token, method string, body []byte) ([]byte, error) {
+	bodyReader := bytes.NewBuffer(body)
 	req, err := http.NewRequest(
 		"POST",
-		tgBaseApi+token,
+		tgBaseApi+token+"/"+method,
 		bodyReader,
 	)
 	if err != nil {
 		return nil, err
 	}
-	defer req.Body.Close()
+	req.Header.Add("Content-Type", "application/json")
 
-	body, err = io.ReadAll(req.Body)
+	client := http.Client{
+		Timeout: 60 * time.Second,
+	}
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	response, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	return body, nil
+	return response, nil
 }
