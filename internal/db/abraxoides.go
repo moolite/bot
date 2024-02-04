@@ -25,7 +25,7 @@ func (a *Abraxas) Clone() *Abraxas {
 func SelectOneAbraxasByAbraxas(ctx context.Context, a *Abraxas) error {
 	q, err := prepareStmt(
 		`SELECT gid,abraxas,kind FROM ` + abraxoidesTable + `
-		WHERE gid=? AND abraxas=? LIMIT 1`,
+		WHERE gid=? AND abraxas LIKE ? LIMIT 1`,
 	)
 	if err != nil {
 		return err

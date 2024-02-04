@@ -49,7 +49,7 @@ func InsertCallout(ctx context.Context, c *Callout) error {
 func SelectOneCallout(ctx context.Context, c *Callout) error {
 	q, err := prepareStmt(
 		`SELECT gid,callout,text FROM ` + calloutsTable + `
-		WHERE callout=? AND gid=? LIMIT 1`,
+		WHERE callout LIKE ? AND gid=? LIMIT 1`,
 	)
 	if err != nil {
 		return err
