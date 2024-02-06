@@ -212,8 +212,8 @@ func Handler(p *fastjson.Value) (*telegram.WebhookResponse, error) {
 	}
 
 	// Use forwarded messages as base for data
-	if p.Exists("message", "reply_to_message") {
-		p = p.Get("message", "reply_to_message")
+	if p.Exists("reply_to_message") {
+		p = p.Get("reply_to_message")
 	}
 
 	go statistics.ApplyTriggers(gid, username, text)
