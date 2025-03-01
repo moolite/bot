@@ -120,5 +120,18 @@ func Listen(ctx context.Context, b *tg.Bot, cfg *config.Config) error {
 	})
 
 	slog.Info("http handler listening", "port", cfg.Port)
-	return http.ListenAndServe(fmt.Sprintf(":%d", cfg.Port), r)
+
+	srv := http.Server{
+		Addr:    fmt.Sprintf(":%d", cfg.Port),
+		Handler: r,
+	}
+	go srv.ListenAndServe()
+
+	<-ctx.Done()
+
+	if err := db.Close(); err != nil {
+		return err
+	}
+
+	return srv.Close()
 }
