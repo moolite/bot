@@ -1,4 +1,4 @@
-SOURCES = $(wildcard cmd/*/*.go) $(wildcard internal/*/*.go)
+SOURCES = $(wildcard cmd/*/*.go) $(wildcard internal/*/*.go) $(wildcard pkg/*/*.go)
 
 marrano-bot: ${SOURCES}
 	go build \
@@ -10,11 +10,15 @@ watch:
 	fd|entr make marrano-bot
 
 test:
-	go test ./internal/*/
+	go test -v ./...
+
+tw: test-watch
+test-watch:
+	fd | entr make test
 
 clean:
 	rm marrano-bot
 
 all: marrano-bot
 
-.PHONY: all test clean w watch
+.PHONY: all test clean w watch test-watch tw

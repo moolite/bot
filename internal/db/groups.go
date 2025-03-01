@@ -9,7 +9,7 @@ var (
 )
 
 type Group struct {
-	GID   string `db:"gid"`
+	GID   int64  `db:"gid"`
 	Title string `db:"title"`
 }
 
@@ -53,7 +53,7 @@ func SelectAllGroups(ctx context.Context) ([]*Group, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		var g *Group
+		g := &Group{}
 		if err := rows.Scan(&g.GID, &g.Title); err != nil {
 			return ret, err
 		} else {
@@ -63,7 +63,7 @@ func SelectAllGroups(ctx context.Context) ([]*Group, error) {
 	return ret, nil
 }
 
-func InsertGroup(ctx context.Context, gid, title string) error {
+func InsertGroup(ctx context.Context, gid int64, title string) error {
 	q, err := prepareStmt(
 		`INSERT INTO ` + groupsTable + ` (gid,title) VALUES(?,?)
 		ON CONFLICT(gid) DO UPDATE SET title=groups.title`,

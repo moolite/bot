@@ -9,9 +9,9 @@ var (
 )
 
 type Abraxas struct {
+	GID     int64  `db:"gid"`
 	Abraxas string `db:"abraxas"`
 	Kind    string `db:"kind"`
-	GID     string `db:"gid"`
 }
 
 func (a *Abraxas) Clone() *Abraxas {
@@ -52,7 +52,7 @@ func SelectAbraxoides(ctx context.Context, gid string) ([]*Abraxas, error) {
 	}
 
 	for rows.Next() {
-		var a *Abraxas
+		a := &Abraxas{}
 		err := rows.Scan(&a.Abraxas, &a.Kind, &a.GID)
 		if err != nil {
 			return abraxoides, err
@@ -110,5 +110,27 @@ func InsertAbraxas(ctx context.Context, a *Abraxas) error {
 		return ErrInsert
 	}
 
+	return nil
+}
+
+func DeleteAbraxas(ctx context.Context, a *Abraxas) error {
+	q, err := prepareStmt(
+		`DELETE FROM ` + abraxoidesTable + ` WHERE gid=? AND abraxas=? LIMIT 1`,
+	)
+	if err != nil {
+		return err
+	}
+
+	res, err := q.ExecContext(ctx, a.GID, a.Abraxas)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n != 1 {
+		return ErrDelete
+	}
 	return nil
 }

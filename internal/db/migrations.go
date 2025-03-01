@@ -72,7 +72,7 @@ func Migrate() error {
 	version, dirty, err := m.Version()
 	if err != nil {
 		if errors.Is(err, migrate.ErrNilVersion) {
-			slog.Error("db not versioned, performing migration")
+			slog.Warn("db not versioned, performing migration")
 			return m.Up()
 		}
 		return err

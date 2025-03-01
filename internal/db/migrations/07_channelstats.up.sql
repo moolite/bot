@@ -1,7 +1,6 @@
 CREATE TABLE channel_stats
-( ts TIMESTAMP
-, uid VARCHAR(128)
+( uid VARCHAR(128)
 , points INT
 , gid VARCHAR(128)
-, PRIMARY KEY(uid,ts)
+, PRIMARY KEY(uid)
 , FOREIGN KEY(gid) REFERENCES groups)

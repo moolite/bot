@@ -2,19 +2,17 @@ package db
 
 import (
 	"context"
-	"time"
 )
 
 var channelStatsTable string = "channel_stats"
 
 type ChannelStats struct {
-	GID    string
-	TS     time.Time
+	GID    int64
 	User   string
 	Points int64
 }
 
-func SelectChannelStatsTimeSeries(ctx context.Context, channel string) ([]*ChannelStats, error) {
+func SelectChannelStats(ctx context.Context, channel string) ([]*ChannelStats, error) {
 	var res []*ChannelStats
 	q := `SELECT gid, SUM(points), DISTINCT(uid) WHERE gid = ?`
 	rows, err := dbc.QueryContext(ctx, q, channel)
@@ -33,28 +31,42 @@ func SelectChannelStatsTimeSeries(ctx context.Context, channel string) ([]*Chann
 	return res, nil
 }
 
-func InsertChannelStats(ctx context.Context, channel, user string, points int64) error {
+func SelectChannelStatsUser(ctx context.Context, channel, user string) (*ChannelStats, error) {
+	q, err := prepareStmt(`SELECT * FROM ` + channelStatsTable + ` WHERE gid = ? AND user = ?`)
+	if err != nil {
+		return nil, err
+	}
+
+	row := q.QueryRowContext(ctx, channel, user)
+	res := &ChannelStats{}
+	if err := row.Scan(res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func InsertChannelStats(ctx context.Context, channel int64, user string, points int64) (*ChannelStats, error) {
+	res := &ChannelStats{
+		GID:    channel,
+		User:   user,
+		Points: points,
+	}
 	q, err := prepareStmt(`INSERT INTO ` + channelStatsTable + `
 	(gid,uid,points)
 	VALUES(?,?,?)
 	ON CONFLICT(uid,ts) DO
-		UPDATE SET points=(` + channelStatsTable + `.points + points)`)
+		UPDATE SET points=(` + channelStatsTable + `.points + points)
+	RETURNING *`)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	res, err := q.ExecContext(ctx, channel, user, points)
-	if err != nil {
-		return err
+	row := q.QueryRowContext(ctx, res.GID, res.User, res.Points)
+
+	if err := row.Scan(res); err != nil {
+		return nil, err
 	}
 
-	n, err := res.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if n == 0 {
-		return ErrInsert
-	}
-
-	return nil
+	return res, nil
 }

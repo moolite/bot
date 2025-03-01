@@ -29,7 +29,9 @@ type TemplateData struct {
 //go:embed plot/*
 var plotFS embed.FS
 
-func mapStatsToTemplateData(data []*db.StatisticsJoin) (res map[time.Time]*ChartData) {
+func mapStatsToTemplateData(data []*db.StatisticsJoin) map[time.Time]*ChartData {
+	res := make(map[time.Time]*ChartData)
+
 	for i := 0; i < len(data); i++ {
 		var prev *db.StatisticsJoin
 		if i > 0 {
@@ -44,25 +46,6 @@ func mapStatsToTemplateData(data []*db.StatisticsJoin) (res map[time.Time]*Chart
 		}
 	}
 
-	return res
-}
-
-func mapChannelStatsToTemplateData(data []*db.ChannelStats) (res map[time.Time]*ChartData) {
-	for i := 0; i < len(data); i++ {
-		var prev *db.ChannelStats
-		if i > 0 {
-			prev = data[i-1]
-		} else {
-			prev = data[i]
-		}
-		curr := data[i]
-		res[curr.TS] = &ChartData{
-			Previous: prev.Points,
-			Current:  curr.Points,
-		}
-	}
-
-	return res
 	return res
 }
 
@@ -101,55 +84,10 @@ func PlotRouter() (*chi.Mux, error) {
 		}
 	})
 
-	r.Get("/{channel}", func(w http.ResponseWriter, r *http.Request) {
-		ctx := context.Background()
-		channel := chi.URLParam(r, "channel")
-		stats, err := db.SelectChannelStatsTimeSeries(ctx, channel)
-		if err != nil {
-			slog.Error("error selecting channel statistics", "err", err, "channel", channel)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		data := &TemplateData{
-			Version: version,
-			Title:   "channel stats: " + channel,
-			Data:    mapChannelStatsToTemplateData(stats),
-		}
-		if err := tmpl.Execute(w, data); err != nil {
-			slog.Error("error executing template", "err", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-	})
-
 	r.Get("/*", func(w http.ResponseWriter, r *http.Request) {
 		fs := http.FileServer(http.FS(subfs))
 		fs.ServeHTTP(w, r)
 	})
 
 	return r, nil
-}
-
-func statisticsJoinToChartData(channel string) map[time.Time][]*ChartData {
-	var results map[time.Time][]*ChartData
-
-	stats, err := db.SelectChannelStatsTimeSeries(context.Background(), channel)
-	if err != nil {
-		slog.Error("error selecting channel statistics", "err", err, "channel", channel)
-		return results
-	}
-
-	for _, s := range stats {
-		if _, ok := results[s.TS]; !ok {
-			results[s.TS] = []*ChartData{}
-		}
-
-		results[s.TS] = append(results[s.TS], &ChartData{
-			s.Points,
-			s.Points,
-		})
-	}
-
-	return results
 }

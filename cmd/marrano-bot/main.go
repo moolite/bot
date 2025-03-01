@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"log/slog"
 	"os"
+	"os/signal"
 	"strings"
 
 	"github.com/lmittmann/tint"
@@ -10,6 +12,8 @@ import (
 	"github.com/moolite/bot/internal/config"
 	"github.com/moolite/bot/internal/core"
 	"github.com/moolite/bot/internal/db"
+	"github.com/moolite/bot/internal/statistics"
+	"github.com/moolite/bot/pkg/tg"
 	"github.com/spf13/pflag"
 )
 
@@ -150,7 +154,18 @@ func main() {
 		return
 	}
 
-	err = core.Listen(Cfg)
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer cancel()
+
+	b, err := tg.New(Cfg.Telegram.ApiKey, Cfg.Telegram.Domain)
+
+	b.RegisterMiddlewares(statistics.BotMiddleware)
+	if err != nil {
+		slog.Error("go-telegram/bot error", "err", err)
+		os.Exit(1)
+	}
+
+	err = core.Listen(ctx, b, Cfg)
 	if err != nil {
 		slog.Error("server error", "err", err)
 		os.Exit(2)

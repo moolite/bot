@@ -9,9 +9,9 @@ var (
 )
 
 type Callout struct {
+	GID     int64  `db:"gid"`
 	Callout string `db:"callout"`
 	Text    string `db:"text"`
-	GID     string `db:"gid"`
 }
 
 func (c *Callout) Clone() *Callout {

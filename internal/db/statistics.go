@@ -5,9 +5,9 @@ import (
 	"time"
 )
 
-var (
-	statisticsTable     string = "statistics"
-	statisticsKindTable string = "statistics_kind"
+const (
+	statisticsTable     string = `statistics`
+	statisticsKindTable string = `statistics_kind`
 )
 
 type StatisticsKind struct {

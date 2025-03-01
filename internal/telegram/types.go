@@ -2,6 +2,12 @@ package telegram
 
 import (
 	"encoding/json"
+	"fmt"
+)
+
+const (
+	ParseModeHTML = "HTML"
+	ParseModeMD   = "Markdown"
 )
 
 type URLButton struct {
@@ -14,8 +20,9 @@ type ReplyMarkup struct {
 }
 
 type WebhookResponse struct {
-	Method string `json:"method,omitempty"`
-	ChatID string `json:"chat_id"`
+	Method    string `json:"method,omitempty"`
+	ChatID    string `json:"chat_id"`
+	MessageID int    `json:"message_id,omitempty"`
 
 	// Media
 	isMedia   bool
@@ -34,6 +41,10 @@ type WebhookResponse struct {
 
 	// Keyboard
 	ReplyMarkup *string `json:"reply_markup,omitempty"`
+
+	// Reactions
+	Reaction      string `json:"reaction,omitempty"`
+	ReactionIsBig bool   `json:"is_big,omitempty"`
 }
 
 func (w *WebhookResponse) setMethod(method string, isMedia bool) *WebhookResponse {
@@ -75,6 +86,13 @@ func (w *WebhookResponse) SetChatID(chatID string) *WebhookResponse {
 	return w
 }
 
+func (w *WebhookResponse) SendReaction(messageId int, reaction string, isBig bool) *WebhookResponse {
+	w.setMethod("setMessageReaction", false)
+	w.MessageID = messageId
+	w.Reaction = fmt.Sprintf(`[{"type":"emoji","emoji":"%s"}]`, reaction)
+	return w
+}
+
 func (w *WebhookResponse) SetText(text string) *WebhookResponse {
 	if w.isMedia {
 		w.Caption = &text
@@ -92,6 +110,11 @@ func (w *WebhookResponse) SetLinks(data []URLButton) *WebhookResponse {
 
 	w.SetKeyboard(string(j))
 
+	return w
+}
+
+func (w *WebhookResponse) UseHtml() *WebhookResponse {
+	w.ParseMode = `HTML`
 	return w
 }
 

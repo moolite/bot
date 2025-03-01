@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/moolite/bot/internal/db"
@@ -20,6 +21,7 @@ var (
 
 var (
 	// cache
+	mux        = new(sync.Mutex)
 	liveCache  = map[int64]int64{}
 	done       = make(chan bool)
 	knownKinds []int64
@@ -70,6 +72,9 @@ func Stop() {
 }
 
 func Send(value, kind int64) error {
+	mux.Lock()
+	defer mux.Unlock()
+
 	if !utils.Contains(knownKinds, kind) {
 		return ErrUnknown
 	}
@@ -84,6 +89,9 @@ func Send(value, kind int64) error {
 }
 
 func Flush(ctx context.Context) error {
+	mux.Lock()
+	defer mux.Unlock()
+
 	for kind, value := range liveCache {
 		err := db.InsertStatistics(ctx, value, kind)
 		if err != nil {
@@ -98,6 +106,9 @@ func Flush(ctx context.Context) error {
 }
 
 func NewKind(ctx context.Context, name, trigger string, isRegexp bool) error {
+	mux.Lock()
+	defer mux.Unlock()
+
 	res, err := db.InsertStatisticsKind(ctx, &db.StatisticsKind{
 		Name:     name,
 		Trigger:  trigger,
@@ -128,7 +139,10 @@ func Prometheus(ctx context.Context) (string, error) {
 	return results.String(), nil
 }
 
-func ApplyTriggers(channel, user, text string) {
+func ApplyTriggers(user, text string) {
+	mux.Lock()
+	defer mux.Unlock()
+
 	res := 0
 	for _, kind := range dbCache {
 		if kind.IsRegexp {

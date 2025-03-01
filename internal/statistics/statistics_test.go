@@ -4,16 +4,18 @@ import (
 	"context"
 	"testing"
 
+	"github.com/matryer/is"
 	"github.com/moolite/bot/internal/db"
-	"gotest.tools/assert"
 )
 
 func TestInit(t *testing.T) {
+	is := is.New(t)
 	err := db.Open(":memory:")
-	assert.NilError(t, err)
+	is.NoErr(err)
+	defer db.Close()
 
 	err = db.Migrate()
-	assert.NilError(t, err)
+	is.NoErr(err)
 
 	testKinds := []*db.StatisticsKind{
 		{
@@ -30,16 +32,16 @@ func TestInit(t *testing.T) {
 
 	for _, item := range testKinds {
 		id, err := db.InsertStatisticsKind(context.Background(), item)
-		assert.NilError(t, err)
+		is.NoErr(err)
 		item.KindID = id
 	}
 
 	err = Init()
-	assert.NilError(t, err)
+	is.NoErr(err)
 	Stop()
 
-	assert.Equal(t, len(knownKinds), 2, "knownKinds should have length of 2")
-	assert.Equal(t, len(dbCache), 2, "dbCache should have lenght of 2")
+	is.Equal(len(knownKinds), 2)
+	is.Equal(len(dbCache), 2)
 	for _, item := range testKinds {
 		var ctrl *db.StatisticsKind
 		for _, dbitem := range dbCache {
@@ -48,31 +50,31 @@ func TestInit(t *testing.T) {
 			}
 		}
 
-		assert.Assert(t, ctrl != nil, "should find")
-		assert.Assert(t, ctrl.Name == item.Name)
-		assert.Assert(t, ctrl.IsRegexp == item.IsRegexp)
+		is.True(ctrl != nil)
+		is.True(ctrl.Name == item.Name)
+		is.True(ctrl.IsRegexp == item.IsRegexp)
 	}
 
 	text := "hello world, foo"
-	ApplyTriggers("gid", "@username", text)
-	assert.Assert(t, liveCache[1] == 1)
-	assert.Assert(t, liveCache[2] == 1)
+	ApplyTriggers("@username", text)
+	is.True(liveCache[1] == 1)
+	is.True(liveCache[2] == 1)
 
 	Flush(context.TODO())
 	res, err := db.SelectStatisticsLatest(context.TODO())
-	assert.NilError(t, err)
+	is.NoErr(err)
 	for _, i := range res {
-		assert.Assert(t, i.Value == 1)
+		is.True(i.Value == 1)
 	}
 
 	err = NewKind(context.TODO(), "list", "moo,goo,boo", false)
-	assert.NilError(t, err)
+	is.NoErr(err)
 
-	ApplyTriggers("gid", "@username", "this is a moo, goo and evena a boo")
+	ApplyTriggers("@username", "this is a moo, goo and evena a boo")
 	res, err = db.SelectStatisticsLatest(context.TODO())
 	for _, r := range res {
 		if r.Name == "list" {
-			assert.Assert(t, r.Value == 3)
+			is.True(r.Value == 3)
 			break
 		}
 	}

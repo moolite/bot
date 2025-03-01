@@ -2,11 +2,8 @@ package core
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
 	"log/slog"
 	"net/http"
 	"time"
@@ -14,19 +11,19 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/httplog/v2"
+
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/moolite/bot/internal/config"
 	"github.com/moolite/bot/internal/db"
 	"github.com/moolite/bot/internal/statistics"
-	"github.com/valyala/fastjson"
+	"github.com/moolite/bot/pkg/tg"
 )
 
 var (
-	resp404 = []byte(`404 - not found`)
+	resp404 = []byte(`404 not found`)
 )
 
-func Listen(cfg *config.Config) error {
-
+func Listen(ctx context.Context, b *tg.Bot, cfg *config.Config) error {
 	logger := httplog.NewLogger("marrano-bot", httplog.Options{
 		JSON:     true,
 		LogLevel: slog.LevelDebug,
@@ -39,22 +36,15 @@ func Listen(cfg *config.Config) error {
 		QuietDownRoutes: []string{
 			"/",
 			"/ping",
+			"/health",
 		},
 		QuietDownPeriod: 10 * time.Second,
 	})
 
-	err := db.Open(cfg.Database)
-	if err != nil {
+	if err := db.Open(cfg.Database); err != nil {
 		slog.Error("error opening connection", "err", err)
 		return err
 	}
-
-	err = statistics.Init()
-	if err != nil {
-		slog.Error("error initializing statistics", "err", err)
-		return err
-	}
-	defer statistics.Stop()
 
 	r := chi.NewRouter()
 	r.Use(httplog.RequestLogger(logger))
@@ -121,53 +111,7 @@ func Listen(cfg *config.Config) error {
 			return
 		}
 
-		if r.Body == nil {
-			w.WriteHeader(http.StatusBadRequest)
-			oplog.Error("body not defined")
-			return
-		}
-
-		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			oplog.Error("body read error", "err", err)
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		oplog.Debug("fastjson is killing me!", "body", string(body))
-
-		jsonParser, err := fastjson.ParseBytes(body)
-		if err != nil {
-			oplog.Error("body parse error", "err", err)
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		result, err := Handler(jsonParser)
-		if err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				oplog.Debug("handler returned empty response", "err", err)
-				w.WriteHeader(http.StatusOK)
-				return
-			}
-
-			oplog.Error("error producing response", "err", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		body, err = result.Marshal()
-		if err != nil {
-			oplog.Error("error producing response", "err", err)
-
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		oplog.Debug("bot response", "body", body)
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write(body)
+		b.HttpHandler(oplog)(w, r)
 	})
 
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {

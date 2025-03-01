@@ -164,6 +164,18 @@ func (r *Dice) String() string {
 	return res
 }
 
+func (r *Dice) HTML() string {
+	die := r.String()
+	die = strings.ReplaceAll(die, `+`, `\+`)
+	die = strings.ReplaceAll(die, `-`, `\-`)
+	return fmt.Sprintf(
+		"<i>%s</i>\n <b>total</b>:<code>%d</code>, <b>rolls</b>:<code>%s</code>\n",
+		die,
+		r.Total,
+		joinInts(r.Results, ", "),
+	)
+}
+
 func (r *Dice) Markdown() string {
 	die := r.String()
 	die = strings.ReplaceAll(die, `+`, `\+`)

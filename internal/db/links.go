@@ -10,9 +10,9 @@ var (
 )
 
 type Link struct {
+	GID  int64  `db:"gid"`
 	URL  string `db:"url"`
 	Text string `db:"text"`
-	GID  string `db:"gid"`
 }
 
 func (l *Link) Clone() *Link {
