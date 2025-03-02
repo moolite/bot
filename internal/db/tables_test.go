@@ -28,7 +28,7 @@ func TestTables(t *testing.T) {
 	err = InsertAbraxas(context.TODO(), &Abraxas{GID: gid, Abraxas: "something", Kind: "photo"})
 	assert.NilError(t, err)
 
-	err = InsertMedia(context.TODO(), &Media{gid, data, kind, text, 0})
+	err = InsertMedia(context.TODO(), &Media{GID: gid, Data: data, Kind: kind, Description: text, Score: 0})
 	assert.NilError(t, err)
 
 	var c int64
