@@ -5,10 +5,15 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"log/slog"
 	"net/http"
-	"path"
 	"time"
 )
+
+type RawResult struct {
+	OK     bool        `json:"ok"`
+	Result interface{} `json:"result"`
+}
 
 func (bot *Bot) SendRaw(ctx context.Context, method string, data, results any) error {
 	select {
@@ -21,14 +26,18 @@ func (bot *Bot) SendRaw(ctx context.Context, method string, data, results any) e
 		Timeout: 30 * time.Second,
 	}
 
-	uri := path.Join(bot.URL.String(), method)
+	uri := bot.URL.String() + "/" + method
 
 	body, err := json.Marshal(data)
 	if err != nil {
 		return err
 	}
 
-	res, err := client.Post(uri, "application/json", bytes.NewReader(body))
+	res, err := client.Post(
+		uri,
+		"application/json",
+		bytes.NewReader(body),
+	)
 	if err != nil {
 		return err
 	}
@@ -38,6 +47,7 @@ func (bot *Bot) SendRaw(ctx context.Context, method string, data, results any) e
 		return err
 	}
 
+	slog.Debug("response body", "body", string(resBody), "method", method)
 	if err := json.Unmarshal(resBody, results); err != nil {
 		return err
 	}

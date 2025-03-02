@@ -57,12 +57,12 @@ type ChatPermissions struct {
 // MessageEntity represents one special entity in a text message.
 // For example, hashtags, usernames, URLs, etc.
 type MessageEntity struct {
-	Type     string `json:"type,omitempty"`
-	Offset   int    `json:"offse,omitemptyt"`
-	Length   int    `json:"lengt,omitemptyh"`
-	URL      string `json:"ur,omitemptyl"`
-	User     *User  `json:"use,omitemptyr"`
-	Language string `json:"languag,omitemptye"`
+	Type     string `json:"type"`
+	Offset   int    `json:"offset"`
+	Length   int    `json:"length"`
+	URL      string `json:"url"`
+	User     *User  `json:"user"`
+	Language string `json:"language"`
 }
 
 // Audio represents an audio file to be treated as music by the Telegram clients
@@ -479,17 +479,17 @@ type ParamDeleteWebhook struct {
 // SendAnimation
 // Send...
 type Sendable struct {
-	BusinessConnectionID string            `json:"business_connection_id,omitempty"`
-	ChatID               int64             `json:"chat_id"`
-	MessageThreadID      int64             `json:"message_thread_id,omitempty"`
-	ParseMode            string            `json:"parse_mode,omitempty"`
-	HasSpoiler           bool              `json:"has_spoiler,omitempty"`
-	DisableNotification  bool              `json:"disable_notification,omitempty"`
-	ProtectContent       bool              `json:"protect_content,omitempty"`
-	AllowPaidBroadcast   bool              `json:"allow_paid_broadcast,omitempty"`
-	MessageEffectID      string            `json:"message_effect_id,omitempty"`
-	ReplyParameters      []ReplyParameters `json:"reply_parameters,omitempty"`
-	ReplyMarkup          string            `json:"reply_markup,omitempty"`
+	BusinessConnectionID string                `json:"business_connection_id,omitempty"`
+	ChatID               int64                 `json:"chat_id"`
+	MessageThreadID      int64                 `json:"message_thread_id,omitempty"`
+	ParseMode            string                `json:"parse_mode,omitempty"`
+	HasSpoiler           bool                  `json:"has_spoiler,omitempty"`
+	DisableNotification  bool                  `json:"disable_notification,omitempty"`
+	ProtectContent       bool                  `json:"protect_content,omitempty"`
+	AllowPaidBroadcast   bool                  `json:"allow_paid_broadcast,omitempty"`
+	MessageEffectID      string                `json:"message_effect_id,omitempty"`
+	ReplyParameters      []ReplyParameters     `json:"reply_parameters,omitempty"`
+	ReplyMarkup          *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 
 	// Message
 	Text               string              `json:"text,omitempty"`
@@ -529,7 +529,7 @@ type Sendable struct {
 
 	// SetMessageReaction
 	MessageID int64          `json:"message_id,omitempty"`
-	Reaction  []ReactionType `json:"reaction_type,omitempty"`
+	Reaction  []ReactionType `json:"reaction,omitempty"`
 
 	// Webhook
 	Method string `json:"method,omitempty"`

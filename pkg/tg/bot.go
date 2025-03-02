@@ -74,9 +74,12 @@ func New(token, webhookUrl string) (*Bot, error) {
 		return nil, err
 	}
 
+	botApiUrl, err := url.Parse("https://api.telegram.org/bot" + token)
+
 	return &Bot{
 		Token:            token,
-		URL:              u,
+		URL:              botApiUrl,
+		WebhookURL:       u,
 		timeout:          60 * time.Second,
 		onMessageHandler: noopHandler,
 	}, nil
@@ -227,6 +230,9 @@ func (b *Bot) HttpHandler(l *slog.Logger) http.HandlerFunc {
 			return
 		}
 
+		l.Debug("Bot#HttpHandler", "sendable", snd, "body", string(body))
+
+		w.Header().Add("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 
 		if _, err := w.Write(body); err != nil {
