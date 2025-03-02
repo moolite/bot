@@ -2,9 +2,11 @@ package core
 
 import (
 	"context"
-	"encoding/json"
+	"database/sql"
+	"errors"
 	"fmt"
 	"log/slog"
+	"strconv"
 	"strings"
 
 	"github.com/moolite/bot/internal/db"
@@ -13,23 +15,13 @@ import (
 	"github.com/moolite/bot/pkg/tg"
 )
 
-func setReaction(chatId, messageId int64, emoji string) *tg.Sendable {
-	return &tg.Sendable{
-		Method:    "setMessageReaction",
-		ChatID:    chatId,
-		MessageID: messageId,
-		Reaction: []tg.ReactionType{{
-			Type:  "emoji",
-			Emoji: emoji,
-		}},
-	}
-}
-
 func registerCommands(ctx context.Context, b *tg.Bot) error {
 	_, err := b.SetMyCommands(ctx, &tg.SetMyCommandsParams{
 		Commands: []tg.BotCommand{
 			// Remember
 			{Command: "remember", Description: "Remember a photo or video with a description"},
+			// abraxas
+			{Command: "abraxas", Description: "Manage a trigger. /abraxas <add|rm> <word> [photo|video]"},
 			// Forget
 			{Command: "forget", Description: "Forget a photo or video"},
 			// Callout
@@ -46,10 +38,21 @@ func registerCommands(ctx context.Context, b *tg.Bot) error {
 func registerBotHandlers(_ context.Context, b *tg.Bot) {
 	b.RegisterHandlers(
 		&tg.UpdateHandler{
+			Type:  tg.UPD_CALLBACK,
+			Param: "",
+			Fn:    VoteMedia,
+		},
+		&tg.UpdateHandler{
 			Type:    tg.UPD_STARTSWITH,
 			Param:   "/remember",
 			Aliases: []string{"/ricorda", "/add", "/touch"},
 			Fn:      MediaRememberCommand,
+		},
+		&tg.UpdateHandler{
+			Type:    tg.UPD_STARTSWITH,
+			Param:   "/abraxas",
+			Aliases: []string{"/trigger", "/abx"},
+			Fn:      AbraxasCommand,
 		},
 		&tg.UpdateHandler{
 			Type:    tg.UPD_STARTSWITH,
@@ -90,12 +93,24 @@ func registerBotHandlers(_ context.Context, b *tg.Bot) {
 			Param: "",
 			Fn:    OnMessage,
 		},
-	).
-		RegisterMessageHandler(OnMessage)
+	)
+
+	b.RegisterMessageHandler(OnMessage)
+
 }
 
 // Any Message
 func OnMessage(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Sendable, error) {
+	if update.Message != nil && update.Message.Text != "" {
+		if snd, err := AbraxasHandler(ctx, b, update); err != nil {
+			return nil, err
+		} else if snd != nil {
+			return snd, nil
+		}
+	}
+
+	slog.Debug("update in OnMessage", "update", update)
+
 	return nil, nil
 }
 
@@ -133,7 +148,7 @@ func AliasCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Sendab
 		return nil, err
 	}
 
-	return tg.SetMessageReaction(update.Message.Chat.ID, update.Message.ID, tg.EMOJI_OK), nil
+	return tg.SendableSetMessageReaction(update, tg.EMOJI_OK), nil
 }
 
 //
@@ -149,6 +164,10 @@ func AnyCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Sendable
 		Name: head,
 	}
 	if err := db.SelectAlias(ctx, alias); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+
 		slog.Error("AnyCommand error during SelectAlias", "err", err)
 		return nil, err
 	}
@@ -171,22 +190,15 @@ func AnyCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Sendable
 // Abraxas
 //
 
-func messageHasAbraxas(update *tg.Update) bool {
-	if update.Message == nil || isMedia(update) {
-		return false
-	}
-
-	head := utils.FirstWord(update.Message.Text)
-	if len(head) < 3 {
-		return false
-	}
-
-	return true
+// AbraxasCommand handles commands for abraxas (add, remove)
+func AbraxasCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Sendable, error) {
+	slog.Error("AbraxasCommand is not implemented")
+	return nil, nil
 }
 
-// AbraxasHandler message text like: `abraxas ...`
+// AbraxasHandler handles message text like: `abraxas ...`
 func AbraxasHandler(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Sendable, error) {
-	head := utils.FirstWord(update.Message.Text)
+	head := strings.ToLower(utils.FirstWord(update.Message.Text))
 	slog.Debug("AbraxasHandler", "head", head)
 
 	chatId := update.Message.Chat.ID
@@ -195,7 +207,11 @@ func AbraxasHandler(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Send
 		Abraxas: head,
 	}
 
-	if err := db.SelectOneAbraxasByAbraxas(ctx, abraxas); err != nil || len(abraxas.Kind) == 0 {
+	if err := db.SelectOneAbraxasByAbraxas(ctx, abraxas); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+
 		slog.Error("error in db.SelectOneAbraxasByAbraxas()")
 		return nil, err
 	}
@@ -205,34 +221,33 @@ func AbraxasHandler(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Send
 		Kind: abraxas.Kind,
 	}
 	if err := db.SelectRandomMedia(ctx, media); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			slog.Error("random media not found")
+			return nil, err
+		}
+
 		slog.Error("error in db.SelectRandomMedia()")
 		return nil, err
 	}
 
-	keyboard := mediaKeyboard(media.Score)
-	keyboardJson, err := json.Marshal(keyboard)
-	if err != nil {
-		return nil, err
+	keyboard := mediaKeyboard(media.RowID, media.Score)
+
+	snd := &tg.Sendable{
+		ChatID:      update.Message.Chat.ID,
+		Caption:     media.Description,
+		ReplyMarkup: keyboard,
 	}
 
 	if media.Kind == "photo" {
-		return &tg.Sendable{
-			ChatID:      update.Message.Chat.ID,
-			Photo:       media.Data,
-			Caption:     media.Description,
-			ParseMode:   "html",
-			ReplyMarkup: string(keyboardJson),
-		}, nil
+		snd.Method = tg.MethodSendPhoto
+		snd.Photo = media.Data
+		return snd, nil
 	}
 
 	if media.Kind == "video" {
-		return &tg.Sendable{
-			ChatID:      update.Message.Chat.ID,
-			Video:       media.Data,
-			Caption:     media.Description,
-			ParseMode:   "html",
-			ReplyMarkup: string(keyboardJson),
-		}, nil
+		snd.Method = tg.MethodSendVideo
+		snd.Video = media.Data
+		return snd, nil
 	}
 
 	return nil, nil
@@ -294,11 +309,11 @@ func CalloutCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Send
 
 	if err := db.InsertCallout(ctx, c); err != nil {
 		if err.Error() == "sql: no rows in result set" { // FIXME this should be a wrapped Error
-			return setReaction(update.Message.Chat.ID, update.Message.ID, tg.EMOJI_KO), nil
+			return tg.SendableSetMessageReaction(update, tg.EMOJI_KO), nil
 		}
 		return nil, err
 	} else {
-		return setReaction(update.Message.Chat.ID, update.Message.ID, tg.EMOJI_OK), nil
+		return tg.SendableSetMessageReaction(update, tg.EMOJI_OK), nil
 	}
 }
 
@@ -316,10 +331,15 @@ func CalloutMessage(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Send
 		Callout: head,
 	}
 	if err := db.SelectOneCallout(ctx, callout); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+
 		slog.Debug("error", "err", err)
 		if strings.HasPrefix(err.Error(), "asd") {
-			return setReaction(update.Message.Chat.ID, update.Message.ID, tg.EMOJI_KO), err
+			return tg.SendableSetMessageReaction(update, tg.EMOJI_KO), err
 		}
+		return nil, err
 	}
 
 	if len(callout.Text) == 0 {
@@ -345,10 +365,10 @@ func MediaRememberCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*t
 	data := ""
 	if isPhoto(update) {
 		kind = "photo"
-		data = update.Message.Photo[0].FileID
+		data = getPhotoFileId(update)
 	} else if isVideo(update) {
 		kind = "video"
-		data = update.Message.Video.FileID
+		data = getVideoFileID(update)
 	} else {
 		return nil, nil
 	}
@@ -365,7 +385,8 @@ func MediaRememberCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*t
 	if err := db.InsertMedia(ctx, m); err != nil {
 		slog.Error("error in db.InsertMedia", "err", err)
 	}
-	return setReaction(update.Message.Chat.ID, update.Message.ID, tg.EMOJI_OK), nil
+
+	return tg.SendableSetMessageReaction(update, tg.EMOJI_OK), nil
 }
 
 func MediaForgetCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Sendable, error) {
@@ -375,7 +396,7 @@ func MediaForgetCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.
 	} else if isVideo(update) {
 		data = update.Message.Video.FileID
 	} else {
-		return setReaction(update.Message.Chat.ID, update.Message.ID, tg.EMOJI_KO), nil
+		return tg.SendableSetMessageReaction(update, tg.EMOJI_KO), nil
 	}
 
 	media := &db.Media{
@@ -385,15 +406,15 @@ func MediaForgetCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.
 
 	if err := db.DeleteMedia(ctx, media); err != nil {
 		slog.Error("error in db.DeleteMedia()", "media", media, "err", err)
-		return setReaction(update.Message.Chat.ID, update.Message.ID, tg.EMOJI_KO), err
+		return tg.SendableSetMessageReaction(update, tg.EMOJI_KO), err
 	} else {
-		return setReaction(update.Message.Chat.ID, update.Message.ID, tg.EMOJI_OK), nil
+		return tg.SendableSetMessageReaction(update, tg.EMOJI_OK), nil
 	}
 }
 
 const (
-	MEDIA_UP   string = "media:up"
-	MEDIA_DOWN string = "media:down"
+	MEDIA_UP   = `media:up`
+	MEDIA_DOWN = `media:pu`
 )
 
 func VoteMedia(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Sendable, error) {
@@ -403,26 +424,36 @@ func VoteMedia(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Sendable,
 	}
 
 	msg := update.CallbackQuery.Message
-	query := update.CallbackQuery.Data
 	id := update.CallbackQuery.ID
-
-	data := ""
-	if msg.Video != nil {
-		data = msg.Video.FileID
+	answer := &tg.Sendable{
+		Method:          tg.MethodAnswerCallbackQuery,
+		CallbackQueryID: id,
 	}
 
-	if len(msg.Photo) > 0 {
-		data = msg.Photo[0].FileID
+	callbackData := strings.Split(update.CallbackQuery.Data, `|`)
+	if len(callbackData) < 2 {
+		return answer, nil
 	}
 
-	media := &db.Media{
-		GID:  msg.Chat.ID,
-		Data: data,
+	query := callbackData[0]
+	rowid, err := strconv.ParseInt(callbackData[1], 10, 64)
+	if err != nil {
+		slog.Debug("wrong CallbackQuery.Data data", "err", err, "callbackData", callbackData)
+		return nil, nil
 	}
-	if err := db.SelectOneMediaByData(ctx, media); err != nil {
+
+	media := &db.Media{RowID: rowid}
+	if err := db.SelectOneMediaByRowID(ctx, media); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			slog.Error("media not found from query", "callback_id", update.CallbackQuery.ID, "media.RowID", rowid)
+			return answer, nil
+		}
+
 		slog.Error("error in db.SelectOneMediaByData", "GID", media.GID, "Data", media.Data, "err", err)
-		return nil, err
+		return answer, err
 	}
+
+	slog.Debug("updating media", "score", media.Score, "query", query)
 
 	if query == MEDIA_UP {
 		media.Score += 1
@@ -430,22 +461,30 @@ func VoteMedia(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Sendable,
 		media.Score -= 1
 	}
 
-	if err := db.InsertMedia(ctx, media); err != nil {
+	if err := db.UpdateMediaScoreByRowID(ctx, media); err != nil {
 		slog.Error("error in db.InsertMedia", "GID", media.GID, "Data", media.Data, "err", err)
+		return answer, nil
 	}
 
-	kb := mediaKeyboard(media.Score)
-	keyboard, err := json.Marshal(kb)
-	return &tg.Sendable{
-		Method:          tg.AnswerCallbackQueryMethod,
-		ChatID:          msg.Chat.ID,
-		MessageID:       msg.ID,
-		CallbackQueryID: id,
-		ReplyMarkup:     string(keyboard),
-	}, err
+	// Update the Previous Message
+	keyboard := mediaKeyboard(media.RowID, media.Score)
+	snd := &tg.Sendable{
+		Method:      tg.MethodEditMessageReplyMarkup,
+		ChatID:      msg.Chat.ID,
+		MessageID:   msg.MessageID,
+		ReplyMarkup: keyboard,
+	}
+	slog.Debug("editing message", "msg", snd)
+	res := &tg.RawResult{}
+	if err := b.Send(ctx, snd, res); err != nil {
+		slog.Error("error sending editMessageReplyMarkup", "err", err, "res", res)
+	}
+
+	// NOTE: always answer with a answerCallbackQuery https://core.telegram.org/bots/api#answercallbackquery
+	return answer, nil
 }
 
-func mediaKeyboard(score int) *tg.InlineKeyboardMarkup {
+func mediaKeyboard(uid int64, score int) *tg.InlineKeyboardMarkup {
 	heart := tg.EMOJI_HEART
 	if score > 10 {
 		heart = tg.EMOJI_HEARTSTRUCK
@@ -454,20 +493,44 @@ func mediaKeyboard(score int) *tg.InlineKeyboardMarkup {
 	return &tg.InlineKeyboardMarkup{
 		InlineKeyboard: [][]tg.InlineKeyboardButton{
 			{
-				{Text: heart, CallbackData: MEDIA_UP},
-				{Text: fmt.Sprintf("<b><i>%d</i></b>", score)},
-				{Text: tg.EMOJI_HEARTBREAK, CallbackData: MEDIA_DOWN},
+				{Text: heart, CallbackData: fmt.Sprintf("%s|%d", MEDIA_UP, uid)},
+				{Text: fmt.Sprintf("%d", score), CallbackData: " "},
+				{Text: tg.EMOJI_HEARTBREAK, CallbackData: fmt.Sprintf("%s|%d", MEDIA_DOWN, uid)},
 			},
 		},
 	}
 }
 
 func isPhoto(update *tg.Update) bool {
-	return update.Message != nil && len(update.Message.Photo) > 0
+	if update.Message == nil {
+		return false
+	}
+
+	return len(update.Message.Photo) > 0 || update.Message.ReplyToMessage != nil && update.Message.ReplyToMessage.Photo != nil
+}
+
+func getPhotoFileId(update *tg.Update) string {
+	if update.Message.ReplyToMessage != nil && update.Message.ReplyToMessage.Photo != nil {
+		return update.Message.ReplyToMessage.Photo[0].FileID
+	}
+
+	return update.Message.Photo[0].FileID
 }
 
 func isVideo(update *tg.Update) bool {
-	return update.Message != nil && update.Message.Video != nil
+	if update.Message == nil {
+		return false
+	}
+
+	return update.Message.Video != nil || update.Message.ReplyToMessage != nil && update.Message.ReplyToMessage.Video != nil
+}
+
+func getVideoFileID(update *tg.Update) string {
+	if update.Message.ReplyToMessage != nil && update.Message.ReplyToMessage.Video != nil {
+		return update.Message.ReplyToMessage.Video.FileID
+	}
+
+	return update.Message.Video.FileID
 }
 
 func isMedia(update *tg.Update) bool {

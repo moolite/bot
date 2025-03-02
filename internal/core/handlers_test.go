@@ -170,3 +170,10 @@ func TestBotHandlers(t *testing.T) {
 		})
 	}
 }
+
+// "{\"chat_id\":-284819895,
+//   \"parse_mode\":\"html\",
+//   \"reply_markup\":\"{\\\"inline_keyboard\\\":[[{\\\"text\\\":\\\"❤\\\",\\\"callback_data\\\":\\\"media:up\\\"},{\\\"text\\\":\\\"\\\\u003cb\\\\u003e\\\\u003ci\\\\u003e0\\\\u003c/i\\\\u003e\\\\u003c/b\\\\u003e\\\"},{\\\"text\\\":\\\"💔\\\",\\\"callback_data\\\":\\\"media:down\\\"}]]}\",
+//   \"caption\":\"Killer doccia\",
+//   \"photo\":\"AgACAgQAAxkBAAEEd4JhAm4LVrZRI5keQyF3OMub96Zk7gAC-bUxGznCGVDc7b7LG-UH6gEAAwIAA3MAAyAE\"
+// }"
