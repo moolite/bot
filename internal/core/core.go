@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/httplog/v2"
 
+	"github.com/mattn/go-isatty"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/moolite/bot/internal/config"
 	"github.com/moolite/bot/internal/db"
@@ -25,8 +27,8 @@ var (
 
 func Listen(ctx context.Context, b *tg.Bot, cfg *config.Config) error {
 	logger := httplog.NewLogger("marrano-bot", httplog.Options{
-		JSON:     true,
-		LogLevel: slog.LevelDebug,
+		JSON:     !isatty.IsTerminal(os.Stdin.Fd()),
+		LogLevel: cfg.LogLevel,
 		Concise:  true,
 		// RequestHeaders:  true,
 		// ResponseHeaders: true,
@@ -118,6 +120,14 @@ func Listen(ctx context.Context, b *tg.Bot, cfg *config.Config) error {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write(resp404)
 	})
+
+	if err := registerCommands(ctx, b); err != nil {
+		slog.Error("Error in registerCommands", "err", err)
+		return err
+	}
+
+	// register bot event handlers
+	registerBotHandlers(ctx, b)
 
 	slog.Info("http handler listening", "port", cfg.Port)
 

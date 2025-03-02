@@ -53,6 +53,8 @@ func setupLogging() {
 
 	var h slog.Handler
 
+	Cfg.LogLevel = level
+
 	if isatty.IsTerminal(os.Stderr.Fd()) {
 		h = tint.NewHandler(os.Stderr, &tint.Options{
 			AddSource: true,
@@ -92,8 +94,6 @@ func main() {
 	pflag.StringVarP(&flagSyncMediaFolder, "export-media", "M", "", "sync media files to the specified folder.")
 	pflag.Parse()
 
-	setupLogging()
-
 	if flagHelp {
 		pflag.Usage()
 		os.Exit(0)
@@ -106,6 +106,8 @@ func main() {
 		os.Exit(1)
 		return
 	}
+
+	setupLogging()
 
 	err = db.Open(Cfg.Database)
 	if err != nil {
@@ -157,9 +159,10 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	b, err := tg.New(Cfg.Telegram.ApiKey, Cfg.Telegram.Domain)
+	b, err := tg.New(Cfg.Telegram.Token, Cfg.Telegram.Domain)
 
 	b.RegisterMiddlewares(statistics.BotMiddleware)
+
 	if err != nil {
 		slog.Error("go-telegram/bot error", "err", err)
 		os.Exit(1)
