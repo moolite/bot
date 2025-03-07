@@ -454,14 +454,6 @@ func MediaToptenCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.
 	}
 
 	snd := mediaCollection(update.Message.Chat.ID, media[0].Description, media)
-
-	r := &map[string]interface{}{}
-	if err := b.Send(ctx, snd, r); err != nil {
-		slog.Debug("error in send", "err", err)
-	}
-
-	slog.Debug("results", "res", slog.AnyValue(r))
-
 	return snd, nil
 }
 
