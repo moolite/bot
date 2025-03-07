@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"fmt"
 )
 
 var (
@@ -82,8 +81,7 @@ func SelectOneMediaByData(ctx context.Context, m *Media) error {
 		return err
 	}
 
-	row := q.QueryRow(m.Data, m.GID)
-	return row.Scan(&m.RowID, &m.Data, &m.Description, &m.GID, &m.Kind, &m.Score)
+	return q.Get(m, m.Data, m.GID)
 }
 
 func SelectOneMediaByRowID(ctx context.Context, m *Media) error {
@@ -95,12 +93,11 @@ func SelectOneMediaByRowID(ctx context.Context, m *Media) error {
 		return err
 	}
 
-	row := q.QueryRow(m.RowID)
-	return row.Scan(&m.RowID, &m.Data, &m.Description, &m.GID, &m.Kind, &m.Score)
+	return q.Get(m, m.RowID)
 }
 
-func SelectAllMediaGroup(ctx context.Context, gid string) ([]*Media, error) {
-	var results []*Media
+func SelectAllMediaGroup(ctx context.Context, gid string) ([]Media, error) {
+	var results []Media
 	q, err := prepareStmt(
 		`SELECT rowid,data,description,gid,kind,score FROM ` + mediaTable + ` WHERE gid=?`,
 	)
@@ -108,26 +105,11 @@ func SelectAllMediaGroup(ctx context.Context, gid string) ([]*Media, error) {
 		return results, err
 	}
 
-	rows, err := q.Query(gid)
-	if err != nil {
-		return results, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		m := new(Media)
-
-		if err = rows.Scan(&m.RowID, &m.Data, &m.Description, &m.GID, &m.Kind, &m.Score); err != nil {
-			return results, err
-		}
-		results = append(results, m)
-	}
-
-	return results, nil
+	return results, q.Select(&results, gid)
 }
 
-func SelectAllMedia(ctx context.Context) ([]*Media, error) {
-	var results []*Media
+func SelectAllMedia(ctx context.Context) ([]Media, error) {
+	results := []Media{}
 	q, err := prepareStmt(
 		`SELECT rowid,data,description,gid,kind,score FROM ` + mediaTable,
 	)
@@ -135,22 +117,7 @@ func SelectAllMedia(ctx context.Context) ([]*Media, error) {
 		return results, err
 	}
 
-	rows, err := q.Query()
-	if err != nil {
-		return results, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		m := new(Media)
-
-		if err = rows.Scan(&m.RowID, &m.Data, &m.Description, &m.GID, &m.Kind, &m.Score); err != nil {
-			return results, err
-		}
-		results = append(results, m)
-	}
-
-	return results, nil
+	return results, q.Select(&results)
 }
 
 func SelectRandomMediaKind(ctx context.Context, m *Media) error {
@@ -165,8 +132,7 @@ func SelectRandomMediaKind(ctx context.Context, m *Media) error {
 		return err
 	}
 
-	row := q.QueryRowContext(ctx, m.GID, m.Kind, m.GID, m.Kind)
-	return row.Scan(&m.RowID, &m.GID, &m.Data, &m.Description, &m.Kind, &m.Score)
+	return q.GetContext(ctx, m, m.GID, m.Kind, m.GID, m.Kind)
 }
 
 func SelectRandomMedia(ctx context.Context, m *Media) error {
@@ -185,27 +151,38 @@ func SelectRandomMedia(ctx context.Context, m *Media) error {
 		return err
 	}
 
-	row := q.QueryRowContext(ctx, m.GID, m.GID)
-	return row.Scan(&m.RowID, &m.GID, &m.Data, &m.Description, &m.Kind, &m.Score)
+	return q.GetContext(ctx, m, m.GID, m.GID)
 }
 
-func SearchMedia(ctx context.Context, gid, term string) (*Media, error) {
-	likeTerm := fmt.Sprintf("%%%s%%", term)
-	m := new(Media)
+func SelectMediaTop(ctx context.Context, gid int64, top int) ([]Media, error) {
+	q, err := prepareStmt(
+		`SELECT rowid,gid,data,description,kind,score FROM media
+		 WHERE gid=?
+		 AND score > 0
+		 ORDER BY score DESC
+		 LIMIT ?`,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	res := []Media{}
+	return res, q.SelectContext(ctx, &res, gid, top)
+}
+
+func SearchMedia(ctx context.Context, gid int64, term string, offset int) ([]Media, error) {
+	results := []Media{}
 
 	q, err := prepareStmt(
 		`SELECT rowid,gid,kind,data,description,score FROM ` + mediaTable + `
-		WHERE description LIKE ? AND gid=?`,
+		WHERE description LIKE ? AND gid=? ORDER BY score LIMIT 6 OFFSET ?`,
 	)
 	if err != nil {
-		return m, err
+		return results, err
 	}
 
-	row := q.QueryRowContext(ctx, likeTerm, m.GID)
-	if err := row.Scan(&m.RowID, &m.GID, &m.Data, &m.Description, &m.Kind, &m.Score); err != nil {
-		return m, err
-	}
-	return m, nil
+	term = `%` + term + `%`
+	return results, q.Select(&results, term, gid, offset)
 }
 
 func DeleteMedia(ctx context.Context, m *Media) error {

@@ -8,13 +8,14 @@ import (
 
 const (
 	MethodAnswerCallbackQuery    = `answerCallbackQuery`
+	MethodEditMessageReplyMarkup = `editMessageReplyMarkup`
+	MethodEditMessageText        = `editMessageText`
+	MethodSendMediaGroup         = `sendMediaGroup`
 	MethodSendMessage            = `sendMessage`
-	MethodSetMessageReaction     = `setMessageReaction`
-	MethodSetMyCommands          = `setMyCommands`
 	MethodSendPhoto              = `sendPhoto`
 	MethodSendVideo              = `sendVideo`
-	MethodEditMessageText        = `editMessageText`
-	MethodEditMessageReplyMarkup = `editMessageReplyMarkup`
+	MethodSetMessageReaction     = `setMessageReaction`
+	MethodSetMyCommands          = `setMyCommands`
 )
 
 func (b *Bot) SendSendable(ctx context.Context, s *Sendable) (*RawResult, error) {

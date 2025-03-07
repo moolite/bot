@@ -9,6 +9,7 @@ require (
 	github.com/go-chi/httplog/v2 v2.1.1
 	github.com/go-telegram/bot v1.12.1
 	github.com/golang-migrate/migrate/v4 v4.18.1
+	github.com/jmoiron/sqlx v1.4.0
 	github.com/lmittmann/tint v1.0.6
 	github.com/matryer/is v1.4.1
 	github.com/mattn/go-isatty v0.0.20

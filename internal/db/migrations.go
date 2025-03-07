@@ -15,7 +15,7 @@ var migrationsFs embed.FS
 
 func migrateSetup() (*migrate.Migrate, error) {
 	driver, err := sqlite3.WithInstance(
-		dbc, &sqlite3.Config{MigrationsTable: "migrations"})
+		dbc.DB, &sqlite3.Config{MigrationsTable: "migrations"})
 	if err != nil {
 		return nil, err
 	}

@@ -30,6 +30,10 @@ func registerCommands(ctx context.Context, b *tg.Bot) error {
 			{Command: "dice", Description: "Roll a dice"},
 			// Backup
 			{Command: "backup", Description: "Create an upload a new database backup for the current chat"},
+			// Search
+			{Command: "search", Description: "Search media files"},
+			// Top
+			{Command: "top", Description: "Top 10 media files"},
 		},
 	})
 	return err
@@ -40,7 +44,19 @@ func registerBotHandlers(_ context.Context, b *tg.Bot) {
 		&tg.UpdateHandler{
 			Type:  tg.UPD_CALLBACK,
 			Param: "",
-			Fn:    VoteMedia,
+			Fn:    OnCallback,
+		},
+		&tg.UpdateHandler{
+			Type:    tg.UPD_STARTSWITH,
+			Param:   `/search`,
+			Aliases: []string{"/pupy", "/s"},
+			Fn:      MediaSearchCommand,
+		},
+		&tg.UpdateHandler{
+			Type:    tg.UPD_STARTSWITH,
+			Param:   "/top",
+			Aliases: []string{"/t"},
+			Fn:      MediaToptenCommand,
 		},
 		&tg.UpdateHandler{
 			Type:    tg.UPD_STARTSWITH,
@@ -112,6 +128,63 @@ func OnMessage(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Sendable,
 	slog.Debug("update in OnMessage", "update", update)
 
 	return nil, nil
+}
+
+const (
+	CB_DATANULL int64 = -1
+	CB_ERROR    uint8 = iota
+	CB_MEDIA_UP
+	CB_MEDIA_DOWN
+	CB_MEDIA_SHOW
+)
+
+func formatCallbackData(act uint8, data int64) string {
+	return fmt.Sprintf("%02x:%x", act, data)
+}
+
+func parseCallbackData(raw string) (uint8, int64) {
+	if len(raw) == 0 {
+		return CB_ERROR, CB_DATANULL
+	}
+
+	data := strings.Split(raw, `:`)
+	if len(data) == 1 {
+		data = append(data, `-1`)
+	}
+
+	slog.Debug("parseCallbackData", "raw", raw, "parts", data)
+
+	actu64, err := strconv.ParseUint(data[0], 16, 8)
+	if err != nil {
+		return CB_ERROR, CB_DATANULL
+	}
+	actu8 := uint8(actu64)
+
+	datai64, err := strconv.ParseInt(data[1], 16, 64)
+	if err != nil {
+		slog.Error("error in strconv", "err", err, "datai64", datai64, "data", data[1])
+		return actu8, CB_DATANULL
+	}
+
+	return actu8, datai64
+}
+
+func OnCallback(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Sendable, error) {
+	action, data := parseCallbackData(update.CallbackQuery.Data)
+	var err error
+	switch action {
+	case CB_MEDIA_UP:
+		err = VoteMedia(ctx, b, update, action, data)
+	case CB_MEDIA_DOWN:
+		err = VoteMedia(ctx, b, update, action, data)
+	case CB_MEDIA_SHOW:
+		err = ShowMedia(ctx, b, update, action, data)
+	}
+
+	return &tg.Sendable{
+		Method:          tg.MethodAnswerCallbackQuery,
+		CallbackQueryID: update.CallbackQuery.ID,
+	}, err
 }
 
 //
@@ -226,31 +299,11 @@ func AbraxasHandler(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Send
 			return nil, err
 		}
 
-		slog.Error("error in db.SelectRandomMedia()")
+		slog.Error("error in db.SelectRandomMedia()", "err", err)
 		return nil, err
 	}
 
-	keyboard := mediaKeyboard(media.RowID, media.Score)
-
-	snd := &tg.Sendable{
-		ChatID:      update.Message.Chat.ID,
-		Caption:     media.Description,
-		ReplyMarkup: keyboard,
-	}
-
-	if media.Kind == "photo" {
-		snd.Method = tg.MethodSendPhoto
-		snd.Photo = media.Data
-		return snd, nil
-	}
-
-	if media.Kind == "video" {
-		snd.Method = tg.MethodSendVideo
-		snd.Video = media.Data
-		return snd, nil
-	}
-
-	return nil, nil
+	return mediaSendable(update.Message.Chat.ID, media), nil
 }
 
 //
@@ -352,13 +405,65 @@ func CalloutMessage(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Send
 		ChatID:    update.Message.Chat.ID,
 		Text:      text,
 		ParseMode: "html",
-		Method:    "sendMessage",
+		Method:    tg.MethodSendMessage,
 	}, nil
 }
 
-//
 // Media
-//
+const (
+	MEDIA_UP = iota + 10
+	MEDIA_DOWN
+	MEDIA_SHOW
+)
+
+func MediaSearchCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Sendable, error) {
+	_, rest := utils.SplitMessageWords(update.Message.Text)
+
+	items, err := db.SearchMedia(ctx, update.Message.Chat.ID, rest, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	keyboard := new(tg.InlineKeyboardMarkup)
+	keyboard.InlineKeyboard = make([][]tg.InlineKeyboardButton, 3%len(items))
+	for i, item := range items {
+		line := i % 3
+		keyboard.InlineKeyboard[line] = append(keyboard.InlineKeyboard[line], tg.InlineKeyboardButton{
+			Text:         item.Description,
+			CallbackData: formatCallbackData(CB_MEDIA_SHOW, item.RowID),
+		})
+	}
+
+	snd := &tg.Sendable{
+		ChatID:      update.Message.Chat.ID,
+		Text:        tg.EMOJI_UHM,
+		ParseMode:   "html",
+		Method:      tg.MethodSendMessage,
+		ReplyMarkup: keyboard,
+	}
+
+	slog.Debug("update in OnMessage", "update", update)
+
+	return snd, nil
+}
+
+func MediaToptenCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Sendable, error) {
+	media, err := db.SelectMediaTop(ctx, update.Message.Chat.ID, 10)
+	if err != nil {
+		return nil, err
+	}
+
+	snd := mediaCollection(update.Message.Chat.ID, media[0].Description, media)
+
+	r := &map[string]interface{}{}
+	if err := b.Send(ctx, snd, r); err != nil {
+		slog.Debug("error in send", "err", err)
+	}
+
+	slog.Debug("results", "res", slog.AnyValue(r))
+
+	return snd, nil
+}
 
 func MediaRememberCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Sendable, error) {
 	kind := ""
@@ -412,58 +517,36 @@ func MediaForgetCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.
 	}
 }
 
-const (
-	MEDIA_UP   = `media:up`
-	MEDIA_DOWN = `media:pu`
-)
-
-func VoteMedia(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Sendable, error) {
+func VoteMedia(ctx context.Context, b *tg.Bot, update *tg.Update, action uint8, data int64) error {
 	// Avoid checking inaccessible messages
 	if update.CallbackQuery.Message == nil {
-		return nil, nil
+		return nil
 	}
 
 	msg := update.CallbackQuery.Message
-	id := update.CallbackQuery.ID
-	answer := &tg.Sendable{
-		Method:          tg.MethodAnswerCallbackQuery,
-		CallbackQueryID: id,
-	}
 
-	callbackData := strings.Split(update.CallbackQuery.Data, `|`)
-	if len(callbackData) < 2 {
-		return answer, nil
-	}
-
-	query := callbackData[0]
-	rowid, err := strconv.ParseInt(callbackData[1], 10, 64)
-	if err != nil {
-		slog.Debug("wrong CallbackQuery.Data data", "err", err, "callbackData", callbackData)
-		return nil, nil
-	}
-
-	media := &db.Media{RowID: rowid}
+	media := &db.Media{RowID: data}
 	if err := db.SelectOneMediaByRowID(ctx, media); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			slog.Error("media not found from query", "callback_id", update.CallbackQuery.ID, "media.RowID", rowid)
-			return answer, nil
+			slog.Error("media not found from query", "callback_id", update.CallbackQuery.ID, "media.RowID", data)
+			return nil
 		}
 
-		slog.Error("error in db.SelectOneMediaByData", "GID", media.GID, "Data", media.Data, "err", err)
-		return answer, err
+		slog.Error("error in db.SelectOneMediaByData", "GID", media.GID, "Data", media.Data, "RowID", data, "err", err)
+		return err
 	}
 
-	slog.Debug("updating media", "score", media.Score, "query", query)
+	slog.Debug("updating media", "score", media.Score, "action", action)
 
-	if query == MEDIA_UP {
+	if action == MEDIA_UP {
 		media.Score += 1
 	} else {
 		media.Score -= 1
 	}
 
 	if err := db.UpdateMediaScoreByRowID(ctx, media); err != nil {
-		slog.Error("error in db.InsertMedia", "GID", media.GID, "Data", media.Data, "err", err)
-		return answer, nil
+		slog.Error("error in db.InsertMedia", "GID", media.GID, "Data", media.Data, "RowID", data, "err", err)
+		return nil
 	}
 
 	// Update the Previous Message
@@ -477,11 +560,66 @@ func VoteMedia(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Sendable,
 	slog.Debug("editing message", "msg", snd)
 	res := &tg.RawResult{}
 	if err := b.Send(ctx, snd, res); err != nil {
-		slog.Error("error sending editMessageReplyMarkup", "err", err, "res", res)
+		slog.Error("error sending message", "snd", snd, "res", res)
+	}
+	return nil
+}
+
+func ShowMedia(ctx context.Context, b *tg.Bot, update *tg.Update, _ uint8, data int64) error {
+	m := &db.Media{
+		RowID: data,
+	}
+	if err := db.SelectOneMediaByRowID(ctx, m); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			slog.Debug("ShowMedia error", "err", err, "rowid", data)
+			return nil
+		}
+		slog.Error("ShowMedia error", "err", err, "rowid", data)
+		return err
 	}
 
-	// NOTE: always answer with a answerCallbackQuery https://core.telegram.org/bots/api#answercallbackquery
-	return answer, nil
+	slog.Debug("ShowMedia", "m", m)
+
+	var chatId int64
+	if update.Message != nil {
+		chatId = update.Message.Chat.ID
+	} else if update.CallbackQuery != nil && update.CallbackQuery.Message != nil {
+		chatId = update.CallbackQuery.Message.Chat.ID
+	}
+
+	snd := mediaSendable(chatId, m)
+
+	r := new(tg.RawResult)
+	if err := b.Send(ctx, snd, r); err != nil {
+		slog.Error("ShowMedia error", "err", err, "results", r)
+		return err
+	}
+
+	return nil
+}
+
+func mediaSendable(gid int64, m *db.Media) *tg.Sendable {
+	keyboard := mediaKeyboard(m.RowID, m.Score)
+
+	snd := &tg.Sendable{
+		ChatID:      gid,
+		Caption:     m.Description,
+		ReplyMarkup: keyboard,
+	}
+
+	if m.Kind == "photo" {
+		snd.Method = tg.MethodSendPhoto
+		snd.Photo = m.Data
+		return snd
+	}
+
+	if m.Kind == "video" {
+		snd.Method = tg.MethodSendVideo
+		snd.Video = m.Data
+		return snd
+	}
+
+	return snd
 }
 
 func mediaKeyboard(uid int64, score int) *tg.InlineKeyboardMarkup {
@@ -493,12 +631,27 @@ func mediaKeyboard(uid int64, score int) *tg.InlineKeyboardMarkup {
 	return &tg.InlineKeyboardMarkup{
 		InlineKeyboard: [][]tg.InlineKeyboardButton{
 			{
-				{Text: heart, CallbackData: fmt.Sprintf("%s|%d", MEDIA_UP, uid)},
+				{Text: heart, CallbackData: formatCallbackData(MEDIA_UP, uid)},
 				{Text: fmt.Sprintf("%d", score), CallbackData: " "},
-				{Text: tg.EMOJI_HEARTBREAK, CallbackData: fmt.Sprintf("%s|%d", MEDIA_DOWN, uid)},
+				{Text: tg.EMOJI_HEARTBREAK, CallbackData: formatCallbackData(MEDIA_DOWN, uid)},
 			},
 		},
 	}
+}
+
+func mediaCollection(gid int64, caption string, items []db.Media) *tg.Sendable {
+	snd := &tg.Sendable{
+		ChatID:  gid,
+		Method:  tg.MethodSendMediaGroup,
+		Media:   make([]tg.InputMedia, len(items)),
+		Caption: caption,
+	}
+
+	for i, item := range items {
+		snd.Media[i] = tg.InputMedia{Type: item.Kind, Media: item.Data, Caption: item.Description}
+	}
+
+	return snd
 }
 
 func isPhoto(update *tg.Update) bool {
