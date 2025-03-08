@@ -131,18 +131,18 @@ func OnMessage(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Sendable,
 }
 
 const (
-	CB_DATANULL int64 = -1
-	CB_ERROR    uint8 = iota
+	CB_DATANULL int64 = iota - 1
+	CB_ERROR
 	CB_MEDIA_UP
 	CB_MEDIA_DOWN
 	CB_MEDIA_SHOW
 )
 
-func formatCallbackData(act uint8, data int64) string {
-	return fmt.Sprintf("%02x:%x", act, data)
+func formatCallbackData(act, data int64) string {
+	return fmt.Sprintf("%x:%x", act, data)
 }
 
-func parseCallbackData(raw string) (uint8, int64) {
+func parseCallbackData(raw string) (int64, int64) {
 	if len(raw) == 0 {
 		return CB_ERROR, CB_DATANULL
 	}
@@ -154,19 +154,18 @@ func parseCallbackData(raw string) (uint8, int64) {
 
 	slog.Debug("parseCallbackData", "raw", raw, "parts", data)
 
-	actu64, err := strconv.ParseUint(data[0], 16, 8)
+	acti64, err := strconv.ParseInt(data[0], 16, 64)
 	if err != nil {
 		return CB_ERROR, CB_DATANULL
 	}
-	actu8 := uint8(actu64)
 
 	datai64, err := strconv.ParseInt(data[1], 16, 64)
 	if err != nil {
 		slog.Error("error in strconv", "err", err, "datai64", datai64, "data", data[1])
-		return actu8, CB_DATANULL
+		return acti64, CB_DATANULL
 	}
 
-	return actu8, datai64
+	return acti64, datai64
 }
 
 func OnCallback(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Sendable, error) {
@@ -410,12 +409,6 @@ func CalloutMessage(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Send
 }
 
 // Media
-const (
-	MEDIA_UP = iota + 10
-	MEDIA_DOWN
-	MEDIA_SHOW
-)
-
 func MediaSearchCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Sendable, error) {
 	_, rest := utils.SplitMessageWords(update.Message.Text)
 
@@ -509,7 +502,7 @@ func MediaForgetCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.
 	}
 }
 
-func VoteMedia(ctx context.Context, b *tg.Bot, update *tg.Update, action uint8, data int64) error {
+func VoteMedia(ctx context.Context, b *tg.Bot, update *tg.Update, action, data int64) error {
 	// Avoid checking inaccessible messages
 	if update.CallbackQuery.Message == nil {
 		return nil
@@ -530,7 +523,7 @@ func VoteMedia(ctx context.Context, b *tg.Bot, update *tg.Update, action uint8, 
 
 	slog.Debug("updating media", "score", media.Score, "action", action)
 
-	if action == MEDIA_UP {
+	if action == CB_MEDIA_UP {
 		media.Score += 1
 	} else {
 		media.Score -= 1
@@ -545,7 +538,7 @@ func VoteMedia(ctx context.Context, b *tg.Bot, update *tg.Update, action uint8, 
 	keyboard := mediaKeyboard(media.RowID, media.Score)
 	snd := &tg.Sendable{
 		Method:      tg.MethodEditMessageReplyMarkup,
-		ChatID:      msg.Chat.ID,
+		ChatID:      media.GID,
 		MessageID:   msg.MessageID,
 		ReplyMarkup: keyboard,
 	}
@@ -557,7 +550,7 @@ func VoteMedia(ctx context.Context, b *tg.Bot, update *tg.Update, action uint8, 
 	return nil
 }
 
-func ShowMedia(ctx context.Context, b *tg.Bot, update *tg.Update, _ uint8, data int64) error {
+func ShowMedia(ctx context.Context, b *tg.Bot, update *tg.Update, _, data int64) error {
 	m := &db.Media{
 		RowID: data,
 	}
@@ -616,16 +609,20 @@ func mediaSendable(gid int64, m *db.Media) *tg.Sendable {
 
 func mediaKeyboard(uid int64, score int) *tg.InlineKeyboardMarkup {
 	heart := tg.EMOJI_HEART
-	if score > 10 {
+	if score >= 5 && score < 10 {
+		heart = tg.EMOJI_KISS
+	} else if score >= 10 && score < 15 {
+		heart = tg.EMOJI_FIRE
+	} else if score >= 15 {
 		heart = tg.EMOJI_HEARTSTRUCK
 	}
 
 	return &tg.InlineKeyboardMarkup{
 		InlineKeyboard: [][]tg.InlineKeyboardButton{
 			{
-				{Text: heart, CallbackData: formatCallbackData(MEDIA_UP, uid)},
+				{Text: heart, CallbackData: formatCallbackData(CB_MEDIA_UP, uid)},
 				{Text: fmt.Sprintf("%d", score), CallbackData: " "},
-				{Text: tg.EMOJI_HEARTBREAK, CallbackData: formatCallbackData(MEDIA_DOWN, uid)},
+				{Text: tg.EMOJI_HEARTBREAK, CallbackData: formatCallbackData(CB_MEDIA_DOWN, uid)},
 			},
 		},
 	}
