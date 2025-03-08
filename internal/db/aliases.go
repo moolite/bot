@@ -17,16 +17,11 @@ func SelectAlias(ctx context.Context, alias *Alias) error {
 		return err
 	}
 
-	row := q.QueryRowContext(ctx, alias.Name)
-	if err := row.Scan(&alias.Name, &alias.Target); err != nil {
-		return err
-	}
-
-	return nil
+	return q.GetContext(ctx, alias.Name)
 }
 
-func SelectAllAliases(ctx context.Context) ([]*Alias, error) {
-	var ret []*Alias
+func SelectAllAliases(ctx context.Context) ([]Alias, error) {
+	ret := []Alias{}
 
 	q, err := prepareStmt(
 		`SELECT name,target FROM ` + aliasTable,
@@ -35,22 +30,7 @@ func SelectAllAliases(ctx context.Context) ([]*Alias, error) {
 		return ret, err
 	}
 
-	rows, err := q.QueryContext(ctx)
-	if err != nil {
-		return ret, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var a *Alias
-		if err := rows.Scan(&a.Name, &a.Target); err != nil {
-			return ret, err
-		} else {
-			ret = append(ret, a)
-		}
-	}
-
-	return ret, nil
+	return ret, q.SelectContext(ctx, &ret)
 }
 
 func InsertAlias(ctx context.Context, alias *Alias) error {

@@ -31,13 +31,11 @@ func SelectOneAbraxasByAbraxas(ctx context.Context, a *Abraxas) error {
 		return err
 	}
 
-	row := q.QueryRowContext(ctx, a.GID, a.Abraxas)
-
-	return row.Scan(&a.GID, &a.Abraxas, &a.Kind)
+	return q.GetContext(ctx, a, a.GID, a.Abraxas)
 }
 
-func SelectAbraxoides(ctx context.Context, gid string) ([]*Abraxas, error) {
-	var abraxoides []*Abraxas
+func SelectAbraxoides(ctx context.Context, gid string) ([]Abraxas, error) {
+	abraxoides := []Abraxas{}
 
 	q, err := prepareStmt(
 		`SELECT abraxas,kind,gid FROM ` + abraxoidesTable + ` WHERE gid=?`,
@@ -46,20 +44,7 @@ func SelectAbraxoides(ctx context.Context, gid string) ([]*Abraxas, error) {
 		return abraxoides, err
 	}
 
-	rows, err := q.QueryContext(ctx, gid)
-	if err != nil {
-		return abraxoides, err
-	}
-
-	for rows.Next() {
-		a := &Abraxas{}
-		err := rows.Scan(&a.Abraxas, &a.Kind, &a.GID)
-		if err != nil {
-			return abraxoides, err
-		}
-		abraxoides = append(abraxoides, a)
-	}
-	return abraxoides, nil
+	return abraxoides, q.SelectContext(ctx, &abraxoides, gid)
 }
 
 func SelectAbraxoidesAbraxas(ctx context.Context, gid string) ([]string, error) {

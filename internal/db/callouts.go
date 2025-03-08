@@ -55,12 +55,11 @@ func SelectOneCallout(ctx context.Context, c *Callout) error {
 		return err
 	}
 
-	row := q.QueryRowContext(ctx, c.Callout, c.GID)
-	return row.Scan(&c.GID, &c.Callout, &c.Text)
+	return q.GetContext(ctx, c, c.Callout, c.GID)
 }
 
 func SelectAllCallouts(ctx context.Context, gid string) ([]string, error) {
-	var callouts []string
+	callouts := []string{}
 
 	q, err := prepareStmt(
 		`SELECT callout FROM ` + calloutsTable + ` WHERE gid=?`,
@@ -69,23 +68,7 @@ func SelectAllCallouts(ctx context.Context, gid string) ([]string, error) {
 		return callouts, err
 	}
 
-	rows, err := q.QueryContext(ctx, gid)
-	if err != nil {
-		return callouts, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var callout string
-		err := rows.Scan(&callout)
-		if err != nil {
-			return callouts, err
-		}
-
-		callouts = append(callouts, callout)
-	}
-
-	return callouts, nil
+	return callouts, q.SelectContext(ctx, &callouts)
 }
 
 func DeleleOneCallout(ctx context.Context, c *Callout) error {
