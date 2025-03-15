@@ -55,6 +55,7 @@ func (bot *Bot) SendRaw(ctx context.Context, method string, data, results any) e
 	return nil
 }
 
-func (b *Bot) Send(ctx context.Context, s *Sendable, res any) error {
-	return b.SendRaw(ctx, s.Method, s, res)
+func (b *Bot) Send(ctx context.Context, s *Sendable) (*RawResult, error) {
+	res := &RawResult{}
+	return res, b.SendRaw(ctx, s.Method, s, res)
 }

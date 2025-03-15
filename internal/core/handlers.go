@@ -136,6 +136,8 @@ const (
 	CB_MEDIA_UP
 	CB_MEDIA_DOWN
 	CB_MEDIA_SHOW
+	CB_MEDIA_SEARCH_MORE
+	CB_MEDIA_SEARCH_LESS
 )
 
 func formatCallbackData(act, data int64) string {
@@ -418,9 +420,9 @@ func MediaSearchCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.
 	}
 
 	keyboard := new(tg.InlineKeyboardMarkup)
-	keyboard.InlineKeyboard = make([][]tg.InlineKeyboardButton, 3%len(items))
+	keyboard.InlineKeyboard = make([][]tg.InlineKeyboardButton, (len(items)/3)+1)
 	for i, item := range items {
-		line := i % 3
+		line := i / 3
 		keyboard.InlineKeyboard[line] = append(keyboard.InlineKeyboard[line], tg.InlineKeyboardButton{
 			Text:         item.Description,
 			CallbackData: formatCallbackData(CB_MEDIA_SHOW, item.RowID),
@@ -429,7 +431,7 @@ func MediaSearchCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.
 
 	snd := &tg.Sendable{
 		ChatID:      update.Message.Chat.ID,
-		Text:        tg.EMOJI_UHM,
+		Text:        rest,
 		ParseMode:   "html",
 		Method:      tg.MethodSendMessage,
 		ReplyMarkup: keyboard,
@@ -438,6 +440,57 @@ func MediaSearchCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.
 	slog.Debug("update in OnMessage", "update", update)
 
 	return snd, nil
+}
+
+func MediaSearchOffsetCallback(ctx context.Context, b *tg.Bot, update *tg.Update, act, offset int64) error {
+	term := update.CallbackQuery.Message.Text
+
+	items, err := db.SearchMedia(ctx, update.Message.Chat.ID, term, int(offset))
+	if err != nil {
+		return err
+	}
+
+	keyboard := mediaSearchKeyboard(items, offset)
+	snd := &tg.Sendable{
+		ChatID:      update.Message.Chat.ID,
+		MessageID:   update.Message.ID,
+		Method:      tg.MethodEditMessageReplyMarkup,
+		ReplyMarkup: keyboard,
+	}
+
+	res, err := b.Send(ctx, snd)
+	if err != nil {
+		slog.Error("MediaSearchOffsetCallback() error", "act", act, "offset", offset, "res", res)
+		return err
+	}
+
+	return nil
+}
+
+func mediaSearchKeyboard(items []db.Media, offset int64) *tg.InlineKeyboardMarkup {
+	rows := (len(items) / 3) + 1
+	k := &tg.InlineKeyboardMarkup{
+		InlineKeyboard: make([][]tg.InlineKeyboardButton, rows),
+	}
+
+	for i, item := range items {
+		row := i / 3
+		k.InlineKeyboard[row] = append(k.InlineKeyboard[row], tg.InlineKeyboardButton{
+			Text:         item.Data,
+			CallbackData: formatCallbackData(CB_MEDIA_SHOW, item.RowID),
+		})
+	}
+
+	backOffset := offset - 6
+	if backOffset < 0 {
+		backOffset = 0
+	}
+	k.InlineKeyboard[(len(items)/3)+1] = []tg.InlineKeyboardButton{
+		{Text: "<<", CallbackData: formatCallbackData(CB_MEDIA_SEARCH_LESS, backOffset)},
+		{Text: ">>", CallbackData: formatCallbackData(CB_MEDIA_SEARCH_LESS, offset+6)},
+	}
+
+	return k
 }
 
 func MediaToptenCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Sendable, error) {
@@ -543,9 +596,9 @@ func VoteMedia(ctx context.Context, b *tg.Bot, update *tg.Update, action, data i
 		ReplyMarkup: keyboard,
 	}
 	slog.Debug("editing message", "msg", snd)
-	res := &tg.RawResult{}
-	if err := b.Send(ctx, snd, res); err != nil {
-		slog.Error("error sending message", "snd", snd, "res", res)
+	if res, err := b.Send(ctx, snd); err != nil {
+		slog.Error("VoteMedia error in b.Send", "err", err, "res", res)
+		return err
 	}
 	return nil
 }
@@ -574,9 +627,8 @@ func ShowMedia(ctx context.Context, b *tg.Bot, update *tg.Update, _, data int64)
 
 	snd := mediaSendable(chatId, m)
 
-	r := new(tg.RawResult)
-	if err := b.Send(ctx, snd, r); err != nil {
-		slog.Error("ShowMedia error", "err", err, "results", r)
+	if res, err := b.Send(ctx, snd); err != nil {
+		slog.Error("ShowMedia error", "err", err, "res", res)
 		return err
 	}
 

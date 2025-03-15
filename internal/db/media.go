@@ -156,7 +156,7 @@ func SelectRandomMedia(ctx context.Context, m *Media) error {
 
 func SelectMediaTop(ctx context.Context, gid int64, top int) ([]Media, error) {
 	q, err := prepareStmt(
-		`SELECT rowid,gid,data,description,kind,score FROM media
+		`SELECT rowid,gid,data,description,kind,score FROM ` + mediaTable + `
 		 WHERE gid=?
 		 AND score > 0
 		 ORDER BY score DESC
@@ -175,7 +175,11 @@ func SearchMedia(ctx context.Context, gid int64, term string, offset int) ([]Med
 
 	q, err := prepareStmt(
 		`SELECT rowid,gid,kind,data,description,score FROM ` + mediaTable + `
-		WHERE description LIKE ? AND gid=? ORDER BY score LIMIT 6 OFFSET ?`,
+		 WHERE description LIKE ?
+		   AND gid=?
+		 ORDER BY score DESC
+		 LIMIT 6
+		 OFFSET ?`,
 	)
 	if err != nil {
 		return results, err
@@ -187,7 +191,10 @@ func SearchMedia(ctx context.Context, gid int64, term string, offset int) ([]Med
 
 func DeleteMedia(ctx context.Context, m *Media) error {
 	q, err := prepareStmt(
-		`DELETE FROM ` + mediaTable + ` WHERE data=? AND gid=? LIMIT 1`,
+		`DELETE FROM ` + mediaTable + `
+		 WHERE data=?
+		   AND gid=?
+		 LIMIT 1`,
 	)
 	if err != nil {
 		return err
