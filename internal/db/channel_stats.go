@@ -7,15 +7,15 @@ import (
 var channelStatsTable string = "channel_stats"
 
 type ChannelStats struct {
-	GID    int64
-	User   string
-	Points int64
+	GID    int64  `db:"gid"`
+	UID    string `db:"uid"`
+	Points int64  `db:"points"`
 }
 
-func SelectChannelStats(ctx context.Context, channel string) ([]ChannelStats, error) {
+func SelectChannelStats(ctx context.Context, channel int64) ([]ChannelStats, error) {
 	res := []ChannelStats{}
 	q, err := prepareStmt(
-		`SELECT gid, SUM(points), DISTINCT(uid) WHERE gid = ?`,
+		`SELECT gid, points, uid FROM channel_stats WHERE gid = ?`,
 	)
 	if err != nil {
 		return res, err
@@ -41,24 +41,18 @@ func SelectChannelStatsUser(ctx context.Context, channel, user string) (*Channel
 	return res, nil
 }
 
-func InsertChannelStats(ctx context.Context, channel int64, user string, points int64) (*ChannelStats, error) {
-	res := &ChannelStats{
-		GID:    channel,
-		User:   user,
-		Points: points,
-	}
+func InsertChannelStats(ctx context.Context, c *ChannelStats) error {
 	q, err := prepareStmt(
 		`INSERT INTO ` + channelStatsTable + `
-				(gid,uid,points)
-				VALUES(?,?,?)
-			ON CONFLICT(uid,ts) DO
-				UPDATE SET points=(` + channelStatsTable + `.points + points)
-				RETURNING *`,
+				(gid,uid,points) VALUES(?,?,?)
+			ON CONFLICT(gid,uid) DO UPDATE SET
+				points=(points + excluded.points)
+				WHERE gid=excluded.gid AND uid=excluded.uid
+			RETURNING points
+			`,
 	)
 	if err != nil {
-		return nil, err
+		return err
 	}
-
-	_, err = q.ExecContext(ctx, res.GID, res.User, res.Points)
-	return res, err
+	return q.GetContext(ctx, c, c.GID, c.UID, c.Points)
 }

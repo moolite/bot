@@ -34,6 +34,8 @@ func registerCommands(ctx context.Context, b *tg.Bot) error {
 			{Command: "search", Description: "Search media files"},
 			// Top
 			{Command: "top", Description: "Top 10 media files"},
+			// grumpyness
+			{Command: "grumpyness", Description: "Grumpyness measuring instrument"},
 		},
 	})
 	return err
@@ -95,6 +97,12 @@ func registerBotHandlers(_ context.Context, b *tg.Bot) {
 			Fn:      AliasCommand,
 		},
 		&tg.UpdateHandler{
+			Type:    tg.UPD_STARTSWITH,
+			Param:   "/grumpyness",
+			Aliases: []string{"/grumpy", "/g"},
+			Fn:      GrumpyCommand,
+		},
+		&tg.UpdateHandler{
 			Type:  tg.UPD_STARTSWITH,
 			Param: "/",
 			Fn:    AnyCommand,
@@ -145,7 +153,7 @@ func formatCallbackData(act, data int64) string {
 }
 
 func parseCallbackData(raw string) (int64, int64) {
-	if len(raw) == 0 {
+	if raw == "" {
 		return CB_ERROR, CB_DATANULL
 	}
 
@@ -320,7 +328,7 @@ func DiceCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Sendabl
 	head, rest := utils.SplitMessageWords(update.Message.Text)
 	slog.Debug("DiceCommand", "head", head, "rest", rest)
 
-	if len(rest) == 0 {
+	if rest == "" {
 		return nil, nil
 	}
 
@@ -380,7 +388,7 @@ func CalloutMessage(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Send
 	head = head[1:] // remove '!'
 	slog.Debug("CalloutMessage", "head", head, "rest", rest)
 
-	if len(rest) == 0 {
+	if rest == "" {
 		return nil, nil
 	}
 
@@ -400,7 +408,7 @@ func CalloutMessage(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Send
 		return nil, err
 	}
 
-	if len(callout.Text) == 0 {
+	if callout.Text == "" {
 		return nil, nil
 	}
 
@@ -485,7 +493,7 @@ func mediaSearchKeyboard(items []db.Media, offset int64) *tg.InlineKeyboardMarku
 	if backOffset < 0 {
 		backOffset = 0
 	}
-	k.InlineKeyboard[(len(items) / 3)] = []tg.InlineKeyboardButton{
+	k.InlineKeyboard[rows-1] = []tg.InlineKeyboardButton{
 		{Text: "<<", CallbackData: formatCallbackData(CB_MEDIA_SEARCH_LESS, backOffset)},
 		{Text: ">>", CallbackData: formatCallbackData(CB_MEDIA_SEARCH_LESS, offset+6)},
 	}
@@ -595,6 +603,7 @@ func voteMedia(ctx context.Context, b *tg.Bot, update *tg.Update, action, data i
 		MessageID:   msg.MessageID,
 		ReplyMarkup: keyboard,
 	}
+
 	slog.Debug("editing message", "msg", snd)
 	if res, err := b.Send(ctx, snd); err != nil {
 		slog.Error("VoteMedia error in b.Send", "err", err, "res", res)
@@ -729,4 +738,53 @@ func getVideoFileID(update *tg.Update) string {
 
 func isMedia(update *tg.Update) bool {
 	return isPhoto(update) || isVideo(update)
+}
+
+// Grumpy
+func GrumpyCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Sendable, error) {
+	_, rest := utils.SplitMessageWords(update.Message.Text)
+	points, user := utils.SplitMessageWords(rest)
+	slog.Debug("GrumpyCommand", "parts", rest, "points", points, "user", user)
+
+	if points != "" && user != "" {
+		pt, err := strconv.ParseInt(points, 10, 64)
+		if err != nil {
+			slog.Error("error parsing points", slog.Any("points", points), slog.Any("pt", pt), slog.Any("err", err))
+			return tg.SendableSetMessageReaction(update, tg.EMOJI_KO), nil
+		}
+
+		s := &db.ChannelStats{
+			GID:    update.Message.Chat.ID,
+			UID:    user,
+			Points: pt,
+		}
+		if err = db.InsertChannelStats(ctx, s); err != nil {
+			slog.Error("GrumpyCommand() InsertChannelStats error", slog.Any("err", err))
+			return nil, err
+		}
+	}
+
+	// finally show grumpiness index
+	stats, err := db.SelectChannelStats(ctx, update.Message.Chat.ID)
+	if err != nil {
+		slog.Error("GrumpyCommand() SelectChannelStats error", slog.Any("err", err))
+		return nil, err
+	}
+
+	text := "<b>Grumpiness</b>\n"
+	if len(stats) == 0 {
+		text = `<i>grumpiness is empty</i>`
+	} else {
+		for _, stat := range stats {
+			text += fmt.Sprintf("<i>%s</i>: %3d\n", stat.UID, stat.Points)
+		}
+	}
+
+	snd := &tg.Sendable{
+		Method:    tg.MethodSendMessage,
+		ChatID:    update.Message.Chat.ID,
+		Text:      text,
+		ParseMode: "html",
+	}
+	return snd, nil
 }

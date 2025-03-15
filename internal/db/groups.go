@@ -66,7 +66,7 @@ func SelectAllGroups(ctx context.Context) ([]*Group, error) {
 func InsertGroup(ctx context.Context, gid int64, title string) error {
 	q, err := prepareStmt(
 		`INSERT INTO ` + groupsTable + ` (gid,title) VALUES(?,?)
-		ON CONFLICT(gid) DO UPDATE SET title=groups.title`,
+		ON CONFLICT(gid) DO UPDATE SET title=excluded.title`,
 	)
 	if err != nil {
 		return err
