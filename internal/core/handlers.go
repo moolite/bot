@@ -175,11 +175,15 @@ func OnCallback(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Sendable
 	var err error
 	switch action {
 	case CB_MEDIA_UP:
-		err = VoteMedia(ctx, b, update, action, data)
+		err = voteMedia(ctx, b, update, action, data)
 	case CB_MEDIA_DOWN:
-		err = VoteMedia(ctx, b, update, action, data)
+		err = voteMedia(ctx, b, update, action, data)
 	case CB_MEDIA_SHOW:
-		err = ShowMedia(ctx, b, update, action, data)
+		err = showMedia(ctx, b, update, action, data)
+	case CB_MEDIA_SEARCH_LESS:
+		fallthrough
+	case CB_MEDIA_SEARCH_MORE:
+		err = MediaSearchOffsetCallback(ctx, b, update, action, data)
 	}
 
 	return &tg.Sendable{
@@ -419,16 +423,7 @@ func MediaSearchCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.
 		return nil, err
 	}
 
-	keyboard := new(tg.InlineKeyboardMarkup)
-	keyboard.InlineKeyboard = make([][]tg.InlineKeyboardButton, (len(items)/3)+1)
-	for i, item := range items {
-		line := i / 3
-		keyboard.InlineKeyboard[line] = append(keyboard.InlineKeyboard[line], tg.InlineKeyboardButton{
-			Text:         item.Description,
-			CallbackData: formatCallbackData(CB_MEDIA_SHOW, item.RowID),
-		})
-	}
-
+	keyboard := mediaSearchKeyboard(items, 0)
 	snd := &tg.Sendable{
 		ChatID:      update.Message.Chat.ID,
 		Text:        rest,
@@ -443,24 +438,29 @@ func MediaSearchCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.
 }
 
 func MediaSearchOffsetCallback(ctx context.Context, b *tg.Bot, update *tg.Update, act, offset int64) error {
-	term := update.CallbackQuery.Message.Text
+	if update.CallbackQuery.Message == nil {
+		slog.Error("MediaSearchOffsetCallback(): CallbackQuery doesn't carry Message", "update", slog.AnyValue(update))
+		return nil
+	}
 
-	items, err := db.SearchMedia(ctx, update.Message.Chat.ID, term, int(offset))
+	term := update.CallbackQuery.Message.Text
+	items, err := db.SearchMedia(ctx, update.CallbackQuery.Message.Chat.ID, term, int(offset))
 	if err != nil {
+		slog.Error("error in SearchMedia", "err", slog.AnyValue(err))
 		return err
 	}
 
 	keyboard := mediaSearchKeyboard(items, offset)
 	snd := &tg.Sendable{
-		ChatID:      update.Message.Chat.ID,
-		MessageID:   update.Message.ID,
+		ChatID:      update.CallbackQuery.Message.Chat.ID,
+		MessageID:   update.CallbackQuery.Message.MessageID,
 		Method:      tg.MethodEditMessageReplyMarkup,
 		ReplyMarkup: keyboard,
 	}
 
-	res, err := b.Send(ctx, snd)
-	if err != nil {
-		slog.Error("MediaSearchOffsetCallback() error", "act", act, "offset", offset, "res", res)
+	slog.Debug("sending MediaSearchOffsetCallback", "snd", slog.AnyValue(snd))
+	if res, err := b.Send(ctx, snd); err != nil {
+		slog.Error("MediaSearchOffsetCallback() error", "act", act, "offset", offset, "res", slog.AnyValue(res))
 		return err
 	}
 
@@ -476,7 +476,7 @@ func mediaSearchKeyboard(items []db.Media, offset int64) *tg.InlineKeyboardMarku
 	for i, item := range items {
 		row := i / 3
 		k.InlineKeyboard[row] = append(k.InlineKeyboard[row], tg.InlineKeyboardButton{
-			Text:         item.Data,
+			Text:         item.Description,
 			CallbackData: formatCallbackData(CB_MEDIA_SHOW, item.RowID),
 		})
 	}
@@ -485,7 +485,7 @@ func mediaSearchKeyboard(items []db.Media, offset int64) *tg.InlineKeyboardMarku
 	if backOffset < 0 {
 		backOffset = 0
 	}
-	k.InlineKeyboard[(len(items)/3)+1] = []tg.InlineKeyboardButton{
+	k.InlineKeyboard[(len(items) / 3)] = []tg.InlineKeyboardButton{
 		{Text: "<<", CallbackData: formatCallbackData(CB_MEDIA_SEARCH_LESS, backOffset)},
 		{Text: ">>", CallbackData: formatCallbackData(CB_MEDIA_SEARCH_LESS, offset+6)},
 	}
@@ -555,7 +555,7 @@ func MediaForgetCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.
 	}
 }
 
-func VoteMedia(ctx context.Context, b *tg.Bot, update *tg.Update, action, data int64) error {
+func voteMedia(ctx context.Context, b *tg.Bot, update *tg.Update, action, data int64) error {
 	// Avoid checking inaccessible messages
 	if update.CallbackQuery.Message == nil {
 		return nil
@@ -603,7 +603,7 @@ func VoteMedia(ctx context.Context, b *tg.Bot, update *tg.Update, action, data i
 	return nil
 }
 
-func ShowMedia(ctx context.Context, b *tg.Bot, update *tg.Update, _, data int64) error {
+func showMedia(ctx context.Context, b *tg.Bot, update *tg.Update, _, data int64) error {
 	m := &db.Media{
 		RowID: data,
 	}
