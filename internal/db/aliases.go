@@ -17,7 +17,7 @@ func SelectAlias(ctx context.Context, alias *Alias) error {
 		return err
 	}
 
-	return q.GetContext(ctx, alias.Name)
+	return q.GetContext(ctx, alias, alias.Name)
 }
 
 func SelectAllAliases(ctx context.Context) ([]Alias, error) {
