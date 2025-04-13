@@ -191,16 +191,13 @@ func SearchMedia(ctx context.Context, gid int64, term string, offset int) ([]Med
 
 func DeleteMedia(ctx context.Context, m *Media) error {
 	q, err := prepareStmt(
-		`DELETE FROM ` + mediaTable + `
-		 WHERE data=?
-		   AND gid=?
-		 LIMIT 1`,
+		`DELETE FROM ` + mediaTable + ` WHERE gid=? AND data=?`,
 	)
 	if err != nil {
 		return err
 	}
 
-	res, err := q.ExecContext(ctx, m.Data, m.GID)
+	res, err := q.ExecContext(ctx, m.GID, m.Data)
 	if err != nil {
 		return err
 	}
