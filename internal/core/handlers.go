@@ -68,15 +68,15 @@ func registerBotHandlers(_ context.Context, b *tg.Bot) {
 		},
 		&tg.UpdateHandler{
 			Type:    tg.UPD_STARTSWITH,
-			Param:   "/abraxas",
-			Aliases: []string{"/trigger", "/abx"},
-			Fn:      AbraxasCommand,
+			Param:   "/forget",
+			Aliases: []string{"/dimentica", "/del", "/rm"},
+			Fn:      MediaForgetCommand,
 		},
 		&tg.UpdateHandler{
 			Type:    tg.UPD_STARTSWITH,
-			Param:   "/forget",
-			Aliases: []string{"/dimentica", "/rm"},
-			Fn:      MediaForgetCommand,
+			Param:   "/abraxas",
+			Aliases: []string{"/trigger", "/abx"},
+			Fn:      AbraxasCommand,
 		},
 		&tg.UpdateHandler{
 			Type:    tg.UPD_STARTSWITH,
@@ -541,13 +541,16 @@ func MediaRememberCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*t
 }
 
 func MediaForgetCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Sendable, error) {
+	ok := tg.SendableSetMessageReaction(update, tg.EMOJI_OK)
+	ko := tg.SendableSetMessageReaction(update, tg.EMOJI_KO)
+
 	data := ""
 	if isPhoto(update) {
-		data = update.Message.Photo[0].FileID
+		data = getPhotoFileId(update)
 	} else if isVideo(update) {
-		data = update.Message.Video.FileID
+		data = getVideoFileID(update)
 	} else {
-		return tg.SendableSetMessageReaction(update, tg.EMOJI_KO), nil
+		return ko, nil
 	}
 
 	media := &db.Media{
@@ -557,9 +560,9 @@ func MediaForgetCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.
 
 	if err := db.DeleteMedia(ctx, media); err != nil {
 		slog.Error("error in db.DeleteMedia()", "media", media, "err", err)
-		return tg.SendableSetMessageReaction(update, tg.EMOJI_KO), err
+		return ko, err
 	} else {
-		return tg.SendableSetMessageReaction(update, tg.EMOJI_OK), nil
+		return ok, nil
 	}
 }
 
