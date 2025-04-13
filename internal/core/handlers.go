@@ -559,6 +559,10 @@ func MediaForgetCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.
 	}
 
 	if err := db.DeleteMedia(ctx, media); err != nil {
+		if errors.Is(err, db.ErrDelete) {
+			return ko, nil
+		}
+
 		slog.Error("error in db.DeleteMedia()", "media", media, "err", err)
 		return ko, err
 	} else {
