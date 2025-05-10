@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"strings"
 )
 
 var (
@@ -185,6 +186,7 @@ func SearchMedia(ctx context.Context, gid int64, term string, offset int) ([]Med
 		return results, err
 	}
 
+	term = strings.TrimSpace(term)
 	term = `%` + term + `%`
 	return results, q.Select(&results, term, gid, offset)
 }
