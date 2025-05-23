@@ -1,10 +1,9 @@
 package utils
 
-import "strings"
-
-func isWhitespace(r rune) bool {
-	return r == ' ' || r == '\n' || r == 0
-}
+import (
+	"strings"
+	"unicode"
+)
 
 func FirstWord(s string) string {
 	if len(s) == 0 {
@@ -14,7 +13,7 @@ func FirstWord(s string) string {
 	b := strings.Builder{}
 
 	for _, r := range s {
-		if isWhitespace(r) {
+		if unicode.IsSpace(r) {
 			break
 		}
 		b.WriteRune(r)
@@ -32,7 +31,7 @@ func SplitMessageWords(s string) (string, string) {
 	rest := strings.Builder{}
 	for idx, r := range s {
 		// build rest when encountering a whitespace or EOF
-		if isWhitespace(r) {
+		if unicode.IsSpace(r) {
 			rest.WriteString(s[idx+1:])
 			break
 		}

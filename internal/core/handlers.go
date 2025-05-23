@@ -1,6 +1,7 @@
 package core
 
 import (
+	"cmp"
 	"context"
 	"database/sql"
 	"errors"
@@ -524,7 +525,7 @@ func MediaRememberCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*t
 		return nil, nil
 	}
 
-	_, rest := utils.SplitMessageWords(update.Message.Text)
+	_, rest := utils.SplitMessageWords(cmp.Or(update.Message.Text, update.Message.Caption))
 	m := &db.Media{
 		GID:         update.Message.Chat.ID,
 		Data:        data,

@@ -13,7 +13,7 @@ var nstmts map[string]*sqlx.NamedStmt = make(map[string]*sqlx.NamedStmt)
 
 func Open(filename string) error {
 	var err error
-	uri := fmt.Sprintf("%s?cache=shared", filename)
+	uri := fmt.Sprintf("file:%s?cache=private&mode=rw&_txlock=immediate&_journal_mode=WAL", filename)
 	dbc, err = sqlx.Connect("sqlite3", uri)
 	if err != nil {
 		return err
