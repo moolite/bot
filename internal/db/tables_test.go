@@ -62,6 +62,15 @@ func TestTables(t *testing.T) {
 	is.Equal(mf.Description, m.Description)
 	is.Equal(mf.GID, m.GID)
 
+	s, err := SearchMedia(context.TODO(), gid, "some", 0)
+	is.NoErr(err)
+	is.Equal(len(s), 1)
+	is.Equal(s[0].Description, text)
+
+	s, err = SearchMedia(context.TODO(), gid, "nothing!", 0)
+	is.NoErr(err)
+	is.Equal(len(s), 0)
+
 	err = MigrateDown()
 	is.NoErr(err)
 }

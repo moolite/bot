@@ -45,3 +45,13 @@ func SplitMessageWords(s string) (string, string) {
 
 	return hs, rs
 }
+
+func CleanText(s string) string {
+	b := strings.Builder{}
+	for _, r := range s {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
+}

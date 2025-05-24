@@ -2,8 +2,10 @@ package db
 
 import (
 	"context"
-	"strings"
+	"fmt"
 	"time"
+
+	"github.com/moolite/bot/internal/utils"
 )
 
 var (
@@ -196,8 +198,8 @@ func SearchMedia(ctx context.Context, gid int64, term string, offset int) ([]Med
 		return results, err
 	}
 
-	term = strings.TrimSpace(term)
-	return results, q.Select(&results, term, gid, offset)
+	term = utils.CleanText(term)
+	return results, q.Select(&results, term, fmt.Sprint(gid), offset)
 }
 
 func DeleteMedia(ctx context.Context, m *Media) error {
