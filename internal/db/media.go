@@ -183,7 +183,7 @@ func SearchMedia(ctx context.Context, gid int64, term string, offset int) ([]Med
 	q, err := prepareStmt(
 		`SELECT media.rowid, media.gid, media.data, media.description, media.created_at
 		 FROM media_fts
-		 JOIN media ON posts.rowid = posts_fts.rowid
+		 JOIN media ON media.rowid = media_fts.rowid
 		 WHERE media_fts.description MATCH ?
 		   AND media_fts.gid=?
 		ORDER BY media.score DESC
