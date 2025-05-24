@@ -10,12 +10,18 @@ var (
 )
 
 type Media struct {
-	RowID       int64  // NOTE: needed only by callback queries
+	RowID       int64  // NOTE: needed by callback queries
 	GID         int64  `db:"gid"`
 	Data        string `db:"data"`
 	Kind        string `db:"kind"`
 	Description string `db:"description"`
 	Score       int    `db:"score"`
+}
+
+type MediaFts struct {
+	RowID       int64
+	Description string `db:"description"`
+	GID         int64  `db:"gid"`
 }
 
 func (m *Media) Clone() *Media {
@@ -175,19 +181,20 @@ func SearchMedia(ctx context.Context, gid int64, term string, offset int) ([]Med
 	results := []Media{}
 
 	q, err := prepareStmt(
-		`SELECT rowid,gid,kind,data,description,score FROM ` + mediaTable + `
-		 WHERE description LIKE ?
-		   AND gid=?
-		 ORDER BY score DESC
-		 LIMIT 6
-		 OFFSET ?`,
+		`SELECT media.rowid, media.gid, media.data, media.description, media.created_at
+		 FROM media_fts
+		 JOIN media ON posts.rowid = posts_fts.rowid
+		 WHERE media_fts.text MATCH ?
+		   AND media_fts.gid=?
+		ORDER BY media.score DESC
+		LIMIT 6
+		OFFSET ?`,
 	)
 	if err != nil {
 		return results, err
 	}
 
 	term = strings.TrimSpace(term)
-	term = `%` + term + `%`
 	return results, q.Select(&results, term, gid, offset)
 }
 

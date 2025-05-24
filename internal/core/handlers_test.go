@@ -171,6 +171,11 @@ func TestBotHandlers(t *testing.T) {
 	}
 }
 
+func TestMediaSearchHandler(t *testing.T) {
+	is := is.New(t)
+	is.NoErr(nil)
+}
+
 func TestMediaSearchKeyboard(t *testing.T) {
 	is := is.New(t)
 
