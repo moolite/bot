@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -485,17 +486,20 @@ func MediaSearchOffsetCallback(ctx context.Context, b *tg.Bot, update *tg.Update
 }
 
 func mediaSearchKeyboard(items []db.Media, offset int64) *tg.InlineKeyboardMarkup {
-	rows := (len(items) / 3) + 1
 	k := &tg.InlineKeyboardMarkup{
-		InlineKeyboard: make([][]tg.InlineKeyboardButton, rows),
+		InlineKeyboard: [][]tg.InlineKeyboardButton{},
 	}
 
-	for i, item := range items {
-		row := i / 3
-		k.InlineKeyboard[row] = append(k.InlineKeyboard[row], tg.InlineKeyboardButton{
-			Text:         item.Description,
-			CallbackData: formatCallbackData(CB_MEDIA_SHOW, item.RowID),
-		})
+	for row := range slices.Chunk(items, 3) {
+		kbRow := make([]tg.InlineKeyboardButton, len(row))
+		for idx, item := range items {
+			kbRow[idx] = tg.InlineKeyboardButton{
+				Text:         item.Description,
+				CallbackData: formatCallbackData(CB_MEDIA_SHOW, item.RowID),
+			}
+		}
+
+		k.InlineKeyboard = append(k.InlineKeyboard, kbRow)
 	}
 
 	backOffset := offset - 6

@@ -183,6 +183,8 @@ func TestMediaSearchKeyboard(t *testing.T) {
 		{RowID: 1, GID: 123, Data: "", Description: "single"},
 	}, 1)
 
+	t.Log("items", res.InlineKeyboard)
+
 	is.Equal(len(res.InlineKeyboard), 2)
 	is.Equal(len(res.InlineKeyboard[0]), 1)
 	is.Equal(res.InlineKeyboard[0][0].Text, "single")
