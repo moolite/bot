@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"strings"
+	"time"
 )
 
 var (
@@ -10,12 +11,13 @@ var (
 )
 
 type Media struct {
-	RowID       int64  // NOTE: needed by callback queries
-	GID         int64  `db:"gid"`
-	Data        string `db:"data"`
-	Kind        string `db:"kind"`
-	Description string `db:"description"`
-	Score       int    `db:"score"`
+	RowID       int64     // NOTE: needed by callback queries
+	GID         int64     `db:"gid"`
+	Data        string    `db:"data"`
+	Kind        string    `db:"kind"`
+	Description string    `db:"description"`
+	Score       int       `db:"score"`
+	CreatedAt   time.Time `db:"created_at"`
 }
 
 type MediaFts struct {
@@ -181,7 +183,7 @@ func SearchMedia(ctx context.Context, gid int64, term string, offset int) ([]Med
 	results := []Media{}
 
 	q, err := prepareStmt(
-		`SELECT media.rowid, media.gid, media.data, media.description, media.created_at
+		`SELECT media.rowid,media.gid,media.data,media.kind,media.description,media.score
 		 FROM media_fts
 		 JOIN media ON media.rowid = media_fts.rowid
 		 WHERE media_fts.description MATCH ?
