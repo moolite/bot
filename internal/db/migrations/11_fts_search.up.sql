@@ -2,6 +2,7 @@ CREATE VIRTUAL TABLE media_fts USING
 fts5(
 , description
 , gid UNINDEXED
+, tokenize="trigram case_sensitive 0"
 );
 
 
