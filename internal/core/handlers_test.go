@@ -171,6 +171,18 @@ func TestBotHandlers(t *testing.T) {
 	}
 }
 
+func TestMediaSearchKeyboard(t *testing.T) {
+	is := is.New(t)
+
+	res := mediaSearchKeyboard([]db.Media{
+		{RowID: 1, GID: 123, Data: "", Description: "single"},
+	}, 1)
+
+	is.Equal(len(res.InlineKeyboard), 2)
+	is.Equal(len(res.InlineKeyboard[0]), 1)
+	is.Equal(res.InlineKeyboard[0][0].Text, "single")
+}
+
 // "{\"chat_id\":-284819895,
 //   \"parse_mode\":\"html\",
 //   \"reply_markup\":\"{\\\"inline_keyboard\\\":[[{\\\"text\\\":\\\"❤\\\",\\\"callback_data\\\":\\\"media:up\\\"},{\\\"text\\\":\\\"\\\\u003cb\\\\u003e\\\\u003ci\\\\u003e0\\\\u003c/i\\\\u003e\\\\u003c/b\\\\u003e\\\"},{\\\"text\\\":\\\"💔\\\",\\\"callback_data\\\":\\\"media:down\\\"}]]}\",

@@ -432,6 +432,10 @@ func MediaSearchCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.
 		return nil, err
 	}
 
+	if len(items) == 0 {
+		return tg.SendableSetMessageReaction(update, tg.EMOJI_KO), nil
+	}
+
 	keyboard := mediaSearchKeyboard(items, 0)
 	snd := &tg.Sendable{
 		ChatID:      update.Message.Chat.ID,
@@ -459,6 +463,10 @@ func MediaSearchOffsetCallback(ctx context.Context, b *tg.Bot, update *tg.Update
 		return err
 	}
 
+	if len(items) == 0 {
+		return nil
+	}
+
 	keyboard := mediaSearchKeyboard(items, offset)
 	snd := &tg.Sendable{
 		ChatID:      update.CallbackQuery.Message.Chat.ID,
@@ -477,7 +485,8 @@ func MediaSearchOffsetCallback(ctx context.Context, b *tg.Bot, update *tg.Update
 }
 
 func mediaSearchKeyboard(items []db.Media, offset int64) *tg.InlineKeyboardMarkup {
-	rows := (len(items) / 3) + 1
+	// +2 here, 1 is the first three items, 2 is the keyboard search callbacks
+	rows := (len(items) / 3) + 2
 	k := &tg.InlineKeyboardMarkup{
 		InlineKeyboard: make([][]tg.InlineKeyboardButton, rows),
 	}
