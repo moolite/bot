@@ -492,7 +492,7 @@ func mediaSearchKeyboard(items []db.Media, offset int64) *tg.InlineKeyboardMarku
 
 	for row := range slices.Chunk(items, 3) {
 		kbRow := make([]tg.InlineKeyboardButton, len(row))
-		for idx, item := range items {
+		for idx, item := range row {
 			kbRow[idx] = tg.InlineKeyboardButton{
 				Text:         item.Description,
 				CallbackData: formatCallbackData(CB_MEDIA_SHOW, item.RowID),

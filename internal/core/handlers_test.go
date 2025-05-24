@@ -188,6 +188,31 @@ func TestMediaSearchKeyboard(t *testing.T) {
 	is.Equal(len(res.InlineKeyboard), 2)
 	is.Equal(len(res.InlineKeyboard[0]), 1)
 	is.Equal(res.InlineKeyboard[0][0].Text, "single")
+
+	res = mediaSearchKeyboard([]db.Media{
+		{RowID: 1, GID: 123, Data: "", Description: "1"},
+		{RowID: 2, GID: 123, Data: "", Description: "2"},
+		{RowID: 3, GID: 123, Data: "", Description: "3"},
+		{RowID: 4, GID: 123, Data: "", Description: "4"},
+		{RowID: 5, GID: 123, Data: "", Description: "5"},
+		{RowID: 6, GID: 123, Data: "", Description: "6"},
+	}, 0)
+	is.Equal(len(res.InlineKeyboard), 3)
+
+	res = mediaSearchKeyboard([]db.Media{
+		{RowID: 1, GID: 123, Data: "", Description: "1"},
+		{RowID: 2, GID: 123, Data: "", Description: "2"},
+		{RowID: 3, GID: 123, Data: "", Description: "3"},
+		{RowID: 4, GID: 123, Data: "", Description: "4"},
+	}, 0)
+	is.Equal(len(res.InlineKeyboard), 3)
+
+	res = mediaSearchKeyboard([]db.Media{
+		{RowID: 1, GID: 123, Data: "", Description: "1"},
+		{RowID: 2, GID: 123, Data: "", Description: "2"},
+		{RowID: 3, GID: 123, Data: "", Description: "3"},
+	}, 0)
+	is.Equal(len(res.InlineKeyboard), 2)
 }
 
 // "{\"chat_id\":-284819895,
