@@ -485,8 +485,7 @@ func MediaSearchOffsetCallback(ctx context.Context, b *tg.Bot, update *tg.Update
 }
 
 func mediaSearchKeyboard(items []db.Media, offset int64) *tg.InlineKeyboardMarkup {
-	// +2 here, 1 is the first three items, 2 is the keyboard search callbacks
-	rows := (len(items) / 3) + 2
+	rows := (len(items) / 3) + 1
 	k := &tg.InlineKeyboardMarkup{
 		InlineKeyboard: make([][]tg.InlineKeyboardButton, rows),
 	}
@@ -503,10 +502,10 @@ func mediaSearchKeyboard(items []db.Media, offset int64) *tg.InlineKeyboardMarku
 	if backOffset < 0 {
 		backOffset = 0
 	}
-	k.InlineKeyboard[rows-1] = []tg.InlineKeyboardButton{
+	k.InlineKeyboard = append(k.InlineKeyboard, []tg.InlineKeyboardButton{
 		{Text: "<<", CallbackData: formatCallbackData(CB_MEDIA_SEARCH_LESS, backOffset)},
 		{Text: ">>", CallbackData: formatCallbackData(CB_MEDIA_SEARCH_LESS, offset+6)},
-	}
+	})
 
 	return k
 }

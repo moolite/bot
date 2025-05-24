@@ -199,7 +199,8 @@ func SearchMedia(ctx context.Context, gid int64, term string, offset int) ([]Med
 	}
 
 	term = utils.CleanText(term)
-	return results, q.Select(&results, term, fmt.Sprint(gid), offset)
+	stringGid := fmt.Sprint(gid) // FTS tables are text by default
+	return results, q.Select(&results, term, stringGid, offset)
 }
 
 func DeleteMedia(ctx context.Context, m *Media) error {
