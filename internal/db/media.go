@@ -181,6 +181,21 @@ func SelectMediaTop(ctx context.Context, gid int64, top int) ([]Media, error) {
 	return res, q.SelectContext(ctx, &res, gid, top)
 }
 
+func SelectMediaBottom(ctx context.Context, gid int64, top int) ([]Media, error) {
+	q, err := prepareStmt(
+		`SELECT rowid,gid,data,description,kind,score FROM ` + mediaTable + `
+		 WHERE gid=?
+		 AND score > 0
+		 ORDER BY score ASC
+		 LIMIT ?`,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	res := []Media{}
+	return res, q.SelectContext(ctx, &res, gid, top)
+}
 func SearchMedia(ctx context.Context, gid int64, term string, offset int) ([]Media, error) {
 	results := []Media{}
 

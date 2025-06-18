@@ -64,6 +64,12 @@ func registerBotHandlers(_ context.Context, b *tg.Bot) {
 		},
 		&tg.UpdateHandler{
 			Type:    tg.UPD_STARTSWITH,
+			Param:   "/pot",
+			Aliases: []string{"/p"},
+			Fn:      MediaBottomtenCommand,
+		},
+		&tg.UpdateHandler{
+			Type:    tg.UPD_STARTSWITH,
 			Param:   "/remember",
 			Aliases: []string{"/ricorda", "/add", "/touch"},
 			Fn:      MediaRememberCommand,
@@ -524,6 +530,16 @@ func MediaToptenCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.
 	return snd, nil
 }
 
+func MediaBottomtenCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Sendable, error) {
+	media, err := db.SelectMediaBottom(ctx, update.Message.Chat.ID, 10)
+	if err != nil {
+		return nil, err
+	}
+
+	snd := mediaCollection(update.Message.Chat.ID, media[0].Description, media)
+	return snd, nil
+}
+
 func MediaRememberCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Sendable, error) {
 	kind := ""
 	data := ""
@@ -795,9 +811,21 @@ func GrumpyCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Senda
 	if len(stats) == 0 {
 		text = `<i>grumpiness is empty</i>`
 	} else {
+		sstats, err := db.SelectChannelStatsStats(ctx, update.Message.Chat.ID)
+		if err != nil {
+			return nil, err
+		}
+
 		for _, stat := range stats {
 			text += fmt.Sprintf("<i>%s</i>: %3d\n", stat.UID, stat.Points)
 		}
+
+		text += fmt.Sprintf("\n<b>%d</b>min, <b>%d</b>max, <b>%d</b>sum, <b>%d</b>avg",
+			sstats.Min,
+			sstats.Max,
+			sstats.Sum,
+			sstats.Avg,
+		)
 	}
 
 	snd := &tg.Sendable{

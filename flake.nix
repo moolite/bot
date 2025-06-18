@@ -29,7 +29,7 @@
           name = "marrano-bot";
           src = ./.;
           nativeBuildInputs = [ pkgs.go ];
-          vendorHash = "sha256-tO2z+KZ6Yc/YmRt2UyW2kcwN7A83gYw2YDSTURfHm+E=";
+          vendorHash = "sha256-M1g9Iex93Pr0a/2QeyGnL5803O6VQJQItIfZdUXccCw=";
           tags= [
             "fts5"
           ];
@@ -42,7 +42,6 @@
         with lib;
         let
           cfg = config.services.marrano-bot;
-          opt = options.services.marrano-bot;
           pkg = self.packages.${pkgs.system}.default;
           hardeningOptions =
             { }; # TODO systemd hardened settings `systemd analyze security marrano-bot`

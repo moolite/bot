@@ -12,6 +12,15 @@ type ChannelStats struct {
 	Points int64  `db:"points"`
 }
 
+type ChannelStatsStats struct {
+	GID   int64 `db:"gid"`
+	Min   int   `db:"min"`
+	Max   int   `db:"max"`
+	Sum   int   `db:"sum"`
+	Avg   int   `db:"avg"`
+	Count int   `db:"count"`
+}
+
 func SelectChannelStats(ctx context.Context, channel int64) ([]ChannelStats, error) {
 	res := []ChannelStats{}
 	q, err := prepareStmt(
@@ -24,21 +33,39 @@ func SelectChannelStats(ctx context.Context, channel int64) ([]ChannelStats, err
 	return res, q.SelectContext(ctx, &res, channel)
 }
 
-func SelectChannelStatsUser(ctx context.Context, channel, user string) (*ChannelStats, error) {
+func SelectChannelStatsStats(ctx context.Context, gid int64) (*ChannelStatsStats, error) {
+	res := &ChannelStatsStats{}
+
+	q, err := prepareStmt(
+		`SELECT
+			gid,
+			MIN(points) AS min,
+			MAX(points) AS max,
+			SUM(points) AS sum,
+			CAST(ROUND(AVG(points)) AS INTEGER) AS avg
+			COUNT(points) AS count,
+		FROM channel_stats
+		WHERE gid = ?
+		`)
+	if err != nil {
+		return res, err
+	}
+
+	err = q.QueryRowContext(ctx, gid).Scan(res)
+	return res, err
+}
+
+func SelectChannelStatsUser(ctx context.Context, channel int64, user string) (*ChannelStats, error) {
+	res := &ChannelStats{}
 	q, err := prepareStmt(
 		`SELECT * FROM ` + channelStatsTable + ` WHERE gid = ? AND user = ?`,
 	)
+
 	if err != nil {
-		return nil, err
+		return res, err
 	}
-
-	row := q.QueryRowContext(ctx, channel, user)
-	res := &ChannelStats{}
-	if err := row.Scan(res); err != nil {
-		return nil, err
-	}
-
-	return res, nil
+	err = q.QueryRowContext(ctx, channel, user).Scan(res)
+	return res, err
 }
 
 func InsertChannelStats(ctx context.Context, c *ChannelStats) error {
