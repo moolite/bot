@@ -51,7 +51,7 @@ func SelectChannelStatsStats(ctx context.Context, gid int64) (*ChannelStatsStats
 		return res, err
 	}
 
-	err = q.QueryRowContext(ctx, gid).Scan(res)
+	err = q.GetContext(ctx, res, gid)
 	return res, err
 }
 

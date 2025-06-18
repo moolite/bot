@@ -92,7 +92,7 @@ func SelectOneMediaByData(ctx context.Context, m *Media) error {
 		return err
 	}
 
-	return q.Get(m, m.Data, m.GID)
+	return q.GetContext(ctx, m, m.Data, m.GID)
 }
 
 func SelectOneMediaByRowID(ctx context.Context, m *Media) error {
@@ -104,7 +104,7 @@ func SelectOneMediaByRowID(ctx context.Context, m *Media) error {
 		return err
 	}
 
-	return q.Get(m, m.RowID)
+	return q.GetContext(ctx, m, m.RowID)
 }
 
 func SelectAllMediaGroup(ctx context.Context, gid string) ([]Media, error) {
@@ -116,7 +116,7 @@ func SelectAllMediaGroup(ctx context.Context, gid string) ([]Media, error) {
 		return results, err
 	}
 
-	return results, q.Select(&results, gid)
+	return results, q.SelectContext(ctx, &results, gid)
 }
 
 func SelectAllMedia(ctx context.Context) ([]Media, error) {
