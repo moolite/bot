@@ -43,7 +43,7 @@ func SelectChannelStatsStats(ctx context.Context, gid int64) (*ChannelStatsStats
 			MAX(points) AS max,
 			SUM(points) AS sum,
 			CAST(ROUND(AVG(points)) AS INTEGER) AS avg,
-			COUNT(points) AS count,
+			COUNT(points) AS count
 		FROM channel_stats
 		WHERE gid = ?
 		`)
