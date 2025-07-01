@@ -14,7 +14,6 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.28
 	github.com/pelletier/go-toml v1.9.5
 	github.com/spf13/pflag v1.0.6
-	github.com/valyala/bytebufferpool v1.0.0
 	github.com/valyala/fastjson v1.6.4
 )
 
