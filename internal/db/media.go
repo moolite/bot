@@ -196,6 +196,27 @@ func SelectMediaBottom(ctx context.Context, gid int64, top int) ([]Media, error)
 	res := []Media{}
 	return res, q.SelectContext(ctx, &res, gid, top)
 }
+
+func SearchRandomMedia(ctx context.Context, m *Media, term string) error {
+	q, err := prepareStmt(
+		`SELECT media.rowid,media.gid,media.data,media.kind,media.description,media.score
+		 FROM media_fts
+		 JOIN media ON media.rowid = media_fts.rowid
+		 WHERE media_fts.description MATCH ?
+		   AND media_fts.gid=?
+		LIMIT 1
+		OFFSET ABS(RANDOM()
+			% MAX((SELECT COUNT(*) FROM media WHERE gid=?),1))`,
+	)
+	if err != nil {
+		return err
+	}
+
+	term = utils.CleanText(term)
+	stringGid := fmt.Sprint(m.GID) // FTS tables are text by default
+	return q.GetContext(ctx, m, term, stringGid, stringGid)
+}
+
 func SearchMedia(ctx context.Context, gid int64, term string, offset int) ([]Media, error) {
 	results := []Media{}
 

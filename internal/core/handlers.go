@@ -292,7 +292,8 @@ func AbraxasCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Send
 
 // AbraxasHandler handles message text like: `abraxas ...`
 func AbraxasHandler(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Sendable, error) {
-	head := strings.ToLower(utils.FirstWord(update.Message.Text))
+	head, rest := utils.SplitMessageWords(cmp.Or(update.Message.Text, update.Message.Caption))
+	head = strings.ToLower(head)
 	slog.Debug("AbraxasHandler", "head", head)
 
 	chatId := update.Message.Chat.ID
@@ -314,6 +315,21 @@ func AbraxasHandler(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Send
 		GID:  chatId,
 		Kind: abraxas.Kind,
 	}
+
+	if len(rest) > 0 {
+		if err := db.SearchRandomMedia(ctx, media, rest); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				slog.Error("media search, nothing found, continuing")
+				// continue...
+			} else {
+				slog.Error("error in db.SelectRandomMedia()", "err", err)
+				return nil, err
+			}
+		} else {
+			return mediaSendable(update.Message.Chat.ID, media), nil
+		}
+	}
+
 	if err := db.SelectRandomMedia(ctx, media); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			slog.Error("random media not found")
