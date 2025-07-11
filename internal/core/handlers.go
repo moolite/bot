@@ -252,6 +252,10 @@ func AliasCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Sendab
 // AnyCommand handles any command sent to the chat, searches for aliases and dispatch the update accordingly
 func AnyCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Sendable, error) {
 	head := utils.FirstWord(update.Message.Text)
+	if len(head) == 0 {
+		return nil, nil
+	}
+
 	head = head[1:]
 
 	alias := &db.Alias{
