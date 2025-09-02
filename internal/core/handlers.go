@@ -35,7 +35,9 @@ func registerCommands(ctx context.Context, b *tg.Bot) error {
 			// Search
 			{Command: "search", Description: "Search media files"},
 			// Top
-			{Command: "top", Description: "Top 10 media files"},
+			{Command: "top10", Description: "Top 10 media files"},
+			// Top20
+			{Command: "top20", Description: "Top 20 media files"},
 			// grumpyness
 			{Command: "grumpyness", Description: "Grumpyness measuring instrument"},
 		},
@@ -59,8 +61,14 @@ func registerBotHandlers(_ context.Context, b *tg.Bot) {
 		&tg.UpdateHandler{
 			Type:    tg.UPD_STARTSWITH,
 			Param:   "/top",
-			Aliases: []string{"/t"},
+			Aliases: []string{"/t", "/top10"},
 			Fn:      MediaToptenCommand,
+		},
+		&tg.UpdateHandler{
+			Type:    tg.UPD_STARTSWITH,
+			Param:   "/tte",
+			Aliases: []string{"/t2", "/top20"},
+			Fn:      MediaToptwentyCommand,
 		},
 		&tg.UpdateHandler{
 			Type:    tg.UPD_STARTSWITH,
@@ -558,6 +566,25 @@ func MediaBottomtenCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*
 
 	snd := mediaCollection(update.Message.Chat.ID, media[0].Description, media)
 	return snd, nil
+}
+
+func MediaToptwentyCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Sendable, error) {
+	media, err := db.SelectMediaTop(ctx, update.Message.Chat.ID, 20)
+	if err != nil {
+		return nil, err
+	}
+
+	snd := mediaCollection(update.Message.Chat.ID, media[0].Description, media[:10])
+	if _, err := b.Send(context.Background(), snd); err != nil {
+		slog.Error("error in bot.Send", "err", err)
+	}
+
+	snd = mediaCollection(update.Message.Chat.ID, media[10].Description, media[10:])
+	if _, err := b.Send(context.Background(), snd); err != nil {
+		slog.Error("error in bot.Send", "err", err)
+	}
+
+	return nil, nil
 }
 
 func MediaRememberCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Sendable, error) {
