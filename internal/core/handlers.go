@@ -334,7 +334,7 @@ func AbraxasHandler(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Send
 				slog.Error("media search, nothing found, continuing")
 				// continue...
 			} else {
-				slog.Error("error in db.SelectRandomMedia()", "err", err)
+				slog.Error("error in db.SearchRandomMedia()", "err", err)
 				return nil, err
 			}
 		} else {

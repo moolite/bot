@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"time"
 
@@ -213,6 +214,9 @@ func SearchRandomMedia(ctx context.Context, m *Media, term string) error {
 	}
 
 	term = utils.CleanText(term)
+	if len(term) == 0 {
+		return sql.ErrNoRows
+	}
 	stringGid := fmt.Sprint(m.GID) // FTS tables are text by default
 	return q.GetContext(ctx, m, term, stringGid, stringGid)
 }
@@ -235,6 +239,9 @@ func SearchMedia(ctx context.Context, gid int64, term string, offset int) ([]Med
 	}
 
 	term = utils.CleanText(term)
+	if len(term) == 0 {
+		return results, nil
+	}
 	stringGid := fmt.Sprint(gid) // FTS tables are text by default
 	return results, q.Select(&results, term, stringGid, offset)
 }
