@@ -1,0 +1,33 @@
+name: check
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "github-action"
+      - "master"
+      - "main"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: disable mandb!
+        run: sudo bash -ec 'echo "set man-db/auto-update false" | debconf-communicate; dpkg-reconfigure man-db'
+      - name: checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - uses: nixbuild/nix-quick-install-action@v30
+      - uses: nix-community/cache-nix-action@v6
+        with:
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix', '**/flake.lock') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-
+          gc-max-store-size-linux: 1G
+          purge: true
+          purge-prefixes: nix-${{ runner.os }}-
+          purge-created: 0
+          purge-last-accessed: 0
+          purge-primary-key: never
+      - run: nix build

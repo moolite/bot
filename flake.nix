@@ -29,7 +29,8 @@
           name = "marrano-bot";
           src = ./.;
           nativeBuildInputs = [ pkgs.go ];
-          vendorHash = "sha256-M1g9Iex93Pr0a/2QeyGnL5803O6VQJQItIfZdUXccCw=";
+          # vendorHash = "sha256-M1g9Iex93Pr0a/2QeyGnL5803O6VQJQItIfZdUXccCw=";
+          vendorHash = "sha256-kQkNBvsDmDKPxSLkB/ckhgi+Eby+n+VOAo3OIcmVtts=";
           tags= [
             "fts5"
           ];
