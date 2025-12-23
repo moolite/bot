@@ -2,15 +2,20 @@
   description = "A very marrano bot.";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
     flakelight.url = "github:nix-community/flakelight";
     flakelight.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { self, flakelight, ... }@inputs:
+  outputs =
+    { self, flakelight, ... }@inputs:
     flakelight ./. {
       inherit inputs;
-      systems = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ];
+      systems = [
+        "x86_64-linux"
+        "aarch64-linux"
+        "aarch64-darwin"
+      ];
 
       devShell.packages = pkgs: [
         pkgs.go
@@ -24,29 +29,45 @@
         pkgs.litecli
       ];
 
-      package = { pkgs, lib, buildGoModule, ... }:
+      package =
+        {
+          pkgs,
+          lib,
+          buildGoModule,
+          ...
+        }:
         buildGoModule {
           name = "marrano-bot";
           src = ./.;
           nativeBuildInputs = [ pkgs.go ];
           # vendorHash = "sha256-M1g9Iex93Pr0a/2QeyGnL5803O6VQJQItIfZdUXccCw=";
           vendorHash = "sha256-kQkNBvsDmDKPxSLkB/ckhgi+Eby+n+VOAo3OIcmVtts=";
-          tags= [
+          tags = [
             "fts5"
           ];
-          meta = { platforms = lib.platforms.all; };
+          meta = {
+            platforms = lib.platforms.all;
+          };
         };
 
-      formatters = { "*.go" = "go fmt"; };
+      formatters = {
+        "*.go" = "go fmt";
+      };
 
-      nixosModule = { config, pkgs, lib, system, ... }:
+      nixosModule =
+        {
+          config,
+          pkgs,
+          lib,
+          ...
+        }:
         with lib;
         let
           cfg = config.services.marrano-bot;
           pkg = self.packages.${pkgs.system}.default;
-          hardeningOptions =
-            { }; # TODO systemd hardened settings `systemd analyze security marrano-bot`
-        in {
+          hardeningOptions = { }; # TODO systemd hardened settings `systemd analyze security marrano-bot`
+        in
+        {
           options.services.marrano-bot = {
             enable = mkEnableOption (lib.mdDoc "Enable MarranoBot Service") // {
               description = lib.mdDoc ''
@@ -63,8 +84,7 @@
             hostName = mkOption {
               type = types.str;
               default = "bot.marrani.lol";
-              description = lib.mdDoc
-                "marrano-bot public hostname. Used to receive webhook updates.";
+              description = lib.mdDoc "marrano-bot public hostname. Used to receive webhook updates.";
             };
 
             openPort = mkOption {
@@ -82,8 +102,7 @@
             dataDir = mkOption {
               type = types.path;
               default = "/var/lib/marrano-bot";
-              description = lib.mdDoc
-                "The directory that will host the database file and config.edn";
+              description = lib.mdDoc "The directory that will host the database file and config.edn";
             };
 
             databaseFile = mkOption {
@@ -136,8 +155,7 @@
                 message = "Age secret 'marrano-bot' is required!";
               }
             ];
-            users.groups =
-              mkIf (cfg.group == "marrano-bot") { marrano-bot = { }; };
+            users.groups = mkIf (cfg.group == "marrano-bot") { marrano-bot = { }; };
 
             users.users = mkIf (cfg.user == "marrano-bot") {
               marrano-bot = {
@@ -168,27 +186,23 @@
 
               serviceConfig = {
                 # NOTE: needed (r)agenix secret!
-                LoadCredential =
-                  "marrano-bot.toml:${config.age.secrets.marrano-bot.path}";
+                LoadCredential = "marrano-bot.toml:${config.age.secrets.marrano-bot.path}";
 
                 User = cfg.user;
                 Group = cfg.group;
                 Type = "simple";
                 Restart = "on-failure";
                 WorkingDirectory = cfg.dataDir;
-                ExecStart =
-                  "${pkgs.marrano-bot}/bin/marrano-bot -c \${CREDENTIALS_DIRECTORY}/marrano-bot.toml";
+                ExecStart = "${pkgs.marrano-bot}/bin/marrano-bot -c \${CREDENTIALS_DIRECTORY}/marrano-bot.toml";
               };
             };
 
-            networking.firewall =
-              mkIf cfg.openPort { allowedTCPPorts = [ cfg.port ]; };
+            networking.firewall = mkIf cfg.openPort { allowedTCPPorts = [ cfg.port ]; };
 
             #
             # Reverse proxies
             #
             services.caddy.virtualHosts."${cfg.hostName}" = {
-              serverAliases = mkDefault [ "www.${cfg.hostName}" ];
               extraConfig = ''
                 encode gzip
                 reverse_proxy :${toString cfg.port}
@@ -197,8 +211,7 @@
 
             services.nginx.virtualHosts."${cfg.hostName}" = {
               serverName = mkDefault cfg.hostName;
-              locations."/".proxyPass =
-                "https://127.0.0.1:${toString cfg.port}";
+              locations."/".proxyPass = "https://127.0.0.1:${toString cfg.port}";
               enableACME = mkDefault true;
               forceSSL = mkDefault true;
             };
