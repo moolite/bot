@@ -236,7 +236,7 @@ type ShippingAddress struct {
 type Message struct {
 	ID                    int64                 `json:"id,omitempty"`
 	MessageID             int64                 `json:"message_id,omitempty"`
-	From                  *User                 `json:"from,omitemtpy"`
+	From                  *User                 `json:"from,omitempty"`
 	Date                  int64                 `json:"date,omitempty"`
 	Chat                  Chat                  `json:"chat"`
 	ForwardFrom           *User                 `json:"forward_from,omitempty"`

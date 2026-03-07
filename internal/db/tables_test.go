@@ -53,23 +53,28 @@ func TestTables(t *testing.T) {
 	is.Equal(m.Kind, kind)
 	is.Equal(m.Description, text)
 
-	mf := &MediaFts{}
-	row = dbc.QueryRow(`SELECT rowid,description,gid FROM media_fts`)
-	err = row.Scan(&mf.RowID, &mf.Description, &mf.GID)
-	is.NoErr(err)
+	// FTS5-specific tests - only run if FTS5 is available
+	if hasFTS5() {
+		mf := &MediaFts{}
+		row = dbc.QueryRow(`SELECT rowid,description,gid FROM media_fts`)
+		err = row.Scan(&mf.RowID, &mf.Description, &mf.GID)
+		is.NoErr(err)
 
-	is.Equal(mf.RowID, int64(1))
-	is.Equal(mf.Description, m.Description)
-	is.Equal(mf.GID, m.GID)
+		is.Equal(mf.RowID, int64(1))
+		is.Equal(mf.Description, m.Description)
+		is.Equal(mf.GID, m.GID)
 
-	s, err := SearchMedia(context.TODO(), gid, "some", 0)
-	is.NoErr(err)
-	is.Equal(len(s), 1)
-	is.Equal(s[0].Description, text)
+		s, err := SearchMedia(context.TODO(), gid, "some", 0)
+		is.NoErr(err)
+		is.Equal(len(s), 1)
+		is.Equal(s[0].Description, text)
 
-	s, err = SearchMedia(context.TODO(), gid, "nothing!", 0)
-	is.NoErr(err)
-	is.Equal(len(s), 0)
+		s, err = SearchMedia(context.TODO(), gid, "nothing!", 0)
+		is.NoErr(err)
+		is.Equal(len(s), 0)
+	} else {
+		t.Log("FTS5 not available, skipping FTS5-specific tests")
+	}
 
 	err = MigrateDown()
 	is.NoErr(err)

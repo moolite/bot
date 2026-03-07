@@ -52,12 +52,11 @@ func SearchLinks(ctx context.Context, gid, term string) (links []*Link, err erro
 	defer rows.Close()
 
 	for rows.Next() {
-		var l *Link
+		l := &Link{}
 		if err := rows.Scan(&l.Text, &l.URL, &l.GID); err != nil {
 			return links, err
-		} else {
-			links = append(links, l)
 		}
+		links = append(links, l)
 	}
 
 	return links, nil

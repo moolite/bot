@@ -9,7 +9,6 @@ import (
 
 var dbc *sqlx.DB
 var stmts map[string]*sqlx.Stmt = make(map[string]*sqlx.Stmt)
-var nstmts map[string]*sqlx.NamedStmt = make(map[string]*sqlx.NamedStmt)
 
 func Open(filename string) error {
 	var err error
@@ -39,18 +38,5 @@ func prepareStmt(stmt string) (*sqlx.Stmt, error) {
 	}
 
 	stmts[stmt] = s
-	return s, nil
-}
-
-func prepareNamedStmt(stmt string) (*sqlx.NamedStmt, error) {
-	if prepared, ok := nstmts[stmt]; ok {
-		return prepared, nil
-	}
-	s, err := dbc.PrepareNamed(stmt)
-	if err != nil {
-		return nil, err
-	}
-
-	nstmts[stmt] = s
 	return s, nil
 }

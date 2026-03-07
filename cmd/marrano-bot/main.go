@@ -28,7 +28,6 @@ var (
 	flagDump            bool
 	flagExportDB        bool
 	flagExportDBPath    string
-	flagSyncMedia       bool
 	flagSyncMediaFolder string
 )
 

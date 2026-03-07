@@ -19,7 +19,7 @@ type testCase struct {
 	isErr  bool
 }
 
-func pprint(t *testing.T, s interface{}) {
+func pprint(t *testing.T, s any) {
 	t.Helper()
 
 	m, err := json.MarshalIndent(s, "", "  ")

@@ -536,10 +536,7 @@ func mediaSearchKeyboard(items []db.Media, offset int64) *tg.InlineKeyboardMarku
 		k.InlineKeyboard = append(k.InlineKeyboard, kbRow)
 	}
 
-	backOffset := offset - 6
-	if backOffset < 0 {
-		backOffset = 0
-	}
+	backOffset := max(0, offset-6)
 	k.InlineKeyboard = append(k.InlineKeyboard, []tg.InlineKeyboardButton{
 		{Text: "<<", CallbackData: formatCallbackData(CB_MEDIA_SEARCH_LESS, backOffset)},
 		{Text: ">>", CallbackData: formatCallbackData(CB_MEDIA_SEARCH_LESS, offset+6)},
@@ -817,10 +814,6 @@ func getVideoFileID(update *tg.Update) string {
 	}
 
 	return update.Message.Video.FileID
-}
-
-func isMedia(update *tg.Update) bool {
-	return isPhoto(update) || isVideo(update)
 }
 
 // Grumpy

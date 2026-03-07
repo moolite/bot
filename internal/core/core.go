@@ -28,6 +28,7 @@ var (
 
 type chain []func(http.Handler) http.Handler
 
+// nolint:unused // kept for future use
 func (c chain) thenFunc(h http.HandlerFunc) http.Handler {
 	return c.then(h)
 }

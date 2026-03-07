@@ -242,7 +242,7 @@ func (b *Bot) HttpHandler(l *slog.Logger) http.HandlerFunc {
 }
 
 func (b *Bot) SetWebhook(ctx context.Context) error {
-	var res interface{}
+	var res any
 	a := &ParamSetWebhook{
 		URL: b.WebhookURL,
 	}
@@ -250,7 +250,7 @@ func (b *Bot) SetWebhook(ctx context.Context) error {
 }
 
 func (b *Bot) DeleteWebhook(ctx context.Context, dropUpdates bool) error {
-	var res interface{}
+	var res any
 	a := &ParamDeleteWebhook{
 		DropPendingUpdates: dropUpdates,
 	}

@@ -30,7 +30,7 @@ func ExportTable(table string) (*bytes.Buffer, error) {
 		return buf, err
 	}
 	colLen := len(cols)
-	valsptr := make([]interface{}, colLen)
+	valsptr := make([]any, colLen)
 
 	for rows.Next() {
 		row := make([]string, colLen)
@@ -66,6 +66,7 @@ func ExportTable(table string) (*bytes.Buffer, error) {
 }
 
 func ExportDB() (ret map[string]*bytes.Buffer, err error) {
+	ret = make(map[string]*bytes.Buffer)
 	tables := []string{
 		groupsTable,
 		abraxoidesTable,

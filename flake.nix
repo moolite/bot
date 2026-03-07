@@ -65,7 +65,6 @@
         let
           cfg = config.services.marrano-bot;
           pkg = self.packages.${pkgs.system}.default;
-          hardeningOptions = { }; # TODO systemd hardened settings `systemd analyze security marrano-bot`
         in
         {
           options.services.marrano-bot = {
