@@ -133,10 +133,14 @@ func registerBotHandlers(_ context.Context, b *tg.Bot) {
 			Param: "",
 			Fn:    OnMessage,
 		},
+		&tg.UpdateHander{
+			Type:  tg.UPD_MENTION,
+			Param: "",
+			Fn:    OnMention,
+		},
 	)
 
 	b.RegisterMessageHandler(OnMessage)
-
 }
 
 // Any Message

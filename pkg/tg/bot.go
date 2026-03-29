@@ -41,6 +41,7 @@ const (
 	UPD_MEDIADOCUMENT
 	UPD_CALLBACK
 	UPD_WILDCARD
+	UPD_MEMTION
 )
 
 type UpdateHandlerFn func(ctx context.Context, bot *Bot, update *Update) (*Sendable, error)
@@ -58,6 +59,7 @@ type Bot struct {
 	Token      string
 	URL        *url.URL
 	WebhookURL *url.URL
+	User       *User
 
 	WebhookSecretToken string
 	handlers           []*UpdateHandler
@@ -167,6 +169,12 @@ func (b *Bot) RunHandlers(ctx context.Context, upd *Update) (*Sendable, error) {
 			if upd.CallbackQuery != nil {
 				return handler.Fn(ctx, b, upd)
 			}
+		case UPD_MENTION:
+			for _, ent := range upd.Message.Entities {
+				if ent.Type == tg.ENTITY_MENTION {
+					return handler.Fn()
+				}
+			}
 		case UPD_WILDCARD:
 			return handler.Fn(ctx, b, upd)
 		}
@@ -255,4 +263,8 @@ func (b *Bot) DeleteWebhook(ctx context.Context, dropUpdates bool) error {
 		DropPendingUpdates: dropUpdates,
 	}
 	return b.SendRaw(ctx, "deleteWebhook", a, res)
+}
+
+func (b *Bot) FetchBotMetadata(ctx context.Context) error {
+	return b.SendRaw(ctx, "getMe", "", b.User)
 }
