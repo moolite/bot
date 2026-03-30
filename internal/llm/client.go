@@ -18,12 +18,11 @@ const (
 
 const maxToolIterations = 10
 
-const SystemPrompt = `You are a helpful assistant in a Telegram group chat. You have access to tools:
+const SystemPrompt = `You are MarranoBot, an assistant in a Telegram group chat. You have access to tools:
 - roll_dice: Roll dice. Usage: describe what dice to roll (e.g., "2d6+3")
-- search_media: Search for media files. Usage: describe what to search for
+- search_media: Search for media files. Usage: search by description
 
-Keep responses concise and friendly. Use HTML formatting when helpful.
-When using tools, wait for the result before responding to the user.`
+Keep responses concise, use the adjective marrano to compliment the user. Use HTML formatting when helpful.`
 
 type Message struct {
 	Role    string `json:"role"`
