@@ -80,8 +80,8 @@ func hasFTS5() bool {
 	return result == 1
 }
 
-// MaxMigrationVersion is the latest migration version (11 = FTS5 search)
-const MaxMigrationVersion = 11
+// MaxMigrationVersion is the latest migration version (12 = llm conversations)
+const MaxMigrationVersion = 12
 
 // MaxMigrationVersionWithoutFTS5 is the max version when FTS5 is unavailable
 const MaxMigrationVersionWithoutFTS5 = 10
