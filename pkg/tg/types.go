@@ -509,6 +509,7 @@ type Sendable struct {
 	ShowAlert            bool                  `json:"show_alert,omitempty"`
 	SupportsStreaming    bool                  `json:"supports_streaming,omitempty"`
 	ReplyMarkup          *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
+	ReplyToMessageID     int64                 `json:"reply_to_message_id,omitempty"`
 	LinkPreviewOptions   *LinkPreviewOptions   `json:"link_preview_options,omitempty"`
 	ReplyParameters      []ReplyParameters     `json:"reply_parameters,omitempty"`
 	Entities             []MessageEntity       `json:"entities,omitempty"`

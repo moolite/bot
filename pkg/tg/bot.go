@@ -41,7 +41,7 @@ const (
 	UPD_MEDIADOCUMENT
 	UPD_CALLBACK
 	UPD_WILDCARD
-	UPD_MEMTION
+	UPD_MENTION
 )
 
 type UpdateHandlerFn func(ctx context.Context, bot *Bot, update *Update) (*Sendable, error)
@@ -171,8 +171,8 @@ func (b *Bot) RunHandlers(ctx context.Context, upd *Update) (*Sendable, error) {
 			}
 		case UPD_MENTION:
 			for _, ent := range upd.Message.Entities {
-				if ent.Type == tg.ENTITY_MENTION {
-					return handler.Fn()
+				if ent.Type == ENTITY_MENTION {
+					return handler.Fn(ctx, b, upd)
 				}
 			}
 		case UPD_WILDCARD:
