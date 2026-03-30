@@ -13,6 +13,7 @@ import (
 
 	"github.com/moolite/bot/internal/db"
 	"github.com/moolite/bot/internal/dicer"
+	"github.com/moolite/bot/internal/llm"
 	"github.com/moolite/bot/internal/utils"
 	"github.com/moolite/bot/pkg/tg"
 )
@@ -133,10 +134,10 @@ func registerBotHandlers(_ context.Context, b *tg.Bot) {
 			Param: "",
 			Fn:    OnMessage,
 		},
-		&tg.UpdateHander{
+		&tg.UpdateHandler{
 			Type:  tg.UPD_MENTION,
 			Param: "",
-			Fn:    OnMention,
+			Fn:    LLMCommand,
 		},
 	)
 
@@ -879,4 +880,151 @@ func GrumpyCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Senda
 		ParseMode: "html",
 	}
 	return snd, nil
+}
+
+func LLMCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Sendable, error) {
+	text := update.Message.Text
+	if text == "" {
+		return nil, nil
+	}
+
+	uid := update.Message.From.ID
+	gid := update.Message.Chat.ID
+
+	var conv *db.Conversation
+	var err error
+
+	if update.Message.ReplyToMessage != nil &&
+		update.Message.ReplyToMessage.From != nil &&
+		update.Message.ReplyToMessage.From.IsBot &&
+		update.Message.ReplyToMessage.Text != "" {
+		conv, err = db.GetOrCreateConversation(ctx, uid, gid)
+	} else {
+		conv, err = db.EnsureConversation(ctx, uid, gid)
+	}
+	if err != nil {
+		slog.Error("LLMCommand: error getting conversation", "err", err)
+		return nil, nil
+	}
+
+	msgs, err := db.GetConversationMessages(ctx, conv.ID, 50)
+	if err != nil {
+		slog.Error("LLMCommand: error getting messages", "err", err)
+		return nil, nil
+	}
+
+	llmMsgs := make([]llm.Message, 0, len(msgs)+2)
+	llmMsgs = append(llmMsgs, llm.Message{
+		Role:    "system",
+		Content: llm.SystemPrompt,
+	})
+
+	for _, m := range msgs {
+		llmMsgs = append(llmMsgs, llm.Message{
+			Role:    m.Role,
+			Content: m.Content,
+		})
+	}
+
+	llmMsgs = append(llmMsgs, llm.Message{
+		Role:    "user",
+		Content: text,
+	})
+
+	gen, err := llm.NewClient(ctx, gid)
+	if err != nil {
+		slog.Error("LLMCommand: error creating LLM client", "err", err)
+		return &tg.Sendable{
+			ChatID:           update.Message.Chat.ID,
+			Text:             "Sorry, AI service is temporarily unavailable.",
+			ReplyToMessageID: update.Message.MessageID,
+			ParseMode:        "html",
+			Method:           tg.MethodSendMessage,
+		}, nil
+	}
+
+	resp, err := gen.Chat(ctx, llmMsgs, llm.AllTools())
+	if err != nil {
+		slog.Error("LLMCommand: error from LLM", "err", err)
+		return &tg.Sendable{
+			ChatID:           update.Message.Chat.ID,
+			Text:             "Sorry, AI service is temporarily unavailable.",
+			ReplyToMessageID: update.Message.MessageID,
+			ParseMode:        "html",
+			Method:           tg.MethodSendMessage,
+		}, nil
+	}
+
+	if err := db.InsertMessage(ctx, &db.Message{
+		ConversationID: conv.ID,
+		Role:           "user",
+		Content:        text,
+		TelegramMsgID:  update.Message.MessageID,
+	}); err != nil {
+		slog.Error("LLMCommand: error inserting user message", "err", err)
+	}
+
+	if err := db.InsertMessage(ctx, &db.Message{
+		ConversationID: conv.ID,
+		Role:           "assistant",
+		Content:        resp.Content,
+		TelegramMsgID:  0,
+	}); err != nil {
+		slog.Error("LLMCommand: error inserting assistant message", "err", err)
+	}
+
+	if len(msgs) >= 5 && len(msgs)%5 == 0 {
+		go compactConversation(conv.ID, gid)
+	}
+
+	return &tg.Sendable{
+		ChatID:           update.Message.Chat.ID,
+		Text:             resp.Content,
+		ReplyToMessageID: update.Message.MessageID,
+		ParseMode:        "html",
+		Method:           tg.MethodSendMessage,
+	}, nil
+}
+
+func compactConversation(convID, gid int64) {
+	ctx := context.Background()
+
+	msgs, err := db.GetConversationMessages(ctx, convID, 100)
+	if err != nil {
+		slog.Error("compactConversation: error getting messages", "err", err)
+		return
+	}
+
+	if len(msgs) <= 2 {
+		return
+	}
+
+	var content strings.Builder
+	for _, msg := range msgs[:len(msgs)-2] {
+		content.WriteString(msg.Role)
+		content.WriteString(": ")
+		content.WriteString(msg.Content)
+		content.WriteString("\n")
+	}
+
+	summaryPrompt := "Summarize briefly the following conversation:\n" + content.String()
+
+	gen, err := llm.NewClient(ctx, gid)
+	if err != nil {
+		slog.Error("compactConversation: error creating LLM client", "err", err)
+		return
+	}
+
+	summaryResp, err := gen.Chat(ctx, []llm.Message{{Role: "user", Content: summaryPrompt}}, nil)
+	if err != nil {
+		slog.Error("compactConversation: error getting summary", "err", err)
+		return
+	}
+
+	if err := db.CompactConversation(ctx, convID, summaryResp.Content); err != nil {
+		slog.Error("compactConversation: error compacting", "err", err)
+		return
+	}
+
+	slog.Info("compactConversation: compacted conversation", "convID", convID)
 }
