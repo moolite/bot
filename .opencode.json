@@ -1,0 +1,23 @@
+{
+    "$schema": "https://opencode.ai/config.json",
+    "agent": {
+        "build": {
+            "model": "zai-coding-plan/glm-5"
+        },
+        "plan": {
+            "model": "minimax-coding-plan/MiniMax-M2.7-highspeed"
+        },
+        "explore": {
+            "model": "zai-coding-plan/glm-4.5-flash"
+        },
+        "title": {
+            "model": "zai-coding-plan/glm-4.5-flash"
+        },
+        "compaction": {
+            "model": "minimax-coding-plan/MiniMax-M2.7-highspeed"
+        },
+        "general": {
+            "model": "zai-coding-plan/glm-5-turbo"
+        }
+    }
+}
