@@ -39,7 +39,7 @@ func (m *Media) Clone() *Media {
 }
 
 func InsertMedia(ctx context.Context, m *Media) error {
-	q, err := prepareStmt(
+	q, err := client.prepareStmt(
 		`INSERT OR REPLACE INTO ` + mediaTable + ` (gid,data,kind,description,score)
 		VALUES(?,?,?,?,?)`,
 	)
@@ -63,7 +63,7 @@ func InsertMedia(ctx context.Context, m *Media) error {
 }
 
 func UpdateMediaScoreByRowID(ctx context.Context, m *Media) error {
-	q, err := prepareStmt(
+	q, err := client.prepareStmt(
 		`UPDATE ` + mediaTable + ` SET score=? WHERE rowid=?`,
 	)
 	if err != nil {
@@ -85,7 +85,7 @@ func UpdateMediaScoreByRowID(ctx context.Context, m *Media) error {
 }
 
 func SelectOneMediaByData(ctx context.Context, m *Media) error {
-	q, err := prepareStmt(
+	q, err := client.prepareStmt(
 		`SELECT rowid,data,description,gid,kind,score FROM ` + mediaTable + `
 		WHERE data=? AND gid=? LIMIT 1`,
 	)
@@ -97,7 +97,7 @@ func SelectOneMediaByData(ctx context.Context, m *Media) error {
 }
 
 func SelectOneMediaByRowID(ctx context.Context, m *Media) error {
-	q, err := prepareStmt(
+	q, err := client.prepareStmt(
 		`SELECT rowid,data,description,gid,kind,score FROM ` + mediaTable + `
 		WHERE rowid=? LIMIT 1`,
 	)
@@ -110,7 +110,7 @@ func SelectOneMediaByRowID(ctx context.Context, m *Media) error {
 
 func SelectAllMediaGroup(ctx context.Context, gid string) ([]Media, error) {
 	var results []Media
-	q, err := prepareStmt(
+	q, err := client.prepareStmt(
 		`SELECT rowid,data,description,gid,kind,score FROM ` + mediaTable + ` WHERE gid=?`,
 	)
 	if err != nil {
@@ -122,7 +122,7 @@ func SelectAllMediaGroup(ctx context.Context, gid string) ([]Media, error) {
 
 func SelectAllMedia(ctx context.Context) ([]Media, error) {
 	results := []Media{}
-	q, err := prepareStmt(
+	q, err := client.prepareStmt(
 		`SELECT rowid,data,description,gid,kind,score FROM ` + mediaTable,
 	)
 	if err != nil {
@@ -133,7 +133,7 @@ func SelectAllMedia(ctx context.Context) ([]Media, error) {
 }
 
 func SelectRandomMediaKind(ctx context.Context, m *Media) error {
-	q, err := prepareStmt(
+	q, err := client.prepareStmt(
 		`SELECT rowid,gid,data,description,kind,score FROM media
 		 WHERE gid=? AND kind=?
 		 LIMIT 1
@@ -152,7 +152,7 @@ func SelectRandomMedia(ctx context.Context, m *Media) error {
 		return SelectRandomMediaKind(ctx, m)
 	}
 
-	q, err := prepareStmt(
+	q, err := client.prepareStmt(
 		`SELECT rowid,gid,data,description,kind,score FROM media
 		 WHERE gid=?
 		 LIMIT 1
@@ -167,7 +167,7 @@ func SelectRandomMedia(ctx context.Context, m *Media) error {
 }
 
 func SelectMediaTop(ctx context.Context, gid int64, top int) ([]Media, error) {
-	q, err := prepareStmt(
+	q, err := client.prepareStmt(
 		`SELECT rowid,gid,data,description,kind,score FROM ` + mediaTable + `
 		 WHERE gid=?
 		 AND score > 0
@@ -183,7 +183,7 @@ func SelectMediaTop(ctx context.Context, gid int64, top int) ([]Media, error) {
 }
 
 func SelectMediaBottom(ctx context.Context, gid int64, top int) ([]Media, error) {
-	q, err := prepareStmt(
+	q, err := client.prepareStmt(
 		`SELECT rowid,gid,data,description,kind,score FROM ` + mediaTable + `
 		 WHERE gid=?
 		 AND score > 0
@@ -199,7 +199,7 @@ func SelectMediaBottom(ctx context.Context, gid int64, top int) ([]Media, error)
 }
 
 func SearchRandomMedia(ctx context.Context, m *Media, term string) error {
-	q, err := prepareStmt(
+	q, err := client.prepareStmt(
 		`SELECT media.rowid,media.gid,media.data,media.kind,media.description,media.score
 		 FROM media_fts
 		 JOIN media ON media.rowid = media_fts.rowid
@@ -224,7 +224,7 @@ func SearchRandomMedia(ctx context.Context, m *Media, term string) error {
 func SearchMedia(ctx context.Context, gid int64, term string, offset int) ([]Media, error) {
 	results := []Media{}
 
-	q, err := prepareStmt(
+	q, err := client.prepareStmt(
 		`SELECT media.rowid,media.gid,media.data,media.kind,media.description,media.score
 		 FROM media_fts
 		 JOIN media ON media.rowid = media_fts.rowid
@@ -247,7 +247,7 @@ func SearchMedia(ctx context.Context, gid int64, term string, offset int) ([]Med
 }
 
 func DeleteMedia(ctx context.Context, m *Media) error {
-	q, err := prepareStmt(
+	q, err := client.prepareStmt(
 		`DELETE FROM ` + mediaTable + ` WHERE gid=? AND data=?`,
 	)
 	if err != nil {

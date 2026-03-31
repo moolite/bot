@@ -23,7 +23,7 @@ type Message struct {
 }
 
 func EnsureConversation(ctx context.Context, uid, gid int64) (*Conversation, error) {
-	q, err := prepareStmt(
+	q, err := client.prepareStmt(
 		`INSERT OR IGNORE INTO llm_conversations (uid, gid) VALUES (?, ?)`,
 	)
 	if err != nil {
@@ -39,7 +39,7 @@ func EnsureConversation(ctx context.Context, uid, gid int64) (*Conversation, err
 }
 
 func GetOrCreateConversation(ctx context.Context, uid, gid int64) (*Conversation, error) {
-	q, err := prepareStmt(
+	q, err := client.prepareStmt(
 		`SELECT id, uid, gid, created_at, updated_at FROM llm_conversations WHERE uid=? AND gid=?`,
 	)
 	if err != nil {
@@ -56,7 +56,7 @@ func GetOrCreateConversation(ctx context.Context, uid, gid int64) (*Conversation
 }
 
 func InsertMessage(ctx context.Context, msg *Message) error {
-	q, err := prepareStmt(
+	q, err := client.prepareStmt(
 		`INSERT INTO llm_messages (conversation_id, role, content, telegram_msg_id) VALUES (?, ?, ?, ?)`,
 	)
 	if err != nil {
@@ -79,7 +79,7 @@ func InsertMessage(ctx context.Context, msg *Message) error {
 }
 
 func GetConversationMessages(ctx context.Context, convID int64, limit int) ([]Message, error) {
-	q, err := prepareStmt(
+	q, err := client.prepareStmt(
 		`SELECT id, conversation_id, role, content, telegram_msg_id, created_at
 FROM llm_messages
 		WHERE conversation_id = ?
@@ -95,7 +95,7 @@ FROM llm_messages
 }
 
 func DeleteConversation(ctx context.Context, convID int64) error {
-	q, err := prepareStmt(
+	q, err := client.prepareStmt(
 		`DELETE FROM llm_conversations WHERE id = ?`,
 	)
 	if err != nil {
@@ -119,7 +119,7 @@ func DeleteConversation(ctx context.Context, convID int64) error {
 }
 
 func CompactConversation(ctx context.Context, convID int64, systemSummary string) error {
-	tx, err := dbc.BeginTxx(ctx, nil)
+	tx, err := client.DB().BeginTxx(ctx, nil)
 	if err != nil {
 		return err
 	}

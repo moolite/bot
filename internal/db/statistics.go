@@ -31,7 +31,7 @@ type StatisticsJoin struct {
 
 func SelectStatisticKinds(ctx context.Context) ([]*StatisticsKind, error) {
 	var results []*StatisticsKind
-	q, err := prepareStmt(
+	q, err := client.prepareStmt(
 		`SELECT kind_id,name,is_regexp FROM ` + statisticsKindTable,
 	)
 	if err != nil {
@@ -57,7 +57,7 @@ func SelectStatisticKinds(ctx context.Context) ([]*StatisticsKind, error) {
 }
 
 func InsertStatistics(ctx context.Context, val, kind int64) error {
-	q, err := prepareStmt(
+	q, err := client.prepareStmt(
 		`INSERT INTO statistics SET(value,kind) VALUES(?,?)`,
 	)
 	if err != nil {
@@ -83,7 +83,7 @@ func InsertStatistics(ctx context.Context, val, kind int64) error {
 func SelectStatisticsByDateRange(ctx context.Context, timeFrom, timeTo time.Time) ([]*StatisticsJoin, error) {
 	var results []*StatisticsJoin
 
-	q, err := prepareStmt(
+	q, err := client.prepareStmt(
 		`SELECT name,value,date FROM statistics
 		WHERE date < ? AND date > ?
 		LEFT JOIN statistics_kind USING(kind_id)`,
@@ -112,7 +112,7 @@ func SelectStatisticsByDateRange(ctx context.Context, timeFrom, timeTo time.Time
 
 func SelectStatisticsLatest(ctx context.Context) ([]*StatisticsJoin, error) {
 	var results []*StatisticsJoin
-	q, err := prepareStmt(
+	q, err := client.prepareStmt(
 		`SELECT name,value,date FROM statistics
 		LEFT JOIN statistics_kind USING(kind_id)
 		WHERE date > date('now','-30 minutes')
@@ -141,7 +141,7 @@ func SelectStatisticsLatest(ctx context.Context) ([]*StatisticsJoin, error) {
 }
 
 func InsertStatisticsKind(ctx context.Context, k *StatisticsKind) (int64, error) {
-	q, err := prepareStmt(
+	q, err := client.prepareStmt(
 		`INSERT INTO statistics_kind (name,trigger,is_regexp) VALUES(?,?,?)`,
 	)
 	if err != nil {

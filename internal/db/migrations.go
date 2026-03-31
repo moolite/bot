@@ -15,7 +15,7 @@ var migrationsFs embed.FS
 
 func migrateSetup() (*migrate.Migrate, error) {
 	driver, err := sqlite3.WithInstance(
-		dbc.DB, &sqlite3.Config{MigrationsTable: "migrations"})
+		client.DB().DB, &sqlite3.Config{MigrationsTable: "migrations"})
 	if err != nil {
 		return nil, err
 	}
@@ -65,16 +65,16 @@ func Drop() error {
 
 // hasFTS5 checks if FTS5 extension is available in SQLite
 func hasFTS5() bool {
+	db := client.DB()
 	var result int
-	err := dbc.QueryRow("SELECT sqlite_compileoption_used('ENABLE_FTS5')").Scan(&result)
+	err := db.QueryRow("SELECT sqlite_compileoption_used('ENABLE_FTS5')").Scan(&result)
 	if err != nil {
-		// Fallback: try to create a dummy FTS5 table
-		_, err = dbc.Exec("CREATE VIRTUAL TABLE IF NOT EXISTS _fts5_check USING fts5(content)")
+		_, err = db.Exec("CREATE VIRTUAL TABLE IF NOT EXISTS _fts5_check USING fts5(content)")
 		if err != nil {
-			dbc.Exec("DROP TABLE IF EXISTS _fts5_check")
+			db.Exec("DROP TABLE IF EXISTS _fts5_check")
 			return false
 		}
-		dbc.Exec("DROP TABLE IF EXISTS _fts5_check")
+		db.Exec("DROP TABLE IF EXISTS _fts5_check")
 		return true
 	}
 	return result == 1

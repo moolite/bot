@@ -10,7 +10,7 @@ type Alias struct {
 }
 
 func SelectAlias(ctx context.Context, alias *Alias) error {
-	q, err := prepareStmt(
+	q, err := client.prepareStmt(
 		`SELECT name,target FROM ` + aliasTable + ` WHERE name=? LIMIT 1`,
 	)
 	if err != nil {
@@ -23,7 +23,7 @@ func SelectAlias(ctx context.Context, alias *Alias) error {
 func SelectAllAliases(ctx context.Context) ([]Alias, error) {
 	ret := []Alias{}
 
-	q, err := prepareStmt(
+	q, err := client.prepareStmt(
 		`SELECT name,target FROM ` + aliasTable,
 	)
 	if err != nil {
@@ -34,7 +34,7 @@ func SelectAllAliases(ctx context.Context) ([]Alias, error) {
 }
 
 func InsertAlias(ctx context.Context, alias *Alias) error {
-	q, err := prepareStmt(
+	q, err := client.prepareStmt(
 		`INSERT OR INTO ` + aliasTable + `(name,target) VALUES(?,?) ON CONFLICT(name) DO UPDATE SET name=?`,
 	)
 	if err != nil {

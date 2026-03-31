@@ -21,7 +21,7 @@ func (g *Group) Clone() *Group {
 }
 
 func SelectOneGroup(ctx context.Context, g *Group) error {
-	q, err := prepareStmt(
+	q, err := client.prepareStmt(
 		`SELECT title FROM ` + groupsTable + ` WHERE gid=? LIMIT 1`,
 	)
 	if err != nil {
@@ -39,7 +39,7 @@ func SelectOneGroup(ctx context.Context, g *Group) error {
 func SelectAllGroups(ctx context.Context) ([]*Group, error) {
 	var ret []*Group
 
-	q, err := prepareStmt(
+	q, err := client.prepareStmt(
 		`SELECT gid,title FROM ` + groupsTable,
 	)
 	if err != nil {
@@ -64,7 +64,7 @@ func SelectAllGroups(ctx context.Context) ([]*Group, error) {
 }
 
 func InsertGroup(ctx context.Context, gid int64, title string) error {
-	q, err := prepareStmt(
+	q, err := client.prepareStmt(
 		`INSERT INTO ` + groupsTable + ` (gid,title) VALUES(?,?)
 		ON CONFLICT(gid) DO UPDATE SET title=excluded.title`,
 	)

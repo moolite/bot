@@ -32,14 +32,16 @@ func TestTables(t *testing.T) {
 	err = InsertMedia(context.TODO(), &Media{GID: gid, Data: data, Kind: kind, Description: text, Score: 0})
 	is.NoErr(err)
 
+	db := Default().DB()
+
 	var c int64
-	row := dbc.QueryRow(`SELECT COUNT(*) FROM media`)
+	row := db.QueryRow(`SELECT COUNT(*) FROM media`)
 	err = row.Scan(&c)
 	is.NoErr(err)
 	is.Equal(c, int64(1))
 
 	n := &Media{}
-	row = dbc.QueryRow(`SELECT kind,description,data,gid FROM media WHERE data=?`, data)
+	row = db.QueryRow(`SELECT kind,description,data,gid FROM media WHERE data=?`, data)
 	err = row.Scan(&n.Kind, &n.Description, &n.Data, &n.GID)
 	is.NoErr(err)
 	is.Equal(n.GID, gid)
@@ -56,7 +58,7 @@ func TestTables(t *testing.T) {
 	// FTS5-specific tests - only run if FTS5 is available
 	if hasFTS5() {
 		mf := &MediaFts{}
-		row = dbc.QueryRow(`SELECT rowid,description,gid FROM media_fts`)
+		row = db.QueryRow(`SELECT rowid,description,gid FROM media_fts`)
 		err = row.Scan(&mf.RowID, &mf.Description, &mf.GID)
 		is.NoErr(err)
 

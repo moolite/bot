@@ -24,7 +24,7 @@ func (l *Link) Clone() *Link {
 }
 
 func SelectLinkByURL(ctx context.Context, l *Link) error {
-	q, err := prepareStmt(
+	q, err := client.prepareStmt(
 		`SELECT url,text,gid FROM ` + linksTable + ` WHERE gid=? LIMIT 1`,
 	)
 	if err != nil {
@@ -38,7 +38,7 @@ func SelectLinkByURL(ctx context.Context, l *Link) error {
 
 func SearchLinks(ctx context.Context, gid, term string) (links []*Link, err error) {
 	likeTerm := fmt.Sprintf("%%%s%%", term)
-	q, err := prepareStmt(
+	q, err := client.prepareStmt(
 		`SELECT text,url,gid FROM ` + linksTable + ` WHERE text LIKE ? AND gid=?`,
 	)
 	if err != nil {
@@ -63,7 +63,7 @@ func SearchLinks(ctx context.Context, gid, term string) (links []*Link, err erro
 }
 
 func InsertLink(ctx context.Context, l *Link) error {
-	q, err := prepareStmt(
+	q, err := client.prepareStmt(
 		`INSERT OR REPLACE INTO ` + linksTable + `
 		(url,text,gid) VALUES(?,?,?)`,
 	)
@@ -84,7 +84,7 @@ func InsertLink(ctx context.Context, l *Link) error {
 }
 
 func DeleteLink(ctx context.Context, l *Link) error {
-	q, err := prepareStmt(
+	q, err := client.prepareStmt(
 		`DELETE FROM ` + linksTable + ` WHERE url=? AND gid=?`,
 	)
 	if err != nil {

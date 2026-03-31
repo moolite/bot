@@ -23,7 +23,7 @@ func (a *Abraxas) Clone() *Abraxas {
 }
 
 func SelectOneAbraxasByAbraxas(ctx context.Context, a *Abraxas) error {
-	q, err := prepareStmt(
+	q, err := client.prepareStmt(
 		`SELECT gid,abraxas,kind FROM ` + abraxoidesTable + `
 		WHERE gid=? AND abraxas LIKE ? LIMIT 1`,
 	)
@@ -37,7 +37,7 @@ func SelectOneAbraxasByAbraxas(ctx context.Context, a *Abraxas) error {
 func SelectAbraxoides(ctx context.Context, gid string) ([]Abraxas, error) {
 	abraxoides := []Abraxas{}
 
-	q, err := prepareStmt(
+	q, err := client.prepareStmt(
 		`SELECT abraxas,kind,gid FROM ` + abraxoidesTable + ` WHERE gid=?`,
 	)
 	if err != nil {
@@ -76,7 +76,7 @@ func SelectAbraxoidesAbraxasKind(ctx context.Context, gid string) ([][]string, e
 }
 
 func InsertAbraxas(ctx context.Context, a *Abraxas) error {
-	q, err := prepareStmt(
+	q, err := client.prepareStmt(
 		`INSERT OR REPLACE INTO ` + abraxoidesTable + ` (gid,abraxas,kind) VALUES (?,?,?)`,
 	)
 	if err != nil {
@@ -99,7 +99,7 @@ func InsertAbraxas(ctx context.Context, a *Abraxas) error {
 }
 
 func DeleteAbraxas(ctx context.Context, a *Abraxas) error {
-	q, err := prepareStmt(
+	q, err := client.prepareStmt(
 		`DELETE FROM ` + abraxoidesTable + ` WHERE gid=? AND abraxas=? LIMIT 1`,
 	)
 	if err != nil {

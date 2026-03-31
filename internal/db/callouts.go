@@ -23,7 +23,7 @@ func (c *Callout) Clone() *Callout {
 }
 
 func InsertCallout(ctx context.Context, c *Callout) error {
-	q, err := prepareStmt(
+	q, err := client.prepareStmt(
 		`INSERT OR REPLACE INTO ` + calloutsTable + `
 		(gid,callout,text) VALUES (?,?,?)`,
 	)
@@ -47,7 +47,7 @@ func InsertCallout(ctx context.Context, c *Callout) error {
 }
 
 func SelectOneCallout(ctx context.Context, c *Callout) error {
-	q, err := prepareStmt(
+	q, err := client.prepareStmt(
 		`SELECT gid,callout,text FROM ` + calloutsTable + `
 		WHERE callout LIKE ? AND gid=? LIMIT 1`,
 	)
@@ -61,7 +61,7 @@ func SelectOneCallout(ctx context.Context, c *Callout) error {
 func SelectAllCallouts(ctx context.Context, gid string) ([]string, error) {
 	callouts := []string{}
 
-	q, err := prepareStmt(
+	q, err := client.prepareStmt(
 		`SELECT callout FROM ` + calloutsTable + ` WHERE gid=?`,
 	)
 	if err != nil {
@@ -72,7 +72,7 @@ func SelectAllCallouts(ctx context.Context, gid string) ([]string, error) {
 }
 
 func DeleleOneCallout(ctx context.Context, c *Callout) error {
-	q, err := prepareStmt(
+	q, err := client.prepareStmt(
 		`DELETE FROM ` + calloutsTable + ` WHERE gid=? AND callout=? LIMIT 1`,
 	)
 	if err != nil {

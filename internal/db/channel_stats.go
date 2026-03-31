@@ -23,7 +23,7 @@ type ChannelStatsStats struct {
 
 func SelectChannelStats(ctx context.Context, channel int64) ([]ChannelStats, error) {
 	res := []ChannelStats{}
-	q, err := prepareStmt(
+	q, err := client.prepareStmt(
 		`SELECT gid, points, uid FROM channel_stats WHERE gid = ?`,
 	)
 	if err != nil {
@@ -36,7 +36,7 @@ func SelectChannelStats(ctx context.Context, channel int64) ([]ChannelStats, err
 func SelectChannelStatsStats(ctx context.Context, gid int64) (*ChannelStatsStats, error) {
 	res := &ChannelStatsStats{}
 
-	q, err := prepareStmt(
+	q, err := client.prepareStmt(
 		`SELECT
 			gid,
 			MIN(points) AS min,
@@ -57,7 +57,7 @@ func SelectChannelStatsStats(ctx context.Context, gid int64) (*ChannelStatsStats
 
 func SelectChannelStatsUser(ctx context.Context, channel int64, user string) (*ChannelStats, error) {
 	res := &ChannelStats{}
-	q, err := prepareStmt(
+	q, err := client.prepareStmt(
 		`SELECT * FROM ` + channelStatsTable + ` WHERE gid = ? AND user = ?`,
 	)
 
@@ -69,7 +69,7 @@ func SelectChannelStatsUser(ctx context.Context, channel int64, user string) (*C
 }
 
 func InsertChannelStats(ctx context.Context, c *ChannelStats) error {
-	q, err := prepareStmt(
+	q, err := client.prepareStmt(
 		`INSERT INTO ` + channelStatsTable + `
 				(gid,uid,points) VALUES(?,?,?)
 			ON CONFLICT(gid,uid) DO UPDATE SET

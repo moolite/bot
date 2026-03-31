@@ -14,7 +14,7 @@ func ExportTable(table string) (*bytes.Buffer, error) {
 	w := csv.NewWriter(buf)
 	defer w.Flush()
 
-	rows, err := dbc.Query(`SELECT FROM ` + table)
+	rows, err := client.DB().Query(`SELECT FROM ` + table)
 	if err != nil {
 		return buf, err
 	}
