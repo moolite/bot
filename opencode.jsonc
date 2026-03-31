@@ -1,6 +1,6 @@
 {
     "$schema": "https://opencode.ai/config.json",
-    "mode": {
+    "agent": {
         "build": {
             "model": "zai-coding-plan/glm-5",
             "temperature": 0.1
@@ -30,6 +30,5 @@
             "temperature": 0.2
         }
     },
-    "agent": {
-    }
+    "plugin": ["@tarquinen/opencode-dcp@v3.1.5"]
 }
