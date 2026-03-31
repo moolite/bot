@@ -1,5 +1,5 @@
 ---
-description: Task planning and tracking using todo lists. Use when: (1) breaking down complex tasks, (2) creating todo lists, (3) tracking progress, (4) suggesting next steps.
+description: Task planning and tracking using todo lists. Use when (1) breaking down complex tasks, (2) creating todo lists, (3) tracking progress, (4) suggesting next steps.
 mode: subagent
 temperature: 0.1
 tools:
@@ -54,6 +54,7 @@ Keep tasks small enough to complete in one session.
 - NEVER skip decomposition - atomic tasks are essential
 - Update status in real-time as work progresses
 - Use `delegation` skill to delegate implementation tasks to subagents
+- Use `question` tool to ask questions to the user
 
 # Output Format
 

@@ -1,6 +1,10 @@
 ---
 name: brainstorm
-description: Design-first ideation workflow — explore user intent, clarify constraints, propose approaches, and produce an approved design document before planning. Use when: (1) starting a new feature, (2) exploring architectural changes, (3) user wants design before implementation.
+description: >
+    Design-first ideation workflow — explore user intent, clarify constraints,
+    propose approaches, and produce an approved design document before
+    planning. Use when (1) starting a new feature, (2) exploring architectural
+    changes, (3) user wants design before implementation.
 ---
 
 # Brainstorm Workflow
@@ -24,7 +28,7 @@ description: Design-first ideation workflow — explore user intent, clarify con
 ## Step 1: Explore Project Context
 
 Use code analysis tools to understand the current codebase:
-- `glob` + `grep` for project structure and patterns
+- `glob`, `grep`, `list` for project structure and patterns
 - Identify relevant modules, conventions, and constraints
 - Summarize what exists and what the user's idea would affect
 
@@ -32,7 +36,7 @@ Use code analysis tools to understand the current codebase:
 
 ## Step 2: Ask Clarifying Questions
 
-Ask **one at a time**. Prefer multiple-choice options when possible.
+Use the `question` tool. Prefer multiple-choice options when possible.
 
 Key areas:
 - **Intent**: What problem are they solving? Who is the target user?
