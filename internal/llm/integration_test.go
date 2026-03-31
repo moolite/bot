@@ -17,6 +17,10 @@ func ensureModel(t *testing.T, model string) {
 	t.Helper()
 	is := is.New(t)
 
+	if model == "" {
+		model = DefaultModel
+	}
+
 	client, err := api.ClientFromEnvironment()
 	is.NoErr(err)
 
@@ -38,7 +42,7 @@ func ensureModel(t *testing.T, model string) {
 
 func TestIntegrationChatBasic(t *testing.T) {
 	is := is.New(t)
-	ensureModel(t, ModelQwen)
+	ensureModel(t, DefaultModel)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
@@ -55,7 +59,7 @@ func TestIntegrationChatBasic(t *testing.T) {
 
 func TestIntegrationChatToolRollDice(t *testing.T) {
 	is := is.New(t)
-	ensureModel(t, ModelQwen)
+	ensureModel(t, DefaultModel)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
@@ -75,7 +79,7 @@ func TestIntegrationChatToolRollDice(t *testing.T) {
 
 func TestIntegrationChatConversation(t *testing.T) {
 	is := is.New(t)
-	ensureModel(t, ModelQwen)
+	ensureModel(t, DefaultModel)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
@@ -105,7 +109,7 @@ func TestIntegrationChatConversation(t *testing.T) {
 
 func TestIntegrationChatNoResponse(t *testing.T) {
 	is := is.New(t)
-	ensureModel(t, ModelQwen)
+	ensureModel(t, DefaultModel)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -124,7 +128,7 @@ func TestIntegrationChatNoResponse(t *testing.T) {
 
 func TestIntegrationSetModel(t *testing.T) {
 	is := is.New(t)
-	ensureModel(t, ModelQwen)
+	ensureModel(t, DefaultModel)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
@@ -132,9 +136,9 @@ func TestIntegrationSetModel(t *testing.T) {
 	gen, err := NewClient(ctx, -100)
 	is.NoErr(err)
 
-	result := gen.SetModel(ModelQwen)
+	result := gen.SetModel(DefaultModel)
 	is.Equal(result, gen)
-	is.Equal(gen.model, ModelQwen)
+	is.Equal(gen.model, DefaultModel)
 
 	resp, err := gen.Chat(ctx, []Message{{Role: "user", Content: "Say hello"}}, nil)
 	is.NoErr(err)

@@ -33,7 +33,7 @@ func newMockClient(t *testing.T, handler mockHandler) (*Generator, func()) {
 
 	return &Generator{
 		client: client,
-		model:  ModelQwen,
+		model:  DefaultModel,
 		chatID: -100,
 	}, srv.Close
 }

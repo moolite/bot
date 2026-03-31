@@ -16,10 +16,17 @@ type TelegramConfig struct {
 	ApiKey string `toml:"apikey"`
 }
 
+type LLMConfig struct {
+	Model          string `toml:"model"`
+	EmbeddingModel string `toml:"embedding_model"`
+	EmbeddingBatch int    `toml:"embedding_batch"`
+}
+
 type Config struct {
 	Database string         `toml:"database"`
 	Port     int            `toml:"port" default:"6446"`
 	Telegram TelegramConfig `toml:"telegram"`
+	LLM      LLMConfig      `toml:"llm"`
 	LogLevel slog.Level
 }
 
@@ -69,7 +76,13 @@ func LoadFromEnv() (*Config, error) {
 }
 
 func LoadFile(filename string) (*Config, error) {
-	cfg := &Config{}
+	cfg := &Config{
+		LLM: LLMConfig{
+			Model:          "qwen3.5:0.5b",
+			EmbeddingModel: "nomic-embed-text",
+			EmbeddingBatch: 50,
+		},
+	}
 	if filename != "" {
 		tree, err := toml.LoadFile(filename)
 		if err != nil {

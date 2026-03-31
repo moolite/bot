@@ -22,8 +22,10 @@ import (
 )
 
 var resp404 = []byte(`404 not found`)
+var appCfg *config.Config
 
 func Listen(ctx context.Context, b *tg.Bot, cfg *config.Config) error {
+	appCfg = cfg
 	logger := httplog.NewLogger("marrano-bot", httplog.Options{
 		JSON:     !isatty.IsTerminal(os.Stdin.Fd()),
 		LogLevel: cfg.LogLevel,

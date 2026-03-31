@@ -10,10 +10,7 @@ import (
 )
 
 const (
-	ModelGranite4      = `granite4:350m`
-	ModelFunctiongemma = `functiongemma:270m`
-	ModelLLama         = `llama:1b`
-	ModelQwen          = `qwen3.5:0.5b`
+	DefaultModel = `qwen3.5:0.5b`
 )
 
 const maxToolIterations = 10
@@ -50,7 +47,7 @@ func NewClient(ctx context.Context, chatID int64) (*Generator, error) {
 
 	g := &Generator{
 		client: client,
-		model:  ModelQwen,
+		model:  DefaultModel,
 		chatID: chatID,
 	}
 
