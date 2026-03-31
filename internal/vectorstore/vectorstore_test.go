@@ -207,24 +207,38 @@ func TestCosineSimilarity(t *testing.T) {
 	}
 }
 
-func BenchmarkSearch(b *testing.B) {
+func benchTool(b *testing.B, num, size int) (*Store, []float32) {
+	b.Helper()
+
 	s := New()
-	for i := 0; i < 10000; i++ {
-		emb := make([]float32, 128)
+	for i := range num {
+		emb := make([]float32, size)
 		for j := range emb {
 			emb[j] = float32(i+j) * 0.01
 		}
 		s.Add("doc", emb)
 	}
 
-	query := make([]float32, 128)
+	query := make([]float32, size)
 	for i := range query {
 		query[i] = 0.5
 	}
 
-	b.ResetTimer()
+	return s, query
+}
 
-	for i := 0; i < b.N; i++ {
+func BenchmarkSearch10k128(b *testing.B) {
+	s, query := benchTool(b, 100000, 128)
+
+	for b.Loop() {
+		s.Search(query, 10)
+	}
+}
+
+func BenchmarkSearch100k512(b *testing.B) {
+	s, query := benchTool(b, 100000, 512)
+
+	for b.Loop() {
 		s.Search(query, 10)
 	}
 }
