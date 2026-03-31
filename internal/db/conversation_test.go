@@ -2,6 +2,8 @@ package db
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/matryer/is"
@@ -11,7 +13,9 @@ func TestConversationEnsure(t *testing.T) {
 	is := is.New(t)
 	ctx := context.TODO()
 
-	is.NoErr(Open(":memory:"))
+	dbPath := filepath.Join(t.TempDir(), "test.db")
+	os.WriteFile(dbPath, []byte{}, 0644)
+	is.NoErr(Open(dbPath))
 	is.NoErr(Migrate())
 	defer Close()
 
@@ -27,7 +31,8 @@ func TestConversationEnsureIdempotent(t *testing.T) {
 	is := is.New(t)
 	ctx := context.TODO()
 
-	is.NoErr(Open(":memory:"))
+	dbPath := filepath.Join(t.TempDir(), "test.db")
+	is.NoErr(Open(dbPath))
 	is.NoErr(Migrate())
 	defer Close()
 
@@ -44,7 +49,8 @@ func TestConversationGetOrCreateExisting(t *testing.T) {
 	is := is.New(t)
 	ctx := context.TODO()
 
-	is.NoErr(Open(":memory:"))
+	dbPath := filepath.Join(t.TempDir(), "test.db")
+	is.NoErr(Open(dbPath))
 	is.NoErr(Migrate())
 	defer Close()
 
@@ -60,7 +66,8 @@ func TestConversationGetOrCreateNotFound(t *testing.T) {
 	is := is.New(t)
 	ctx := context.TODO()
 
-	is.NoErr(Open(":memory:"))
+	dbPath := filepath.Join(t.TempDir(), "test.db")
+	is.NoErr(Open(dbPath))
 	is.NoErr(Migrate())
 	defer Close()
 
@@ -72,7 +79,8 @@ func TestConversationDifferentUsers(t *testing.T) {
 	is := is.New(t)
 	ctx := context.TODO()
 
-	is.NoErr(Open(":memory:"))
+	dbPath := filepath.Join(t.TempDir(), "test.db")
+	is.NoErr(Open(dbPath))
 	is.NoErr(Migrate())
 	defer Close()
 
@@ -89,7 +97,8 @@ func TestInsertMessage(t *testing.T) {
 	is := is.New(t)
 	ctx := context.TODO()
 
-	is.NoErr(Open(":memory:"))
+	dbPath := filepath.Join(t.TempDir(), "test.db")
+	is.NoErr(Open(dbPath))
 	is.NoErr(Migrate())
 	defer Close()
 
@@ -110,7 +119,8 @@ func TestGetConversationMessages(t *testing.T) {
 	is := is.New(t)
 	ctx := context.TODO()
 
-	is.NoErr(Open(":memory:"))
+	dbPath := filepath.Join(t.TempDir(), "test.db")
+	is.NoErr(Open(dbPath))
 	is.NoErr(Migrate())
 	defer Close()
 
@@ -139,7 +149,8 @@ func TestGetConversationMessagesLimit(t *testing.T) {
 	is := is.New(t)
 	ctx := context.TODO()
 
-	is.NoErr(Open(":memory:"))
+	dbPath := filepath.Join(t.TempDir(), "test.db")
+	is.NoErr(Open(dbPath))
 	is.NoErr(Migrate())
 	defer Close()
 
@@ -164,7 +175,8 @@ func TestGetConversationMessagesEmpty(t *testing.T) {
 	is := is.New(t)
 	ctx := context.TODO()
 
-	is.NoErr(Open(":memory:"))
+	dbPath := filepath.Join(t.TempDir(), "test.db")
+	is.NoErr(Open(dbPath))
 	is.NoErr(Migrate())
 	defer Close()
 
@@ -180,7 +192,8 @@ func TestDeleteConversation(t *testing.T) {
 	is := is.New(t)
 	ctx := context.TODO()
 
-	is.NoErr(Open(":memory:"))
+	dbPath := filepath.Join(t.TempDir(), "test.db")
+	is.NoErr(Open(dbPath))
 	is.NoErr(Migrate())
 	defer Close()
 
@@ -204,7 +217,8 @@ func TestDeleteConversationNotFound(t *testing.T) {
 	is := is.New(t)
 	ctx := context.TODO()
 
-	is.NoErr(Open(":memory:"))
+	dbPath := filepath.Join(t.TempDir(), "test.db")
+	is.NoErr(Open(dbPath))
 	is.NoErr(Migrate())
 	defer Close()
 
@@ -216,7 +230,8 @@ func TestCompactConversation(t *testing.T) {
 	is := is.New(t)
 	ctx := context.TODO()
 
-	is.NoErr(Open(":memory:"))
+	dbPath := filepath.Join(t.TempDir(), "test.db")
+	is.NoErr(Open(dbPath))
 	is.NoErr(Migrate())
 	defer Close()
 
@@ -245,7 +260,8 @@ func TestCompactConversationEmptySummary(t *testing.T) {
 	is := is.New(t)
 	ctx := context.TODO()
 
-	is.NoErr(Open(":memory:"))
+	dbPath := filepath.Join(t.TempDir(), "test.db")
+	is.NoErr(Open(dbPath))
 	is.NoErr(Migrate())
 	defer Close()
 
@@ -264,4 +280,116 @@ func TestCompactConversationEmptySummary(t *testing.T) {
 	result, err := GetConversationMessages(ctx, conv.ID, 50)
 	is.NoErr(err)
 	is.Equal(len(result), 0)
+}
+
+func TestGetOrCreateSessionBySessionID(t *testing.T) {
+	is := is.New(t)
+	ctx := context.TODO()
+
+	dbPath := filepath.Join(t.TempDir(), "test.db")
+	is.NoErr(Open(dbPath))
+	is.NoErr(Migrate())
+	defer Close()
+
+	conv, err := GetOrCreateSessionBySessionID(ctx, "test-session-1", 100, -200)
+	is.NoErr(err)
+	is.True(conv != nil)
+	is.True(conv.ID > 0)
+	is.Equal(conv.SessionID, "test-session-1")
+	is.Equal(conv.UID, int64(100))
+	is.Equal(conv.GID, int64(-200))
+
+	conv2, err := GetOrCreateSessionBySessionID(ctx, "test-session-1", 100, -200)
+	is.NoErr(err)
+	is.Equal(conv.ID, conv2.ID)
+}
+
+func TestGetOrCreateSessionBySessionIDEmpty(t *testing.T) {
+	is := is.New(t)
+	ctx := context.TODO()
+
+	dbPath := filepath.Join(t.TempDir(), "test.db")
+	is.NoErr(Open(dbPath))
+	is.NoErr(Migrate())
+	defer Close()
+
+	_, err := GetOrCreateSessionBySessionID(ctx, "", 100, -200)
+	is.Equal(err, ErrNoSessionID)
+}
+
+func TestGetSessions(t *testing.T) {
+	is := is.New(t)
+	ctx := context.TODO()
+
+	dbPath := filepath.Join(t.TempDir(), "test.db")
+	is.NoErr(Open(dbPath))
+	is.NoErr(Migrate())
+	defer Close()
+
+	sessions, err := GetSessions(ctx, 10)
+	is.NoErr(err)
+	is.Equal(len(sessions), 0)
+
+	conv, err := GetOrCreateSessionBySessionID(ctx, "session-1", 100, -200)
+	is.NoErr(err)
+
+	is.NoErr(InsertMessage(ctx, &Message{
+		ConversationID: conv.ID,
+		Role:           "user",
+		Content:        "hello",
+		TelegramMsgID:  1,
+	}))
+
+	sessions, err = GetSessions(ctx, 10)
+	is.NoErr(err)
+	is.Equal(len(sessions), 1)
+	is.Equal(sessions[0].SessionID, "session-1")
+	is.Equal(sessions[0].MsgCount, 1)
+}
+
+func TestGetSessionsFiltersEmptySessionID(t *testing.T) {
+	is := is.New(t)
+	ctx := context.TODO()
+
+	dbPath := filepath.Join(t.TempDir(), "test.db")
+	is.NoErr(Open(dbPath))
+	is.NoErr(Migrate())
+	defer Close()
+
+	_, err := EnsureConversation(ctx, 100, -200)
+	is.NoErr(err)
+
+	sessions, err := GetSessions(ctx, 10)
+	is.NoErr(err)
+	is.Equal(len(sessions), 0)
+}
+
+func TestCountConversationMessages(t *testing.T) {
+	is := is.New(t)
+	ctx := context.TODO()
+
+	dbPath := filepath.Join(t.TempDir(), "test.db")
+	is.NoErr(Open(dbPath))
+	is.NoErr(Migrate())
+	defer Close()
+
+	conv, err := EnsureConversation(ctx, 100, -200)
+	is.NoErr(err)
+
+	count, err := CountConversationMessages(ctx, conv.ID)
+	is.NoErr(err)
+	is.Equal(count, 0)
+
+	for i := 0; i < 5; i++ {
+		is.NoErr(InsertMessage(ctx, &Message{
+			ConversationID: conv.ID,
+			Role:           "user",
+			Content:        "msg",
+			TelegramMsgID:  int64(i),
+		}))
+	}
+
+	count, err = CountConversationMessages(ctx, conv.ID)
+	is.NoErr(err)
+	is.Equal(count, 5)
 }

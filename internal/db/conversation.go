@@ -9,6 +9,7 @@ type Conversation struct {
 	ID        int64     `db:"id"`
 	UID       int64     `db:"uid"`
 	GID       int64     `db:"gid"`
+	SessionID string    `db:"session_id"`
 	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
 }
@@ -40,7 +41,7 @@ func EnsureConversation(ctx context.Context, uid, gid int64) (*Conversation, err
 
 func GetOrCreateConversation(ctx context.Context, uid, gid int64) (*Conversation, error) {
 	q, err := client.prepareStmt(
-		`SELECT id, uid, gid, created_at, updated_at FROM llm_conversations WHERE uid=? AND gid=?`,
+		`SELECT id, uid, gid, COALESCE(session_id, '') as session_id, created_at, updated_at FROM llm_conversations WHERE uid=? AND gid=?`,
 	)
 	if err != nil {
 		return nil, err
@@ -147,4 +148,75 @@ func CompactConversation(ctx context.Context, convID int64, systemSummary string
 	}
 
 	return tx.Commit()
+}
+
+type SessionSummary struct {
+	ID        int64     `db:"id"`
+	SessionID string    `db:"session_id"`
+	CreatedAt time.Time `db:"created_at"`
+	MsgCount  int       `db:"msg_count"`
+}
+
+func GetSessions(ctx context.Context, limit int) ([]SessionSummary, error) {
+	q, err := client.prepareStmt(
+		`SELECT c.id, c.session_id, c.created_at, COUNT(m.id) as msg_count
+FROM llm_conversations c
+LEFT JOIN llm_messages m ON c.id = m.conversation_id
+WHERE c.session_id IS NOT NULL AND c.session_id != ''
+GROUP BY c.id
+ORDER BY c.updated_at DESC
+LIMIT ?`,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	var sessions []SessionSummary
+	return sessions, q.SelectContext(ctx, &sessions, limit)
+}
+
+func GetOrCreateSessionBySessionID(ctx context.Context, sessionID string, uid int64, gid int64) (*Conversation, error) {
+	if sessionID == "" {
+		return nil, ErrNoSessionID
+	}
+
+	insertQ, err := client.prepareStmt(
+		`INSERT OR IGNORE INTO llm_conversations (uid, gid, session_id) VALUES (?, ?, ?)`,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = insertQ.ExecContext(ctx, uid, gid, sessionID)
+	if err != nil {
+		return nil, err
+	}
+
+	q, err := client.prepareStmt(
+		`SELECT id, uid, gid, COALESCE(session_id, '') as session_id, created_at, updated_at FROM llm_conversations WHERE session_id = ?`,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	var conv Conversation
+	err = q.GetContext(ctx, &conv, sessionID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &conv, nil
+}
+
+func CountConversationMessages(ctx context.Context, convID int64) (int, error) {
+	q, err := client.prepareStmt(
+		`SELECT COUNT(*) FROM llm_messages WHERE conversation_id = ?`,
+	)
+	if err != nil {
+		return 0, err
+	}
+
+	var count int
+	err = q.GetContext(ctx, &count, convID)
+	return count, err
 }

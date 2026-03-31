@@ -50,7 +50,7 @@ func Default() *Client {
 
 func Open(filename string) error {
 	var err error
-	uri := fmt.Sprintf("file:%s?cache=private&mode=rw&_txlock=immediate&_journal_mode=WAL", filename)
+	uri := fmt.Sprintf("file:%s?cache=private&mode=rwc&_txlock=immediate&_journal_mode=WAL", filename)
 	sqlDB, err := sqlx.Connect("sqlite3", uri)
 	if err != nil {
 		return err

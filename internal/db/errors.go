@@ -5,7 +5,8 @@ import (
 )
 
 var (
-	ErrNotFound error = errors.New("record not found")
-	ErrInsert   error = errors.New("record insertion failure")
-	ErrDelete   error = errors.New("error deleting record")
+	ErrNotFound    error = errors.New("record not found")
+	ErrInsert      error = errors.New("record insertion failure")
+	ErrDelete      error = errors.New("error deleting record")
+	ErrNoSessionID error = errors.New("session id is required")
 )
