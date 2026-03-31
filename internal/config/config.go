@@ -17,9 +17,11 @@ type TelegramConfig struct {
 }
 
 type LLMConfig struct {
-	Model          string `toml:"model"`
-	EmbeddingModel string `toml:"embedding_model"`
-	EmbeddingBatch int    `toml:"embedding_batch"`
+	Model          string  `toml:"model"`
+	EmbeddingModel string  `toml:"embedding_model"`
+	EmbeddingBatch int     `toml:"embedding_batch"`
+	Temperature    float32 `toml:"temperature"`
+	ContextSize    int     `toml:"context_size"`
 }
 
 type Config struct {
@@ -81,6 +83,8 @@ func LoadFile(filename string) (*Config, error) {
 			Model:          "qwen3.5:0.8b",
 			EmbeddingModel: "nomic-embed-text",
 			EmbeddingBatch: 50,
+			Temperature:    0.4,
+			ContextSize:    25000,
 		},
 	}
 	if filename != "" {
