@@ -20,4 +20,5 @@ func TestFlagDefaults(t *testing.T) {
 	is.Equal(flagExportDB, false)
 	is.Equal(flagExportDBPath, "")
 	is.Equal(flagSyncMediaFolder, "")
+	is.Equal(flagImportHistory, "")
 }

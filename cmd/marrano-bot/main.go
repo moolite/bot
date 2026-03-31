@@ -29,6 +29,7 @@ var (
 	flagExportDB        bool
 	flagExportDBPath    string
 	flagSyncMediaFolder string
+	flagImportHistory   string
 )
 
 func setupLogging() {
@@ -91,6 +92,7 @@ func main() {
 	pflag.BoolVarP(&flagExportDB, "export", "E", false, "export database data as csv (defaults to stdout)")
 	pflag.StringVar(&flagExportDBPath, "export-dir", cwd, "folder to write database exported data csv files")
 	pflag.StringVarP(&flagSyncMediaFolder, "export-media", "M", "", "sync media files to the specified folder.")
+	pflag.StringVarP(&flagImportHistory, "import-history", "H", "", "import Telegram chat history from JSON export file")
 	pflag.Parse()
 
 	if flagHelp {
@@ -149,6 +151,17 @@ func main() {
 		slog.Info("sync media to folder", "folder", flagSyncMediaFolder)
 		if err := SyncFolder(flagSyncMediaFolder); err != nil {
 			slog.Error("error syncronizing media folder", "folder", flagSyncMediaFolder, "err", err)
+			os.Exit(1)
+		}
+		os.Exit(0)
+		return
+	}
+
+	if flagImportHistory != "" {
+		ctx := context.Background()
+		slog.Info("importing history", "path", flagImportHistory)
+		if err := ImportHistory(ctx, flagImportHistory); err != nil {
+			slog.Error("error importing history", "err", err)
 			os.Exit(1)
 		}
 		os.Exit(0)
