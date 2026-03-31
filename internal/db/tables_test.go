@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"path/filepath"
 	"testing"
 
 	"github.com/matryer/is"
@@ -9,27 +10,19 @@ import (
 
 func TestTables(t *testing.T) {
 	is := is.New(t)
-	var err error
 
-	err = Open(":memory:")
+	dbPath := filepath.Join(t.TempDir(), "test.db")
+	is.NoErr(Open(dbPath))
+	is.NoErr(Migrate())
 	defer Close()
+
+	err := InsertGroup(context.TODO(), -123456, "group name")
 	is.NoErr(err)
 
-	err = Migrate()
+	err = InsertAbraxas(context.TODO(), &Abraxas{GID: -123456, Abraxas: "something", Kind: "photo"})
 	is.NoErr(err)
 
-	var gid int64 = -123456
-	text := "some text"
-	data := "123456"
-	kind := "photo"
-
-	err = InsertGroup(context.TODO(), gid, "group name")
-	is.NoErr(err)
-
-	err = InsertAbraxas(context.TODO(), &Abraxas{GID: gid, Abraxas: "something", Kind: "photo"})
-	is.NoErr(err)
-
-	err = InsertMedia(context.TODO(), &Media{GID: gid, Data: data, Kind: kind, Description: text, Score: 0})
+	err = InsertMedia(context.TODO(), &Media{GID: -123456, Data: "123456", Kind: "photo", Description: "some text", Score: 0})
 	is.NoErr(err)
 
 	db := Default().DB()
@@ -41,43 +34,52 @@ func TestTables(t *testing.T) {
 	is.Equal(c, int64(1))
 
 	n := &Media{}
-	row = db.QueryRow(`SELECT kind,description,data,gid FROM media WHERE data=?`, data)
+	row = db.QueryRow(`SELECT kind, description, data, gid FROM media WHERE data=?`, "123456")
 	err = row.Scan(&n.Kind, &n.Description, &n.Data, &n.GID)
 	is.NoErr(err)
-	is.Equal(n.GID, gid)
+	is.Equal(n.GID, int64(-123456))
+	is.Equal(n.Data, "123456")
+	is.Equal(n.Description, "some text")
+	is.Equal(n.Kind, "photo")
 
-	m := &Media{GID: gid, Kind: kind}
+	m := &Media{GID: -123456, Kind: "photo"}
 	err = SelectRandomMedia(context.TODO(), m)
 	is.NoErr(err)
+	is.Equal(m.GID, int64(-123456))
+	is.Equal(m.Data, "123456")
+	is.Equal(m.Kind, "photo")
+	is.Equal(m.Description, "some text")
+}
 
-	is.Equal(m.GID, gid)
-	is.Equal(m.Data, data)
-	is.Equal(m.Kind, kind)
-	is.Equal(m.Description, text)
+func TestTablesWithFTS(t *testing.T) {
+	is := is.New(t)
 
-	// FTS5-specific tests - only run if FTS5 is available
-	if hasFTS5() {
-		mf := &MediaFts{}
-		row = db.QueryRow(`SELECT rowid,description,gid FROM media_fts`)
-		err = row.Scan(&mf.RowID, &mf.Description, &mf.GID)
-		is.NoErr(err)
+	dbPath := filepath.Join(t.TempDir(), "test.db")
+	is.NoErr(Open(dbPath))
+	is.NoErr(Migrate())
+	defer Close()
 
-		is.Equal(mf.RowID, int64(1))
-		is.Equal(mf.Description, m.Description)
-		is.Equal(mf.GID, m.GID)
-
-		s, err := SearchMedia(context.TODO(), gid, "some", 0)
-		is.NoErr(err)
-		is.Equal(len(s), 1)
-		is.Equal(s[0].Description, text)
-
-		s, err = SearchMedia(context.TODO(), gid, "nothing!", 0)
-		is.NoErr(err)
-		is.Equal(len(s), 0)
-	} else {
-		t.Log("FTS5 not available, skipping FTS5-specific tests")
-	}
-
-	err = MigrateDown()
+	err := InsertGroup(context.TODO(), -123456, "group name")
 	is.NoErr(err)
+
+	err = InsertMedia(context.TODO(), &Media{GID: -123456, Data: "123456", Kind: "photo", Description: "some text", Score: 0})
+	is.NoErr(err)
+
+	db := Default().DB()
+
+	var mf MediaFts
+	row := db.QueryRow(`SELECT rowid, description, gid FROM media_fts`)
+	err = row.Scan(&mf.RowID, &mf.Description, &mf.GID)
+	is.NoErr(err)
+	is.Equal(mf.GID, int64(-123456))
+	is.Equal(mf.Description, "some text")
+	is.Equal(mf.RowID, int64(1))
+
+	s, err := SearchMedia(context.TODO(), -123456, "some", 0)
+	is.NoErr(err)
+	is.Equal(len(s), 1)
+
+	s, err = SearchMedia(context.TODO(), -123456, "nothing!", 0)
+	is.NoErr(err)
+	is.Equal(len(s), 0)
 }

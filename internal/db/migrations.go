@@ -10,6 +10,9 @@ import (
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 )
 
+// MaxMigrationVersion is the latest migration version (14 = llm session id)
+const MaxMigrationVersion uint = 14
+
 //go:embed migrations/*.sql
 var migrationsFs embed.FS
 
@@ -63,29 +66,6 @@ func Drop() error {
 	return m.Drop()
 }
 
-// hasFTS5 checks if FTS5 extension is available in SQLite
-func hasFTS5() bool {
-	db := client.DB()
-	var result int
-	err := db.QueryRow("SELECT sqlite_compileoption_used('ENABLE_FTS5')").Scan(&result)
-	if err != nil {
-		_, err = db.Exec("CREATE VIRTUAL TABLE IF NOT EXISTS _fts5_check USING fts5(content)")
-		if err != nil {
-			db.Exec("DROP TABLE IF EXISTS _fts5_check")
-			return false
-		}
-		db.Exec("DROP TABLE IF EXISTS _fts5_check")
-		return true
-	}
-	return result == 1
-}
-
-// MaxMigrationVersion is the latest migration version (12 = llm conversations)
-const MaxMigrationVersion = 12
-
-// MaxMigrationVersionWithoutFTS5 is the max version when FTS5 is unavailable
-const MaxMigrationVersionWithoutFTS5 = 10
-
 func Migrate() error {
 	m, err := migrateSetup()
 	if err != nil {
@@ -106,18 +86,12 @@ func Migrate() error {
 		return errors.New("dirty migration state")
 	}
 
-	// Determine max migration version based on FTS5 availability
-	maxVersion := uint(MaxMigrationVersion)
-	if !hasFTS5() {
-		maxVersion = MaxMigrationVersionWithoutFTS5
-		slog.Debug("FTS5 not available, limiting migrations", "max_version", maxVersion)
-	}
+	slog.Debug("db migration", "version", version, "dirty", dirty)
 
-	slog.Debug("db migration", "version", version, "dirty", dirty, "target_version", maxVersion)
-
-	// Migrate to the target version
-	if version < maxVersion {
-		return m.Migrate(maxVersion)
+	if version < MaxMigrationVersion {
+		if err := m.Migrate(MaxMigrationVersion); err != nil {
+			return err
+		}
 	}
 
 	return nil
