@@ -67,9 +67,11 @@ bot/
 │   │   ├── db.go         # Connection management, prepared statements
 │   │   ├── migrations/   # SQL migration files (embedded)
 │   │   └── *.go          # Domain-specific DB operations
+│   ├── chain/            # HTTP middleware chain builder
 │   ├── dicer/            # Dice rolling logic
 │   ├── statistics/       # Metrics collection and prometheus export
 │   ├── statsd/           # StatsD client
+│   ├── vectorstore/      # In-memory vector similarity search (cosine)
 │   ├── telegram/         # Telegram-specific utilities (HTML, entities)
 │   └── utils/            # Shared utilities (string helpers)
 └── pkg/tg/               # Custom Telegram bot framework
