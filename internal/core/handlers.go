@@ -943,6 +943,8 @@ func LLMCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Sendable
 		}, nil
 	}
 
+	applyLLMConfig(gen)
+
 	resp, err := gen.Chat(ctx, llmMsgs, llm.AllTools())
 	if err != nil {
 		slog.Error("LLMCommand: error from LLM", "err", err)
@@ -962,6 +964,7 @@ func LLMCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Sendable
 		TelegramMsgID:  update.Message.MessageID,
 	}); err != nil {
 		slog.Error("LLMCommand: error inserting user message", "err", err)
+		return tg.SendableSetMessageReaction(update, tg.EMOJI_KO), nil
 	}
 
 	if err := db.InsertMessage(ctx, &db.Message{
@@ -984,6 +987,20 @@ func LLMCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Sendable
 		ParseMode:        "html",
 		Method:           tg.MethodSendMessage,
 	}, nil
+}
+
+func applyLLMConfig(gen *llm.Generator) {
+	if appCfg == nil {
+		return
+	}
+	temp := appCfg.LLM.Temperature
+	if temp <= 0 {
+		temp = 0.1
+	}
+	gen.SetTemperature(temp)
+	if appCfg.LLM.ContextSize > 0 {
+		gen.SetContextSize(appCfg.LLM.ContextSize)
+	}
 }
 
 func compactConversation(convID, gid int64) {
@@ -1014,6 +1031,8 @@ func compactConversation(convID, gid int64) {
 		slog.Error("compactConversation: error creating LLM client", "err", err)
 		return
 	}
+
+	applyLLMConfig(gen)
 
 	summaryResp, err := gen.Chat(ctx, []llm.Message{{Role: "user", Content: summaryPrompt}}, nil)
 	if err != nil {
