@@ -1,0 +1,35 @@
+{
+    "$schema": "https://opencode.ai/config.json",
+    "mode": {
+        "build": {
+            "model": "zai-coding-plan/glm-5",
+            "temperature": 0.1
+        },
+        "plan": {
+            "model": "minimax-coding-plan/MiniMax-M2.7-highspeed",
+            "temperature": 0.3
+        },
+        "explore": {
+            "model": "zai-coding-plan/glm-4.5-flash",
+            "temperature": 0
+        },
+        "title": {
+            "model": "zai-coding-plan/glm-4.5-flash",
+            "temperature": 0
+        },
+        "compaction": {
+            "model": "minimax-coding-plan/MiniMax-M2.7-highspeed",
+            "temperature": 0.2
+        },
+        "general": {
+            "model": "zai-coding-plan/glm-5-turbo",
+            "temperature": 0.3
+        },
+        "review": {
+            "model": "zai-coding-plan/glm-5.1",
+            "temperature": 0.2
+        }
+    },
+    "agent": {
+    }
+}
