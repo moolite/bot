@@ -78,7 +78,7 @@ func LoadFromEnv() (*Config, error) {
 func LoadFile(filename string) (*Config, error) {
 	cfg := &Config{
 		LLM: LLMConfig{
-			Model:          "qwen3.5:0.5b",
+			Model:          "qwen3.5:0.8b",
 			EmbeddingModel: "nomic-embed-text",
 			EmbeddingBatch: 50,
 		},
