@@ -1,145 +1,116 @@
 # Code Diagnostics and Improvement Plan
 
-## Critical Issues
+## Current State (Updated: 2026-03-31)
 
-### 1. Test Failures - FTS5 Not Available in Memory Database ⚠️
-**Files Affected:**
-- `internal/core/handlers_test.go`
-- `internal/db/tables_test.go`
-- `internal/statistics/statistics_test.go`
+### ✅ RESOLVED ISSUES (Removed)
 
-**Problem:** Tests use in-memory database (`:memory:`) but FTS5 is not available in memory databases. The FTS5 extension requires file-based databases with the `fts5` build tag.
+1. **FTS5 test failures** - Fixed with graceful handling. Tests now skip FTS5 migrations when unavailable and limit to version 10.
+2. **Unused code warnings** - Most items resolved:
+   - `flagSyncMediaFolder` - Actually in use at main.go:148-151
+   - `isMedia` function - Does not exist in codebase
+   - `prepareNamedStmt` function - Does not exist in codebase
+   - `hardeningOptions` - Does not exist in flake.nix
+3. **max() modernization** - Already implemented at handlers.go:544
+4. **Nil dereference warnings** - Links.go:56 code is correct (Scan return is checked with error handling)
+5. **Go version documentation** - go.mod specifies `go 1.24.1` (not 1.23.3)
+6. **AGENTS.md enhancement** - ✅ Completed with comprehensive documentation
 
-**Error Message:**
+---
+
+## Active Issues
+
+### Medium Priority
+
+### 1. Unused Method - thenFunc
+**Location:** `internal/core/core.go:31`
+
+**Status:** Marked with `// nolint:unused // kept for future use`
+
+**Issue:** The `thenFunc` method on the `chain` type is unused but has a comment indicating it's kept for future use.
+
+**Recommendation:** Either:
+- Remove if no plans to use it
+- Remove the nolint comment and actually use it if there's a use case
+
+---
+
+### 2. Modernize interface{} to any
+**Location:** `pkg/tg/client.go:15`
+
+**Issue:** One occurrence of `interface{}` instead of the modern `any` alias (Go 1.18+).
+
+**Code:**
+```go
+Result interface{} `json:"result"`
 ```
-err: no such module: fts5 in line 0: CREATE VIRTUAL TABLE media_fts USING fts5(...)
-```
 
-**Solution:**
-Option 1: Add FTS5 build tag to tests
-- Update test files to build with `-tags "fts5"`
-- Requires SQLite FTS5 extension to be available
-
-Option 2: Skip FTS5 migration in tests
-- Make FTS5 table creation conditional on build tag
-- Add fallback logic for tests without FTS5 support
-
-Option 3: Use test database file
-- Create temporary SQLite file for testing instead of `:memory:`
-
-**Recommended:** Option 2 - make FTS5 conditional since it's an optional feature.
+**Recommendation:** Replace with `any` for Go 1.18+ compatibility.
 
 ---
 
-## Code Quality Issues
+### 3. Constants Type Inconsistency ✅ RESOLVED
+**Location:** `pkg/tg/types.go:6`
 
-### 2. Unused Code (8 warnings)
-**Files:**
-- `cmd/marrano-bot/main.go:31` - `flagSyncMedia` variable declared but never used
-- `internal/core/core.go:31` - `thenFunc` method on chain type
-- `internal/core/handlers.go:822` - `isMedia` function
-- `internal/db/db.go:45` - `prepareNamedStmt` function
-- `flake.nix:68` - unused `hardeningOptions` binding
+**Status:** Fixed - All constants now have explicit `string` type
 
-**Impact:** Code clutter, confusion about active functionality
-
-**Solution:** Remove or comment out unused code with explanation.
+**Solution Applied:** Added explicit `string` type to all 18 constants for consistency with Go best practices.
 
 ---
 
-### 3. Nil Dereference Warnings (3 warnings)
-**Files:**
-- `internal/db/links.go:56` - Scanning into pointer fields without nil check
-- `internal/db/export.go:84` - Map update on nil pointer
+### Low Priority
 
-**Problem:** `rows.Scan(&l.Text, &l.URL, &l.GID)` can fail but code doesn't handle potential nil returns before dereferencing.
+### 1. Missing Test Coverage
+**Locations:**
+- `internal/config/` package - 0 test files
+- `cmd/marrano-bot/main.go` - 0 test files
 
-**Solution:** Add nil checks after Scan or use pointer pointers.
+**Impact:** Reduced confidence in code changes for config loading and CLI functionality.
 
----
-
-### 4. Modernization Opportunities
-**Files:**
-- `pkg/tg/bot.go:245,253` - `interface{}` can be replaced with `any`
-- `internal/core/handlers.go:540` - Could use `max()` instead of if statement
-- `pkg/tg/emoji.go:4` - SA9004: All constants in group should have explicit type
-
-**Impact:** Better Go 1.18+ idioms, clearer code
+**Recommendation:** Add unit tests for:
+- Config file parsing (TOML)
+- Environment variable overrides
+- CLI flag handling
+- Main function initialization
 
 ---
 
-## Security Considerations
-
-### 5. Nil Pointer Dereferences
-**Location:** `internal/db/links.go:56`
-
-**Risk:** If Scan fails or returns nil pointers, dereferencing them causes panic.
-
-**Severity:** Medium - could crash the bot
-
-**Recommendation:** Add defensive nil checks.
-
----
-
-## Performance
-
-### 6. Prepared Statement Cache
+### 2. Statement Cache Architecture
 **Location:** `internal/db/db.go`
 
-**Observation:** Prepared statements are cached globally in module variables (`stmts`, `nstmts`). This can cause:
-- Memory leaks if database connection is never closed
-- Statement pooling issues across requests
+**Issue:** Prepared statements are cached globally in module-level map (`stmts`).
 
-**Recommendation:** Consider connection-scoped statement caching or use context to manage lifespan.
+**Current Implementation:**
+```go
+var stmts map[string]*sqlx.Stmt = make(map[string]*sqlx.Stmt)
 
----
+func prepareStmt(stmt string) (*sqlx.Stmt, error) {
+    if prepared, ok := stmts[stmt]; ok {
+        return prepared, nil
+    }
+    // ... prepare and cache
+}
+```
 
-## Test Coverage
+**Potential Issues:**
+- Statements not scoped to connection lifetime
+- Memory if connection is never closed properly
+- Potential concurrency issues with concurrent access
 
-### 7. Missing Test Coverage
-**Observation:** No tests for:
-- `internal/config` package (0 test files)
-- `cmd/marrano-bot/main.go` (0 test files)
-- Many database CRUD operations
+**Current Mitigation:** Connection is typically singleton for bot lifecycle, and `Close()` resets the cache.
 
-**Impact:** Reduced confidence in code changes
-
-**Recommendation:** Add unit tests for config loading, CLI flags, and DB operations.
-
----
-
-## Dependencies
-
-### 8. Outdated Dependencies
-**Go Version:** 1.23.3 (from go.mod)
-
-**Observation:** No explicit go.mod checks for minimum version
-
-**Recommendation:** Consider adding `go 1.23` minimum version constraint if features require it.
-
----
-
-## Documentation
-
-### 9. Missing AGENTS.md Content
-**Status:** AGENTS.md created but could be enhanced with:
-- Example migration patterns
-- Detailed API documentation
-- Troubleshooting guide
+**Recommendation:** Consider connection-scoped statement caching or use database connection pooling with proper statement lifecycle management.
 
 ---
 
 ## Priority Fixes
 
 ### High Priority
-1. **Fix FTS5 test failures** - Critical for CI/CD
-2. **Fix nil dereferences** - Security/stability
+None - All critical issues resolved.
 
 ### Medium Priority
-3. Remove unused code
-4. Add test coverage
-5. Modernize interface{} -> any
+1. Modernize `interface{}` → `any` (single occurrence)
+2. Remove or use `thenFunc` method
 
 ### Low Priority
-6. Refactor statement caching
-7. Enhance AGENTS.md
+1. Add test coverage for config and main.go
+2. Refactor statement cache architecture (optional, current design works for use case)
