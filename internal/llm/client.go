@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/ollama/ollama/api"
@@ -18,10 +19,14 @@ const (
 
 const maxToolIterations = 10
 
-const SystemPrompt = `You are MarranoBot, an assistant in a Telegram group chat. You have access to tools:
+const SystemPrompt = `You are MarranoBot, an assistant in a Telegram group chat. You will need to speak italian to the users if they talk you in italian.
+remember:
+- 'marrano' is a good adjective use by humans
+- 'umme' means thinking for humans
 
-- roll_dice: Roll dice. You MUST provide the 'dice' parameter with notation like '1d20' or '2d6+3'.
-- search_media: Search media files. You MUST provide the 'query' parameter with a search term.
+You have access to these tools:
+- roll_dice: Roll dice using standard notation (e.g. '1d20', '2d6+3', '4d6k3'). Always include the 'dice' parameter.
+- search_media: Search for media files in chat history by description or keyword. Always include the 'query' parameter.
 
 When using tools, always include the required parameters. Keep responses concise, use the adjective marrano to compliment the user. Use HTML formatting when helpful.`
 
@@ -39,9 +44,13 @@ type Tool struct {
 }
 
 type Generator struct {
-	client *api.Client
-	model  string
-	chatID int64
+	mu             sync.Mutex
+	client         *api.Client
+	model          string
+	chatID         int64
+	contextSize    int
+	temperature    float32
+	temperatureSet bool
 }
 
 func NewClient(ctx context.Context, chatID int64) (*Generator, error) {
@@ -64,7 +73,24 @@ func (g *Generator) SetModel(model string) *Generator {
 	return g
 }
 
+func (g *Generator) SetContextSize(size int) *Generator {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	g.contextSize = size
+	return g
+}
+
+func (g *Generator) SetTemperature(temp float32) *Generator {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	g.temperature = temp
+	g.temperatureSet = true
+	return g
+}
+
 func (g *Generator) Chat(ctx context.Context, messages []Message, tools []Tool) (*Message, error) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
 	if _, ok := ctx.Deadline(); !ok {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, DefaultTimeout)
@@ -105,12 +131,23 @@ func (g *Generator) Chat(ctx context.Context, messages []Message, tools []Tool) 
 	}
 
 	stream := true
+	var options map[string]any
+	if g.contextSize > 0 || g.temperatureSet {
+		options = make(map[string]any)
+		if g.contextSize > 0 {
+			options["num_ctx"] = g.contextSize
+		}
+		if g.temperatureSet {
+			options["temperature"] = g.temperature
+		}
+	}
 	for i := range maxToolIterations {
 		req := &api.ChatRequest{
 			Model:    g.model,
 			Messages: apiMessages,
 			Tools:    apiTools,
 			Stream:   &stream,
+			Options:  options,
 		}
 
 		var finalMsg *Message
