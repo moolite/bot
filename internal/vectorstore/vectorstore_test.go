@@ -242,3 +242,97 @@ func BenchmarkSearch100k512(b *testing.B) {
 		s.Search(query, 10)
 	}
 }
+
+func TestFloat32ToBytes(t *testing.T) {
+	is := is.New(t)
+
+	tests := []struct {
+		name string
+		in   []float32
+		want []byte
+	}{
+		{"nil", nil, nil},
+		{"empty", []float32{}, nil},
+		{"zero", []float32{0.0}, []byte{0x00, 0x00, 0x00, 0x00}},
+		{"one", []float32{1.0}, []byte{0x00, 0x00, 0x80, 0x3F}},
+		{"minus_one", []float32{-1.0}, []byte{0x00, 0x00, 0x80, 0xBF}},
+		{"half", []float32{0.5}, []byte{0x00, 0x00, 0x00, 0x3F}},
+		{"multiple", []float32{1, 2, 3}, []byte{0x00, 0x00, 0x80, 0x3F, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x40, 0x40}},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			is := is.New(t)
+			got := Float32ToBytes(tc.in)
+			is.Equal(got, tc.want)
+		})
+	}
+}
+
+func TestBytesToFloat32(t *testing.T) {
+	is := is.New(t)
+
+	tests := []struct {
+		name string
+		in   []byte
+		want []float32
+	}{
+		{"nil", nil, nil},
+		{"empty", []byte{}, nil},
+		{"zero", []byte{0x00, 0x00, 0x00, 0x00}, []float32{0.0}},
+		{"one", []byte{0x00, 0x00, 0x80, 0x3F}, []float32{1.0}},
+		{"minus_one", []byte{0x00, 0x00, 0x80, 0xBF}, []float32{-1.0}},
+		{"half", []byte{0x00, 0x00, 0x00, 0x3F}, []float32{0.5}},
+		{"multiple", []byte{0x00, 0x00, 0x80, 0x3F, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x40, 0x40}, []float32{1, 2, 3}},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			is := is.New(t)
+			got := BytesToFloat32(tc.in)
+			is.Equal(got, tc.want)
+		})
+	}
+}
+
+func TestFloat32BytesRoundTrip(t *testing.T) {
+	is := is.New(t)
+
+	tests := []struct {
+		name string
+		in   []float32
+	}{
+		{"nil", nil},
+		{"empty", []float32{}},
+		{"zero", []float32{0.0}},
+		{"normal", []float32{1.0, -1.0, 0.5, -0.5, 123.456}},
+		{"nan", []float32{float32(math.NaN())}},
+		{"pos_inf", []float32{float32(math.Inf(1))}},
+		{"neg_inf", []float32{float32(math.Inf(-1))}},
+		{"small", []float32{math.SmallestNonzeroFloat32}},
+		{"large", []float32{math.MaxFloat32}},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			is := is.New(t)
+
+			bytes := Float32ToBytes(tc.in)
+			got := BytesToFloat32(bytes)
+
+			if len(tc.in) == 0 {
+				is.Equal(len(got), 0)
+				return
+			}
+
+			if math.IsNaN(float64(tc.in[0])) {
+				is.True(math.IsNaN(float64(got[0])))
+				return
+			}
+
+			for i := range tc.in {
+				is.Equal(got[i], tc.in[i])
+			}
+		})
+	}
+}

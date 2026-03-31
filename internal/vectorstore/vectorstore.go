@@ -1,6 +1,7 @@
 package vectorstore
 
 import (
+	"encoding/binary"
 	"encoding/gob"
 	"math"
 	"os"
@@ -112,4 +113,26 @@ func cosineSimilarity(a, b []float32) float32 {
 		return 0
 	}
 	return float32(dot / (math.Sqrt(normA) * math.Sqrt(normB)))
+}
+
+func BytesToFloat32(b []byte) []float32 {
+	if len(b) == 0 {
+		return nil
+	}
+	result := make([]float32, len(b)/4)
+	for i := range result {
+		result[i] = math.Float32frombits(binary.LittleEndian.Uint32(b[i*4:]))
+	}
+	return result
+}
+
+func Float32ToBytes(f []float32) []byte {
+	if len(f) == 0 {
+		return nil
+	}
+	b := make([]byte, len(f)*4)
+	for i, v := range f {
+		binary.LittleEndian.PutUint32(b[i*4:], math.Float32bits(v))
+	}
+	return b
 }
