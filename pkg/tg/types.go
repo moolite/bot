@@ -4,23 +4,23 @@ import "net/url"
 
 const (
 	ENTITY_MENTION               string = `mention`
-	ENTITY_HASHTAG                      = `hashtag`
-	ENTITY_CASHTAG                      = `cashtag`
-	ENTITY_URL                          = `url`
-	ENTITY_EMAIL                        = `email`
-	ENTITY_PHONE_NUMBER                 = `phone_number`
-	ENTITY_BOLD                         = `bold`
-	ENTITY_ITALIC                       = `italic`
-	ENTITY_UNDERLINE                    = `underline`
-	ENTITY_STRIKETHROUGH                = `strikethrough`
-	ENTITY_SPOILER                      = `spoiler`
-	ENTITY_EXPANDABLE_BLOCKQUOTE        = `expandable_blockquote`
-	ENTITY_CODE                         = `code`
-	ENTITY_PRE                          = `pre`
-	ENTITY_TEXT_LINK                    = `text_link`
-	ENTITY_TEXT_MENTION                 = `text_mention`
-	ENTITY_CUSTOM_EMOJI                 = `custom_emoji`
-	ENTITY_DATE_TIME                    = `date_time`
+	ENTITY_HASHTAG               string = `hashtag`
+	ENTITY_CASHTAG               string = `cashtag`
+	ENTITY_URL                   string = `url`
+	ENTITY_EMAIL                 string = `email`
+	ENTITY_PHONE_NUMBER          string = `phone_number`
+	ENTITY_BOLD                  string = `bold`
+	ENTITY_ITALIC                string = `italic`
+	ENTITY_UNDERLINE             string = `underline`
+	ENTITY_STRIKETHROUGH         string = `strikethrough`
+	ENTITY_SPOILER               string = `spoiler`
+	ENTITY_EXPANDABLE_BLOCKQUOTE string = `expandable_blockquote`
+	ENTITY_CODE                  string = `code`
+	ENTITY_PRE                   string = `pre`
+	ENTITY_TEXT_LINK             string = `text_link`
+	ENTITY_TEXT_MENTION          string = `text_mention`
+	ENTITY_CUSTOM_EMOJI          string = `custom_emoji`
+	ENTITY_DATE_TIME             string = `date_time`
 )
 
 // User is telegram user
