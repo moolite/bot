@@ -144,7 +144,7 @@ func registerBotHandlers(_ context.Context, b *tg.Bot) {
 	b.RegisterMessageHandler(OnMessage)
 }
 
-// Any Message
+// OnMessage processes all messages
 func OnMessage(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Sendable, error) {
 	if update.Message != nil && update.Message.Text != "" {
 		if snd, err := AbraxasHandler(ctx, b, update); err != nil {
@@ -313,9 +313,9 @@ func AbraxasHandler(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Send
 	head = strings.ToLower(head)
 	slog.Debug("AbraxasHandler", "head", head)
 
-	chatId := update.Message.Chat.ID
+	chatID := update.Message.Chat.ID
 	abraxas := &db.Abraxas{
-		GID:     chatId,
+		GID:     chatID,
 		Abraxas: head,
 	}
 
@@ -329,7 +329,7 @@ func AbraxasHandler(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Send
 	}
 
 	media := &db.Media{
-		GID:  chatId,
+		GID:  chatID,
 		Kind: abraxas.Kind,
 	}
 
@@ -463,7 +463,7 @@ func CalloutMessage(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Send
 	}, nil
 }
 
-// Media
+// MediaSearchCommand parses /search <query> messages
 func MediaSearchCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Sendable, error) {
 	_, rest := utils.SplitMessageWords(update.Message.Text)
 
@@ -594,7 +594,7 @@ func MediaRememberCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*t
 	data := ""
 	if isPhoto(update) {
 		kind = "photo"
-		data = getPhotoFileId(update)
+		data = getPhotoFileID(update)
 	} else if isVideo(update) {
 		kind = "video"
 		data = getVideoFileID(update)
@@ -624,7 +624,7 @@ func MediaForgetCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.
 
 	data := ""
 	if isPhoto(update) {
-		data = getPhotoFileId(update)
+		data = getPhotoFileID(update)
 	} else if isVideo(update) {
 		data = getVideoFileID(update)
 	} else {
@@ -712,14 +712,14 @@ func showMedia(ctx context.Context, b *tg.Bot, update *tg.Update, _, data int64)
 
 	slog.Debug("ShowMedia", "m", m)
 
-	var chatId int64
+	var chatID int64
 	if update.Message != nil {
-		chatId = update.Message.Chat.ID
+		chatID = update.Message.Chat.ID
 	} else if update.CallbackQuery != nil && update.CallbackQuery.Message != nil {
-		chatId = update.CallbackQuery.Message.Chat.ID
+		chatID = update.CallbackQuery.Message.Chat.ID
 	}
 
-	snd := mediaSendable(chatId, m)
+	snd := mediaSendable(chatID, m)
 
 	if res, err := b.Send(ctx, snd); err != nil {
 		slog.Error("ShowMedia error", "err", err, "res", res)
@@ -797,7 +797,7 @@ func isPhoto(update *tg.Update) bool {
 	return len(update.Message.Photo) > 0 || update.Message.ReplyToMessage != nil && update.Message.ReplyToMessage.Photo != nil
 }
 
-func getPhotoFileId(update *tg.Update) string {
+func getPhotoFileID(update *tg.Update) string {
 	if update.Message.ReplyToMessage != nil && update.Message.ReplyToMessage.Photo != nil {
 		return update.Message.ReplyToMessage.Photo[0].FileID
 	}
@@ -821,7 +821,7 @@ func getVideoFileID(update *tg.Update) string {
 	return update.Message.Video.FileID
 }
 
-// Grumpy
+// GrumpyCommand parses the message /grumpy <...>
 func GrumpyCommand(ctx context.Context, b *tg.Bot, update *tg.Update) (*tg.Sendable, error) {
 	_, rest := utils.SplitMessageWords(update.Message.Text)
 	points, user := utils.SplitMessageWords(rest)

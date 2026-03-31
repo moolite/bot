@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-	"slices"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -22,23 +21,7 @@ import (
 	"github.com/moolite/bot/pkg/tg"
 )
 
-var (
-	resp404 = []byte(`404 not found`)
-)
-
-type chain []func(http.Handler) http.Handler
-
-// nolint:unused // kept for future use
-func (c chain) thenFunc(h http.HandlerFunc) http.Handler {
-	return c.then(h)
-}
-
-func (c chain) then(h http.Handler) http.Handler {
-	for _, mw := range slices.Backward(c) {
-		h = mw(h)
-	}
-	return h
-}
+var resp404 = []byte(`404 not found`)
 
 func Listen(ctx context.Context, b *tg.Bot, cfg *config.Config) error {
 	logger := httplog.NewLogger("marrano-bot", httplog.Options{

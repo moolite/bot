@@ -11,8 +11,8 @@ import (
 )
 
 type RawResult struct {
-	OK     bool        `json:"ok"`
-	Result interface{} `json:"result"`
+	OK     bool `json:"ok"`
+	Result any  `json:"result"`
 }
 
 func (bot *Bot) SendRaw(ctx context.Context, method string, data, results any) error {
